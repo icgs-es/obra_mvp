@@ -1,0 +1,14 @@
+
+<tr id="row-subobra-{{ r.id }}">
+  <td>{{ r.id }}</td>
+  <td>{{ r.obra }}</td>
+  <td class="mono">{{ r.codigo }}</td>
+  <td>{{ r.nombre }}</td>
+  <td class="actions">
+    <a hx-get="{% url 'subobra_edit' r.id %}" hx-target="#row-subobra-{{ r.id }}" hx-swap="outerHTML">Editar</a>
+    <form method="post" style="display:inline" hx-post="{% url 'subobra_delete' r.id %}" hx-target="#tabcontent" hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit" onclick="return confirm('¿Eliminar subobra {{ r.codigo }}?')">Borrar</button>
+    </form>
+  </td>
+</tr>

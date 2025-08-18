@@ -1,0 +1,29 @@
+
+<article class="span-12">
+  <header><strong>Nueva Partida</strong></header>
+  <form method="post" class="grid" hx-post="{% url 'tab_partidas' %}" hx-target="#tabcontent" hx-swap="outerHTML">
+    {% csrf_token %}
+    <label class="span-6">Capítulo {{ form.capitulo }}</label>
+    <label class="span-6">Nombre {{ form.nombre }}</label>
+    <div class="span-12"><button type="submit">Guardar</button></div>
+  </form>
+</article>
+
+<div class="table-scroll">
+  <table role="grid">
+    <thead><tr><th>ID</th><th>Obra</th><th>SubObra</th><th>Capítulo</th><th>Partida</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.capitulo.obra }}</td>
+        <td>{{ r.capitulo.subobra|default:"—" }}</td>
+        <td>{{ r.capitulo }}</td>
+        <td>{{ r.nombre }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Sin partidas</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

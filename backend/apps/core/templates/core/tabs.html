@@ -1,0 +1,55 @@
+
+{% extends "core/_base.html" %}
+{% block title %}Catálogo · Obras/SubObras · Capítulos/Partidas{% endblock %}
+
+{% block content %}
+<h2>Catálogo</h2>
+
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+<style>
+  .tabs { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap: wrap; }
+  .tabs a { padding:.5rem .75rem; border:1px solid #ccc; border-radius:.5rem; text-decoration:none; }
+  .tabs a.active { background:#f2f2f2; }
+  .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap: .5rem; }
+  .span-12 { grid-column: span 12; }
+  .span-6  { grid-column: span 6; }
+  .span-4  { grid-column: span 4; }
+  .span-3  { grid-column: span 3; }
+  .table-scroll { overflow:auto; max-height: 60vh; border:1px solid #e5e5e5; }
+  table { width:100%; border-collapse: collapse; }
+  th, td { padding:.4rem .6rem; border-bottom:1px solid #eee; }
+  th { position: sticky; top: 0; background: #fafafa; }
+</style>
+
+<nav class="tabs">
+  <a href="#" hx-get="{% url 'tab_obras' %}" hx-target="#tabcontent" hx-push-url="false" class="active" id="tab-obras">Obras</a>
+  <a href="#" hx-get="{% url 'tab_subobras' %}" hx-target="#tabcontent" hx-push-url="false" id="tab-subobras">SubObras</a>
+  <a href="#" hx-get="{% url 'tab_capitulos' %}" hx-target="#tabcontent" hx-push-url="false" id="tab-capitulos">Capítulos</a>
+  <a href="#" hx-get="{% url 'tab_partidas' %}" hx-target="#tabcontent" hx-push-url="false" id="tab-partidas">Partidas</a>
+</nav>
+
+<div id="tabcontent"
+     hx-get="{% url 'tab_obras' %}"
+     hx-trigger="load">
+  <!-- contenido htmx -->
+</div>
+
+<script>
+  document.addEventListener('htmx:afterOnLoad', function(evt){
+    const links = document.querySelectorAll('.tabs a');
+    links.forEach(a => a.classList.remove('active'));
+    if (evt.detail.xhr && evt.detail.requestConfig && evt.detail.requestConfig.path) {
+      const path = evt.detail.requestConfig.path;
+      const map = {
+        "{% url 'tab_obras' %}": "tab-obras",
+        "{% url 'tab_subobras' %}": "tab-subobras",
+        "{% url 'tab_capitulos' %}": "tab-capitulos",
+        "{% url 'tab_partidas' %}": "tab-partidas",
+      };
+      const id = map[path];
+      if (id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
+    }
+  });
+</script>
+{% endblock %}

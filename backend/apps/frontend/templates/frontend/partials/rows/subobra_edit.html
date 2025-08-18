@@ -1,0 +1,14 @@
+
+<tr id="row-subobra-{{ r.id }}">
+  <form method="post" hx-post="{% url 'subobra_edit' r.id %}" hx-target="#row-subobra-{{ r.id }}" hx-swap="outerHTML">
+    {% csrf_token %}
+    <td>{{ r.id }}</td>
+    <td>{{ form.obra }}</td>
+    <td>{{ form.codigo }}</td>
+    <td>{{ form.nombre }}</td>
+    <td class="actions">
+      <button type="submit">Guardar</button>
+      <a hx-get="{% url 'subobra_row' r.id %}" hx-target="#row-subobra-{{ r.id }}" hx-swap="outerHTML">Cancelar</a>
+    </td>
+  </form>
+</tr>

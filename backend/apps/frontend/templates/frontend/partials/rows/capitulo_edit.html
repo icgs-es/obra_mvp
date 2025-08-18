@@ -1,0 +1,15 @@
+
+<tr id="row-capitulo-{{ r.id }}">
+  <form method="post" hx-post="{% url 'capitulo_edit' r.id %}" hx-target="#row-capitulo-{{ r.id }}" hx-swap="outerHTML">
+    {% csrf_token %}
+    <td>{{ r.id }}</td>
+    <td>{{ form.obra }}</td>
+    <td>{{ form.subobra }}</td>
+    <td>{{ form.codigo }}</td>
+    <td>{{ form.nombre }}</td>
+    <td class="actions">
+      <button type="submit">Guardar</button>
+      <a hx-get="{% url 'capitulo_row' r.id %}" hx-target="#row-capitulo-{{ r.id }}" hx-swap="outerHTML">Cancelar</a>
+    </td>
+  </form>
+</tr>

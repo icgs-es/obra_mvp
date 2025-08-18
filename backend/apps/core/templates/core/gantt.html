@@ -1,0 +1,52 @@
+{% extends "core/_base.html" %}
+{% block title %}Gantt{% endblock %}
+{% block content %}
+<h2>Gantt (vis-timeline)</h2>
+
+<form method="get" class="grid" style="margin-bottom:1rem">
+  <label>Obra
+    <select name="obra">
+      <option value="">— Todas —</option>
+      {% for o in obras %}
+        <option value="{{ o.id }}" {% if obra_sel == o.id %}selected{% endif %}>{{ o.codigo }} · {{ o.nombre }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Desde <input type="date" name="ini" value="{{ ini|date:'Y-m-d' }}"></label>
+  <label>Hasta <input type="date" name="fin" value="{{ fin|date:'Y-m-d' }}"></label>
+  <button type="submit">Filtrar</button>
+</form>
+
+<link href="https://unpkg.com/vis-timeline@7.7.0/styles/vis-timeline-graph2d.min.css" rel="stylesheet"/>
+<script src="https://unpkg.com/vis-data@7.1.4/peer/umd/vis-data.min.js"></script>
+<script src="https://unpkg.com/vis-timeline@7.7.0/peer/umd/vis-timeline-graph2d.min.js"></script>
+
+<div id="timeline" style="height:60vh"></div>
+<p id="gantt-msg"></p>
+
+<script>
+(function() {
+  try {
+    const items = new vis.DataSet(JSON.parse('{{ items_json|escapejs }}'));
+    const groups = new vis.DataSet(JSON.parse('{{ grupos_json|escapejs }}'));
+    const container = document.getElementById('timeline');
+    const options = {
+      stack: true,
+      maxHeight: '60vh',
+      zoomKey: 'ctrlKey',
+      orientation: 'both',
+      margin: { item: 8, axis: 12 },
+      min: new Date('{{ ini|date:"Y-m-d" }}'),
+      max: new Date('{{ fin|date:"Y-m-d" }}'),
+    };
+    new vis.Timeline(container, items, groups, options);
+    if (!items.length) {
+      document.getElementById('gantt-msg').innerText = "No hay datos en el rango seleccionado.";
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('gantt-msg').innerText = "No se pudo cargar el Gantt. Revisa la consola del navegador.";
+  }
+})();
+</script>
+{% endblock %}

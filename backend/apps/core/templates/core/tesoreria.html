@@ -1,0 +1,42 @@
+{% extends "core/_base.html" %}
+{% block title %}Tesorería{% endblock %}
+{% block content %}
+<h2>Tesorería (pagos previstos)</h2>
+<form method="get" class="grid" style="margin-bottom:1rem">
+  <label>Desde <input type="date" name="ini" value="{{ ini|date:'Y-m-d' }}"></label>
+  <label>Hasta <input type="date" name="fin" value="{{ fin|date:'Y-m-d' }}"></label>
+  <label>Periodo
+    <select name="periodo">
+      <option value="mes" {% if periodo == 'mes' %}selected{% endif %}>Mensual</option>
+      <option value="semana" {% if periodo == 'semana' %}selected{% endif %}>Semanal</option>
+    </select>
+  </label>
+  <button type="submit">Filtrar</button>
+</form>
+
+<div id="chart" style="height:360px"></div>
+<table role="grid">
+  <thead><tr><th>Periodo</th><th style="text-align:right">Pagos previstos (€)</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr><td>{{ r.periodo|date:"Y-m-d" }}</td><td style="text-align:right">{{ r.importe|default_if_none:"0"|floatformat:2 }}</td></tr>
+  {% empty %}
+    <tr><td colspan="2">Sin datos</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+  (function() {
+    try {
+      const x = JSON.parse('{{ x_json|escapejs }}').map(d => d ? new Date(d) : null);
+      const y = JSON.parse('{{ y_json|escapejs }}');
+      const trace = {x, y, type: 'scatter', mode: 'lines+markers'};
+      Plotly.newPlot('chart', [trace], {margin:{t:20}, xaxis:{title:'Periodo'}, yaxis:{title:'€'}});
+    } catch (e) {
+      console.error(e);
+    }
+  })();
+</script>
+{% endblock %}

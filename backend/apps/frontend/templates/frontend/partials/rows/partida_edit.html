@@ -1,0 +1,14 @@
+
+<tr id="row-partida-{{ r.id }}">
+  <form method="post" hx-post="{% url 'partida_edit' r.id %}" hx-target="#row-partida-{{ r.id }}" hx-swap="outerHTML">
+    {% csrf_token %}
+    <td>{{ r.id }}</td>
+    <td colspan="2">{{ form.capitulo }}</td>
+    <td colspan="1">{{ r.capitulo }}</td>
+    <td>{{ form.nombre }}</td>
+    <td class="actions">
+      <button type="submit">Guardar</button>
+      <a hx-get="{% url 'partida_row' r.id %}" hx-target="#row-partida-{{ r.id }}" hx-swap="outerHTML">Cancelar</a>
+    </td>
+  </form>
+</tr>

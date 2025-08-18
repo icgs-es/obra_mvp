@@ -1,0 +1,31 @@
+
+<article class="span-12">
+  <header><strong>Nuevo Capítulo</strong></header>
+  <form method="post" class="grid" hx-post="{% url 'tab_capitulos' %}" hx-target="#tabcontent" hx-swap="outerHTML">
+    {% csrf_token %}
+    <label class="span-3">Obra {{ form.obra }}</label>
+    <label class="span-3">SubObra {{ form.subobra }}</label>
+    <label class="span-2">Código {{ form.codigo }}</label>
+    <label class="span-4">Nombre {{ form.nombre }}</label>
+    <div class="span-12"><button type="submit">Guardar</button></div>
+  </form>
+</article>
+
+<div class="table-scroll">
+  <table role="grid">
+    <thead><tr><th>ID</th><th>Obra</th><th>SubObra</th><th>Código</th><th>Nombre</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.obra }}</td>
+        <td>{{ r.subobra|default:"—" }}</td>
+        <td class="mono">{{ r.codigo }}</td>
+        <td>{{ r.nombre }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Sin capítulos</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

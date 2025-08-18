@@ -1,0 +1,10 @@
+En backend/config/urls.py añade:
+
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('health', health),
+    path('manual/', include('apps.core.ui_urls')),
+    path('api/core/', include('apps.core.api_urls')),  # ← añade esta línea
+]

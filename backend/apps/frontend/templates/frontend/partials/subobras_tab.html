@@ -1,0 +1,37 @@
+
+<article class="span-12">
+  <header><strong>Nueva SubObra</strong></header>
+  <form method="post" class="grid" hx-post="{% url 'tab_subobras' %}" hx-target="#tabcontent" hx-swap="outerHTML">
+    {% csrf_token %}
+    <label class="span-3">Obra {{ form.obra }}</label>
+    <label class="span-3">Código {{ form.codigo }}</label>
+    <label class="span-6">Nombre {{ form.nombre }}</label>
+    <div class="span-12"><button type="submit">Guardar</button></div>
+  </form>
+</article>
+
+<form class="span-12" hx-get="{% url 'tab_subobras' %}" hx-target="#tabcontent" hx-swap="outerHTML">
+  <label>Obra
+    <select name="obra">
+      <option value="">— Todas —</option>
+      {% for o in obras %}
+        <option value="{{ o.id }}" {% if obra_id == o.id %}selected{% endif %}>{{ o }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Filtrar</button>
+  <a href="#" hx-get="{% url 'tab_subobras' %}" hx-target="#tabcontent">Limpiar</a>
+</form>
+
+<div class="table-scroll">
+  <table role="grid">
+    <thead><tr><th>ID</th><th>Obra</th><th>Código</th><th>Nombre</th><th class="actions">Acciones</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      {% include "frontend/partials/rows/subobra.html" with r=r %}
+    {% empty %}
+      <tr><td colspan="5">Sin subobras</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

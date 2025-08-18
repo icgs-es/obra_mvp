@@ -1,0 +1,46 @@
+
+<article class="span-12">
+  <header><strong>Nuevo Capítulo</strong></header>
+  <form method="post" class="grid" hx-post="{% url 'tab_capitulos' %}" hx-target="#tabcontent" hx-swap="outerHTML">
+    {% csrf_token %}
+    <label class="span-3">Obra {{ form.obra }}</label>
+    <label class="span-3">SubObra {{ form.subobra }}</label>
+    <label class="span-2">Código {{ form.codigo }}</label>
+    <label class="span-4">Nombre {{ form.nombre }}</label>
+    <div class="span-12"><button type="submit">Guardar</button></div>
+  </form>
+</article>
+
+<form class="span-12" hx-get="{% url 'tab_capitulos' %}" hx-target="#tabcontent" hx-swap="outerHTML">
+  <label>Obra
+    <select name="obra">
+      <option value="">— Todas —</option>
+      {% for o in obras %}
+        <option value="{{ o.id }}" {% if obra_id == o.id %}selected{% endif %}>{{ o }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>SubObra
+    <select name="subobra">
+      <option value="">— Todas —</option>
+      {% for so in subobras %}
+        <option value="{{ so.id }}" {% if subobra_id == so.id %}selected{% endif %}>{{ so }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Filtrar</button>
+  <a href="#" hx-get="{% url 'tab_capitulos' %}" hx-target="#tabcontent">Limpiar</a>
+</form>
+
+<div class="table-scroll">
+  <table role="grid">
+    <thead><tr><th>ID</th><th>Obra</th><th>SubObra</th><th>Código</th><th>Nombre</th><th class="actions">Acciones</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      {% include "frontend/partials/rows/capitulo.html" with r=r %}
+    {% empty %}
+      <tr><td colspan="6">Sin capítulos</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,43 @@
+# Añade (o revisa) estos modelos en backend/apps/core/models.py
+
+from django.core.validators import MinValueValidator
+from django.utils import timezone
+from django.db import models
+
+# ... (tus otros modelos)
+
+class Proveedor(TimeStampedModel):
+    nombre = models.CharField(max_length=255)
+    nif = models.CharField(max_length=20, blank=True)
+    def __str__(self):
+        return self.nombre
+
+class FacturaProveedor(TimeStampedModel):
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, related_name="facturas")
+    obra = models.ForeignKey(Obra, on_delete=models.PROTECT, related_name="facturas")
+    capitulo = models.ForeignKey(Capitulo, on_delete=models.SET_NULL, null=True, blank=True, related_name="facturas")
+    numero = models.CharField(max_length=80)
+    fecha = models.DateField()
+    base = models.DecimalField(max_digits=12, decimal_places=2)
+    impuestos = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=12, decimal_places=2)
+    estado = models.CharField(max_length=20, choices=[("pendiente","Pendiente"),("pagada","Pagada")], default="pendiente")
+    def __str__(self):
+        return f"{self.numero} · {self.proveedor}"
+
+class Vencimiento(TimeStampedModel):
+    factura = models.ForeignKey(FacturaProveedor, on_delete=models.CASCADE, related_name="vencimientos")
+    fecha_venc = models.DateField()
+    importe = models.DecimalField(max_digits=12, decimal_places=2)
+    pagado = models.BooleanField(default=False)
+    def __str__(self):
+        return f"{self.fecha_venc} · {self.importe:.2f}"
+
+class ParteTrabajo(TimeStampedModel):
+    recurso = models.ForeignKey(RecursoPersonal, on_delete=models.PROTECT, related_name="partes")
+    obra = models.ForeignKey(Obra, on_delete=models.PROTECT, related_name="partes")
+    capitulo = models.ForeignKey(Capitulo, on_delete=models.PROTECT, related_name="partes")
+    tarea = models.ForeignKey(Tarea, on_delete=models.SET_NULL, null=True, blank=True, related_name="partes")
+    fecha = models.DateField(default=timezone.now)
+    horas = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    observaciones = models.CharField(max_length=255, blank=True)

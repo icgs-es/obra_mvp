@@ -1,0 +1,18 @@
+{% extends "core/_base.html" %}
+{% block title %}Alta de parte{% endblock %}
+{% block content %}
+<h2>Alta de parte de trabajo</h2>
+<form method="post">
+  {% csrf_token %}
+  <div class="grid">
+    <label class="span-4">Recurso (persona) {{ form.recurso }}</label>
+    <label class="span-4">Obra {{ form.obra }}</label>
+    <label class="span-4">Capítulo {{ form.capitulo }}</label>
+    <label class="span-4">Tarea {{ form.tarea }}</label>
+    <label class="span-2">Fecha {{ form.fecha }}</label>
+    <label class="span-2">Horas {{ form.horas }}</label>
+    <label class="span-12">Observaciones {{ form.observaciones }}</label>
+    <div class="span-12"><button type="submit">Guardar</button></div>
+  </div>
+</form>
+{% endblock %}

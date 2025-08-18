@@ -1,0 +1,99 @@
+{% extends "core/_base.html" %}
+{% block title %}Planificación manual{% endblock %}
+
+{% block content %}
+<h2>Planificación manual</h2>
+
+<form method="get" class="grid" style="margin-bottom:1rem">
+  <label class="span-3">
+    Obra
+    <select name="obra">
+      <option value="">— Todas —</option>
+      {% for o in obras %}
+        <option value="{{ o.id }}" {% if obra_sel == o.id %}selected{% endif %}>{{ o.codigo }} · {{ o.nombre }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label class="span-3">
+    Capítulo
+    <select name="capitulo">
+      <option value="">— Todos —</option>
+      {% for c in capitulos %}
+        <option value="{{ c.id }}" {% if capitulo_sel == c.id %}selected{% endif %}>
+          {{ c.obra.codigo }} · {{ c.codigo }} · {{ c.nombre }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label class="span-2">
+    Desde
+    <input type="date" name="ini" value="{{ ini|date:'Y-m-d' }}">
+  </label>
+
+  <label class="span-2">
+    Hasta
+    <input type="date" name="fin" value="{{ fin|date:'Y-m-d' }}">
+  </label>
+
+  <label class="span-2">
+    Periodo
+    <select name="periodo">
+      <option value="mes" {% if periodo == "mes" %}selected{% endif %}>Mensual</option>
+      <option value="semana" {% if periodo == "semana" %}selected{% endif %}>Semanal</option>
+    </select>
+  </label>
+
+  <div class="span-12">
+    <button type="submit">Filtrar</button>
+  </div>
+</form>
+
+<article>
+  <header><strong>Alta rápida</strong></header>
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid">
+      <label class="span-3">Obra {{ form.obra }}</label>
+      <label class="span-3">Capítulo {{ form.capitulo }}</label>
+      <label class="span-2">Fecha {{ form.fecha }}</label>
+      <label class="span-2">Tipo {{ form.tipo }}</label>
+      <label class="span-2">Horas {{ form.horas_plan }}</label>
+      <label class="span-2">Cantidad {{ form.cantidad_plan }}</label>
+      <label class="span-2">Importe {{ form.importe_plan }}</label>
+      <label class="span-4">Persona {{ form.recurso_personal }}</label>
+      <label class="span-4">Material {{ form.recurso_material }}</label>
+      <div class="span-12">
+        <button type="submit">Añadir línea</button>
+      </div>
+    </div>
+  </form>
+</article>
+
+<div class="table-scroll">
+  <table role="grid">
+    <thead>
+      <tr>
+        <th class="mono">Periodo</th>
+        <th style="text-align:right">Importe</th>
+        <th style="text-align:right">Horas</th>
+        <th style="text-align:right">Cantidad</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td class="mono">{{ r.periodo|date:"Y-m-d" }}</td>
+        <td style="text-align:right">{{ r.importe|default_if_none:"0"|floatformat:2 }}</td>
+        <td style="text-align:right">{{ r.horas|default_if_none:"0"|floatformat:2 }}</td>
+        <td style="text-align:right">{{ r.cantidad|default_if_none:"0"|floatformat:3 }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">No hay datos en el rango.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

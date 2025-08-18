@@ -1,0 +1,15 @@
+
+<tr id="row-partida-{{ r.id }}">
+  <td>{{ r.id }}</td>
+  <td>{{ r.capitulo.obra }}</td>
+  <td>{{ r.capitulo.subobra|default:"—" }}</td>
+  <td>{{ r.capitulo }}</td>
+  <td>{{ r.nombre }}</td>
+  <td class="actions">
+    <a hx-get="{% url 'partida_edit' r.id %}" hx-target="#row-partida-{{ r.id }}" hx-swap="outerHTML">Editar</a>
+    <form method="post" style="display:inline" hx-post="{% url 'partida_delete' r.id %}" hx-target="#tabcontent" hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit" onclick="return confirm('¿Eliminar partida {{ r.nombre }}?')">Borrar</button>
+    </form>
+  </td>
+</tr>

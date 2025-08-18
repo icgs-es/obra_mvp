@@ -1,0 +1,13 @@
+
+<tr id="row-obra-{{ r.id }}">
+  <form method="post" hx-post="{% url 'obra_edit' r.id %}" hx-target="#row-obra-{{ r.id }}" hx-swap="outerHTML">
+    {% csrf_token %}
+    <td>{{ r.id }}</td>
+    <td>{{ form.codigo }}</td>
+    <td>{{ form.nombre }}</td>
+    <td class="actions">
+      <button type="submit">Guardar</button>
+      <a hx-get="{% url 'obra_row' r.id %}" hx-target="#row-obra-{{ r.id }}" hx-swap="outerHTML">Cancelar</a>
+    </td>
+  </form>
+</tr>
