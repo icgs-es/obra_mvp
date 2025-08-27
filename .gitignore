@@ -44,3 +44,6 @@ infra/pgadmin_data/
 
 backups/
 *.dump
+
+backups/
+*.dump
