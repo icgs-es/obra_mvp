@@ -1,0 +1,77 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+    env_file:
+      - /opt/obra_mvp/deploy/.env.prod
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    expose:
+      - "8000"
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - /opt/obra_mvp/deploy/.env.prod
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - /opt/obra_mvp/deploy/.env.prod
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - static_data:/srv/static
+      - media_data:/srv/media
+    depends_on:
+      - web
+  
+  web-preview:
+    profiles: ["preview"]
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+    env_file:
+      - /opt/obra_mvp/deploy/.env.prod
+    # Montamos el código del repo (compose está en infra/, por eso usamos ../)
+    volumes:
+      - ../:/app
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    depends_on:
+      - db
+    # Servidor de desarrollo con autoreload en 8001
+    command: >
+      sh -lc "python manage.py runserver 0.0.0.0:8001 --insecure"
+    ports:
+      - "8001:8001"
+
+volumes:
+  pgdata:
+  static_data:
+  media_data:
+  caddy_data:
+  caddy_config:
