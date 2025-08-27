@@ -41,3 +41,6 @@ htmlcov/
 # Docker local volumes (si existieran)
 infra/pgdata/
 infra/pgadmin_data/
+
+backups/
+*.dump
