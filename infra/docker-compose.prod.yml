@@ -62,10 +62,22 @@ services:
       - static_data:/app/staticfiles
       - media_data:/app/media
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     # Servidor de desarrollo con autoreload en 8001
     command: >
-      sh -lc "python manage.py runserver 0.0.0.0:8001 --insecure"
+      #sh -lc "python manage.py runserver 0.0.0.0:8001 --insecure"
+      gunicorn config.wsgi:application
+      --bind 0.0.0.0:8000
+      --workers 1
+      --threads 1
+      --timeout 120
+      --graceful-timeout 30
+      --max-requests 200
+      --max-requests-jitter 50
+      --worker-tmp-dir /dev/shm
+      --log-level info
+
     ports:
       - "8001:8001"
 
