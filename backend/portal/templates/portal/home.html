@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Mi jornada · INTASA{% endblock %}
+{% block content %}
+<div class="grid grid-3">
+  <div class="card">
+    <h3>Tareas de hoy</h3>
+    <p class="muted">Pendientes: {{ resumen.tareas_hoy }}</p>
+    <a class="btn btn-outline" href="/app/tareas/?f=hoy">Ver</a>
+  </div>
+  <div class="card">
+    <h3>Tareas atrasadas</h3>
+    <p class="muted">Total: {{ resumen.tareas_atrasadas }}</p>
+    <a class="btn btn-outline" href="/app/tareas/?f=atrasadas">Ver</a>
+  </div>
+  <div class="card">
+    <h3>Tiempo esta semana</h3>
+    <p class="muted">{{ resumen.minutos_semana }} min</p>
+    <a class="btn btn-outline" href="/app/reportes/">Ver reportes</a>
+  </div>
+</div>
+{% endblock %}

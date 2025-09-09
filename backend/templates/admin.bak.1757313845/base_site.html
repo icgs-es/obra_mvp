@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | Intasa Platform Admin{% endblock %}
+
+{% block extrastyle %}
+<style>
+/* Solo cambios mínimos y seguros */
+#header {
+    background: #2c3e50 !important;
+}
+
+#branding h1 {
+    color: white !important;
+}
+
+/* Botones de navegación global */
+.nav-global-links {
+    float: right;
+    margin: 15px 20px;
+}
+
+.nav-global-links a {
+    color: white !important;
+    text-decoration: none;
+    background: #3498db;
+    padding: 8px 15px;
+    border-radius: 4px;
+    margin-left: 10px;
+    font-size: 12px;
+}
+
+.nav-global-links a:hover {
+    background: #2980b9;
+}
+</style>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url \'admin:index\' %}">Intasa Platform - Administración</a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+<div class="nav-global-links">
+    <a href="/app/">
+        <i class="fas fa-tachometer-alt"></i> Portal
+    </a>
+    <a href="/">
+        <i class="fas fa-home"></i> Inicio
+    </a>
+</div>
+{% endblock %}

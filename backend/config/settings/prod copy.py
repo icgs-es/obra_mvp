@@ -5,28 +5,8 @@ from pathlib import Path
 from .base import *
 
 # -------------------------
-# Configuración de TEMPLATES (AÑADIR ESTO)
-# -------------------------
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # ← CRÍTICO: Ruta a tu carpeta templates
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-# -------------------------
 # Núcleo producción
 # -------------------------
-
 DEBUG = False
 
 # Secret key
@@ -48,15 +28,14 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_HTTPONLY = True
 
 # CSRF Trusted Origins (http y https para cada host listado)
-CSRF_TRUSTED_ORIGINS = [
-    "https://finaninvestgroup.com",
-    "https://www.finaninvestgroup.com",
-    "http://localhost",
-    "http://127.0.0.1",
-]
+CSRF_TRUSTED_ORIGINS = []
+for h in ALLOWED_HOSTS:
+    if h and h != "*":
+        CSRF_TRUSTED_ORIGINS.append(f"https://{h}")
+        CSRF_TRUSTED_ORIGINS.append(f"http://{h}")
+
 # -------------------------
 # Archivos estáticos / media
 # -------------------------
@@ -98,19 +77,8 @@ LOGGING = {
     "handlers": { "console": {"class": "logging.StreamHandler"} },
     "root": { "handlers": ["console"], "level": "INFO" },
 }
-# ... (configuración existente)
 
-# --- Configuración de Autenticación ---
-LOGIN_URL = "/accounts/login/"  # Cambiado de "/admin/login/"
-LOGIN_REDIRECT_URL = "/app/"    # Después de login, ir al portal
-LOGOUT_REDIRECT_URL = "/accounts/login/"
-
-# Para evitar que usuarios logueados accedan al login
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
-
-# --- Configuración adicional de seguridad ---
-# Esto asegura que las cookies de sesión sean compatibles con tu dominio
-SESSION_COOKIE_DOMAIN = 'finaninvestgroup.com'
-CSRF_COOKIE_DOMAIN = 'finaninvestgroup.com'
+# --- Login global en producción ---
+LOGIN_URL = "/admin/login/"
+LOGIN_REDIRECT_URL = "/app/"
+INTASA_SETTINGS_MARKER = "prod-loaded"

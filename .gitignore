@@ -1,49 +1,9 @@
-# Python/Django
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.sqlite3
-db.sqlite3
 *.log
-*.pot
-*.pyc
-*.egg-info/
-.venv/
-venv/
 .env
 .env.*
-*.env
-
-# Node/Front
-node_modules/
-dist/
-build/
-
-# Django static/media
-staticfiles/
-static_root/
-media/
-
-# VCS/IDE
-.git/
-*.swp
-*.swo
-.idea/
-.vscode/
-.DS_Store
-
-# Coverage / pytest
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Docker local volumes (si existieran)
-infra/pgdata/
-infra/pgadmin_data/
-
+/media/
+/staticfiles/
 backups/
-*.dump
-
-backups/
-*.dump
+*.sqlite3

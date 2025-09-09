@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Usuarios · INTASA{% endblock %}
+{% block content %}
+<div class="row" style="justify-content:space-between;margin-bottom:1rem">
+  <form method="get" class="row" style="gap:.5rem">
+    <input type="search" name="q" placeholder="Buscar usuario o email..." value="{{ request.GET.q }}"/>
+    <button class="btn btn-outline" type="submit">Buscar</button>
+  </form>
+  <a class="btn" href="/app/usuarios/nuevo/">+ Nuevo usuario</a>
+</div>
+<div class="card">
+  <table>
+    <thead><tr><th>Username</th><th>Email</th><th>Activo</th><th>Roles</th><th></th></tr></thead>
+    <tbody>
+      {% for u in object_list %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email|default:"—" }}</td>
+        <td>{{ u.is_active }}</td>
+        <td>
+          {% for g in u.groups.all %}
+            <span class="tag">{{ g.name }}</span>
+          {% empty %}
+            <span class="muted">—</span>
+          {% endfor %}
+        </td>
+        <td>
+          <a href="/app/usuarios/{{ u.pk }}/editar/">Editar</a>
+          {% if u.is_active %}
+          · <form method="post" action="/app/usuarios/{{ u.pk }}/baja/" style="display:inline">
+              {% csrf_token %}
+              <button class="btn btn-outline" onclick="return confirm('Dar de baja a {{u.username}}?')">Baja</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="muted">No hay usuarios.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

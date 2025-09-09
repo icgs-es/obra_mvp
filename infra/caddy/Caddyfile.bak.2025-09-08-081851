@@ -1,13 +1,13 @@
 # ─────────────────────────────────────────────────────────────
 # FinanInvest Group - Caddyfile (prod)
-# Sirve /static y /media desde Caddy; TODO lo demás → Django
+# Regla: solo /static y /media los sirve Caddy; TODO lo demás → Django
 # ─────────────────────────────────────────────────────────────
-
 finaninvestgroup.com {
     encode gzip
 
     # --- estáticos ---
     handle_path /static/* {
+        # Ajusta si tus volúmenes en el contenedor caddy apuntan a otra ruta
         root * /srv/static
         file_server
     }
@@ -17,22 +17,23 @@ finaninvestgroup.com {
         file_server
     }
 
-    # --- preview protegido (mantén tu hash real) ---
-    # basic_auth /preview/* {
-    #     icgs $2a$14$........TU_HASH........
-    # }
+    # --- preview protegido ---
+    # Mantengo tu basic_auth y ruta a web-preview
+    basic_auth /preview/* {
+        icgs $2a$14$scuCLEPCAUhJ9dYFdXzw1.wWRPGbk2ONXX1vg2G9hxM/............
+    }
     handle_path /preview/* {
         reverse_proxy web-preview:8001
     }
 
-    # --- n8n (si lo tienes levantado) ---
+    # --- n8n (opcional) ---
     handle_path /n8n/* {
         reverse_proxy n8n:5678
     }
 
-    # --- CATCH-ALL → Django ---
-    # IMPORTANTÍSIMO: sin file_server por defecto; 
-    # cualquier ruta no capturada arriba (incluida "/") va a Django.
+    # --- catch-all → Django ---
+    # IMPORTANTÍSIMO: sin file_server por defecto; TODO lo que no coincida con
+    # lo anterior (incluida la home "/") se manda al backend Django.
     handle {
         reverse_proxy web:8000
     }

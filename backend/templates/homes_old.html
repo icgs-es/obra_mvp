@@ -1,0 +1,78 @@
+{% extends "base_profesional.html" %}
+{% load static %}
+
+{% block title %}Inicio - Intasa Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Hero Section -->
+        <div class="text-center py-5">
+            <img src="#" alt="Intasa Logo" height="80" class="mb-4">
+            <h1 class="display-4 fw-bold mb-3">Intasa Platform</h1>
+            <p class="lead mb-4">Sistema de gestión integral para Grupo Intasa</p>
+            
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                <a href="/accounts/login/" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>Acceso Usuarios
+                </a>
+                <a href="/admin/login/" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-cog me-2"></i>Acceso Administración
+                </a>
+            </div>
+        </div>
+
+        <!-- Módulos Disponibles -->
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card card-intasa h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-tasks fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Gestión de Tareas</h5>
+                        <p class="card-text">Organiza y sigue el progreso de tus actividades diarias</p>
+                        <a href="/app/tareas/" class="btn btn-sm btn-outline-primary">Acceder</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card card-intasa h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-calendar fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Agenda</h5>
+                        <p class="card-text">Gestiona tu calendario y eventos importantes</p>
+                        <a href="/app/agenda/" class="btn btn-sm btn-outline-success">Acceder</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card card-intasa h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-hard-hat fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">Módulo Construcción</h5>
+                        <p class="card-text">Accede al sistema de gestión de obras y proyectos</p>
+                        <a href="/manual/tabs/" class="btn btn-sm btn-outline-warning">Acceder</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Contacto -->
+        <div class="card card-intasa mt-5">
+            <div class="card-body text-center">
+                <h4 class="card-title">¿Necesitas ayuda?</h4>
+                <p class="card-text">Contacta con nuestro equipo de soporte técnico</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="mailto:informatico@grupointasa.es" class="btn btn-outline-primary">
+                        <i class="fas fa-envelope me-2"></i>informatico@grupointasa.es
+                    </a>
+                    <a href="tel:+34610934471" class="btn btn-outline-secondary">
+                        <i class="fas fa-phone me-2"></i>610 934 471
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

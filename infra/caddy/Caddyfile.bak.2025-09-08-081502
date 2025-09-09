@@ -1,0 +1,56 @@
+{
+  email info@finaninvestgroup.com
+}
+
+:80 {
+  encode gzip zstd
+  redir https://finaninvestgroup.com{uri}
+}
+
+finaninvestgroup.com, www.finaninvestgroup.com {
+  encode gzip zstd
+
+  # --- estáticos y media (Caddy) ---
+  @static path /static/*
+  handle @static {
+    root * /srv/static
+    file_server
+  }
+
+  @media path /media/*
+  handle @media {
+    root * /srv/media
+    file_server
+  }
+
+  # --- preview protegido ---
+  basic_auth /preview/* {
+    icgs $2a$14$cuClELPCAuhJ9dYFdXzW1.wWRPGbK20NXX1vg2G9hxM/rFVTn/6XK
+  }
+  handle_path /preview/* {
+    reverse_proxy web-preview:8001
+  }
+
+  # --- n8n (opcional) ---
+  # basic_auth /n8n/* { ... }
+  handle_path /n8n/* {
+    reverse_proxy n8n:5678
+  }
+
+  # --- Django (app interna) ---
+  @django path /app* /admin* /accounts* /health
+  reverse_proxy @django web:8000
+
+  # --- landing pública por defecto ---
+  @site {
+    not path /n8n/* /preview/* /static/* /media/* /manual/* /health /app* /admin* /accounts*
+  }
+  handle @site {
+    root * /srv/site
+    try_files {path} /index.html
+    file_server
+  }
+
+  # Fallback (por si algo no matchea antes)
+  reverse_proxy web:8000
+}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Evento · INTASA{% endblock %}
+{% block content %}
+<div class="card">
+  <form method="post">{% csrf_token %}
+    <div class="grid">
+      {{ form.as_p }}
+    </div>
+    <div class="row" style="margin-top:1rem">
+      <button class="btn" type="submit">Guardar</button>
+      <a class="btn btn-outline" href="/app/agenda/">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

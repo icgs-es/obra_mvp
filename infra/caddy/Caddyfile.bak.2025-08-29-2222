@@ -1,0 +1,33 @@
+{
+	# Opcional (recomendado): email para ACME
+	email info@finaninvestgroup.com
+}
+
+finaninvestgroup.com, www.finaninvestgroup.com {
+	encode gzip zstd
+
+	@static path /static/*
+	handle @static {
+		root * /srv
+		file_server
+	}
+
+	@media path /media/*
+	handle @media {
+		root * /srv
+		file_server
+	}
+
+	# Preview (si lo usas)
+	handle_path /preview/* {
+		reverse_proxy web-preview:8001
+	}
+
+	# n8n en subruta
+	handle_path /n8n/* {
+		reverse_proxy n8n:5678
+	}
+
+	# Django por defecto
+	reverse_proxy web:8000
+}

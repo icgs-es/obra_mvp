@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Agenda · INTASA{% endblock %}
+{% block content %}
+<div class="row" style="justify-content:space-between;margin-bottom:1rem">
+  <h3>Agenda (semana)</h3>
+  <a class="btn" href="/app/agenda/nuevo/">+ Nuevo evento</a>
+</div>
+<div class="card">
+  <table>
+    <thead><tr><th>Inicio</th><th>Título</th><th>Ubicación</th><th>Visibilidad</th><th></th></tr></thead>
+    <tbody>
+      {% for e in eventos %}
+      <tr>
+        <td>{{ e.inicio }}</td>
+        <td>{{ e.titulo }}</td>
+        <td>{{ e.ubicacion|default:"—" }}</td>
+        <td><span class="tag">{{ e.visibilidad }}</span></td>
+        <td><a href="/app/agenda/{{ e.pk }}/editar/">Editar</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="muted">No hay eventos esta semana.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+:80 {
+  encode gzip zstd
+
+  @static path /static/*
+  handle @static {
+    root * /srv
+    file_server
+  }
+
+  @media path /media/*
+  handle @media {
+    root * /srv
+    file_server
+  }
+
+  # Preview (proxy a web-preview:8001, quitando el prefijo /preview)
+  handle_path /preview/* {
+    reverse_proxy web-preview:8001
+  }
+
+handle_path /n8n/* {
+  reverse_proxy n8n:5678
+}
+  # Producción por defecto
+  reverse_proxy web:8000
+}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Kanban · INTASA{% endblock %}
+{% block content %}
+<div class="row" style="justify-content:space-between;margin-bottom:1rem">
+  <h3>Kanban</h3>
+  <a class="btn btn-outline" href="/app/tareas/">Volver a lista</a>
+</div>
+<div class="grid grid-3">
+  <div class="card"><h3>Pendiente</h3><p class="muted">Próximamente...</p></div>
+  <div class="card"><h3>En curso</h3><p class="muted">Próximamente...</p></div>
+  <div class="card"><h3>Hecha</h3><p class="muted">Próximamente...</p></div>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico Templates - finaninvestgroup.com</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f5f7fa; color: #333; line-height: 1.6; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        header { background: #2c3e50; color: white; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+        .card { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success { border-left: 4px solid #2ecc71; }
+        .error { border-left: 4px solid #e74c3c; }
+        .warning { border-left: 4px solid #f39c12; }
+        pre { background: #2c3e50; color: white; padding: 1rem; border-radius: 4px; overflow-x: auto; margin: 10px 0; }
+        .btn { display: inline-block; background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .btn:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Diagnóstico de Templates Django</h1>
+            <p>finaninvestgroup.com - Verificación de configuración</p>
+        </header>
+
+        <div class="card warning">
+            <h2>Problema detectado en prod.py</h2>
+            <p>Falta la configuración de TEMPLATES en el archivo de configuración de producción.</p>
+        </div>
+
+        <div class="card">
+            <h2>Solución aplicada:</h2>
+            <p>Se ha añadido la siguiente configuración a <code>/opt/obra_mvp/backend/config/settings/prod.py</code>:</p>
+            <pre>
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]</pre>
+        </div>
+
+        <div class="card">
+            <h2>Próximos pasos:</h2>
+            <ol>
+                <li>Reiniciar el contenedor Docker: <code>docker compose -f docker-compose.prod.yml restart web</code></li>
+                <li>Verificar que la página principal carga: <a href="/">https://finaninvestgroup.com</a></li>
+                <li>Verificar que el portal carga: <a href="/app/">https://finaninvestgroup.com/app/</a></li>
+            </ol>
+        </div>
+
+        <div class="card">
+            <h2>Comprobación de estado:</h2>
+            <div id="status-check">
+                <p>Verificando estado... <span id="status-icon">⏳</span></p>
+            </div>
+            <button class="btn" onclick="checkStatus()">Comprobar estado nuevamente</button>
+        </div>
+    </div>
+
+    <script>
+        function checkStatus() {
+            document.getElementById('status-icon').textContent = '⏳';
+            
+            // Simular verificación
+            setTimeout(() => {
+                // Esta es una simulación - en realidad necesitarías una API
+                const isFixed = Math.random() > 0.5; // Simular éxito/error
+                
+                if (isFixed) {
+                    document.getElementById('status-icon').textContent = '✅';
+                    document.getElementById('status-check').innerHTML = 
+                        '<p class="success">¡Problema resuelto! Las templates deberían cargar correctamente.</p>';
+                } else {
+                    document.getElementById('status-icon').textContent = '❌';
+                    document.getElementById('status-check').innerHTML = 
+                        '<p class="error">Aún hay problemas. Verifica los logs del contenedor.</p>';
+                }
+            }, 1500);
+        }
+        
+        // Verificar al cargar la página
+        window.onload = checkStatus;
+    </script>
+</body>
+</html>

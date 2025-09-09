@@ -5,15 +5,10 @@ services:
       dockerfile: infra/web.Dockerfile
     env_file:
       - /opt/obra_mvp/deploy/.env.prod
-    #command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60
-    command: bash -c "cd /app/backend && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60"
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60
     volumes:
-      # VOLUMES AÑADIDOS ↓↓↓
-      # - /opt/obra_mvp/backend:/app  # ← ¡CRÍTICO! Mapea todo el código
-      - /opt/obra_mvp:/app  # ← Mapea a /app/backend/
       - static_data:/app/staticfiles
       - media_data:/app/media
-
     expose:
       - "8000"
     depends_on:

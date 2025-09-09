@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Usuario · INTASA{% endblock %}
+{% block content %}
+<div class="card">
+  <form method="post">{% csrf_token %}
+    <div class="grid">
+      {{ form.as_p }}
+      <div>
+        <label>Contraseña inicial</label>
+        <input type="password" name="initial_password" placeholder="(opcional)" />
+      </div>
+      <div>
+        <label>Roles</label>
+        <div class="row">
+          {% for r in all_roles %}
+            <label><input type="checkbox" name="roles" value="{{ r.name }}"
+              {% if selected_roles and r.name in selected_roles %}checked{% endif %}> {{ r.name }}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:1rem">
+      <button class="btn" type="submit">Guardar</button>
+      <a class="btn btn-outline" href="/app/usuarios/">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

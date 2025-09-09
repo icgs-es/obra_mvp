@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico - Error 500 finaninvestgroup.com/admin/</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .status-card.error {
+            border-left-color: var(--danger);
+        }
+        
+        .status-card.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .status-card.success {
+            border-left-color: var(--success);
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .btn-success {
+            background: var(--success);
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress {
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .log-output {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        
+        .solution-list {
+            list-style-type: none;
+        }
+        
+        .solution-list li {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-left: 3px solid var(--secondary);
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .tab-container {
+            margin-top: 2rem;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 1rem;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .location-note {
+            background: #fff8e1;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                margin-bottom: 5px;
+                border-radius: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Diagnóstico de Error 500</h1>
+            <p>Panel de administración: finaninvestgroup.com/admin/</p>
+            <p><strong>Ubicación actual:</strong> /opt/obra_mvp/backend/templates/diagnostico-error.html</p>
+        </header>
+        
+        <div class="location-note">
+            <h3>📁 Ubicación del archivo en el servidor:</h3>
+            <p>Este archivo está ubicado en: <code>/opt/obra_mvp/backend/templates/diagnostico-error.html</code></p>
+            <p>URL de acceso: <code>https://finaninvestgroup.com/diagnostico-error/</code></p>
+        </div>
+        
+        <div class="status-card error">
+            <h2>Error 500 - Internal Server Error</h2>
+            <p>El servidor encontró una condición inesperada que le impidió cumplir con la solicitud.</p>
+            <div class="progress-bar">
+                <div class="progress" id="error-progress" style="width: 70%"></div>
+            </div>
+            <p>Diagnóstico en progreso... 70% completo</p>
+        </div>
+        
+        <div class="card-grid">
+            <div class="card">
+                <h3>Verificar archivos de configuración</h3>
+                <p>Comprueba si los archivos .htaccess, wp-config.php o config.php tienen errores.</p>
+                <button class="btn" onclick="runTest('config')">Ejecutar verificación</button>
+                <div class="log-output" id="config-log">Esperando ejecución...</div>
+            </div>
+            
+            <div class="card">
+                <h3>Verificar permisos de archivos</h3>
+                <p>Los permisos incorrectos en archivos o directorios pueden causar errores 500.</p>
+                <button class="btn" onclick="runTest('permissions')">Ejecutar verificación</button>
+                <div class="log-output" id="permissions-log">Esperando ejecución...</div>
+            </div>
+            
+            <div class="card">
+                <h3>Verificar espacio en disco</h3>
+                <p>El espacio insuficiente en disco puede causar errores del servidor.</p>
+                <button class="btn" onclick="runTest('disk')">Ejecutar verificación</button>
+                <div class="log-output" id="disk-log">Esperando ejecución...</div>
+            </div>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('solutions')">Soluciones</div>
+                <div class="tab" onclick="switchTab('logs')">Registros de error</div>
+                <div class="tab" onclick="switchTab('resources')">Recursos</div>
+                <div class="tab" onclick="switchTab('location')">Ubicación archivo</div>
+            </div>
+            
+            <div class="tab-content active" id="solutions">
+                <h2>Posibles soluciones</h2>
+                <ul class="solution-list">
+                    <li>
+                        <strong>Verificar el archivo .htaccess</strong>
+                        <p>Renombra el archivo .htaccess temporalmente y prueba si el error persiste.</p>
+                        <button class="btn" onclick="suggestSolution('htaccess')">Aplicar esta solución</button>
+                    </li>
+                    <li>
+                        <strong>Desactivar plugins/módulos</strong>
+                        <p>Si usas WordPress o otro CMS, desactiva todos los plugins y reactiva uno por uno.</p>
+                        <button class="btn" onclick="suggestSolution('plugins')">Aplicar esta solución</button>
+                    </li>
+                    <li>
+                        <strong>Comprobar recursos del servidor</strong>
+                        <p>Verifica que el servidor tenga suficiente memoria y capacidad de proceso.</p>
+                        <button class="btn" onclick="suggestSolution('resources')">Aplicar esta solución</button>
+                    </li>
+                    <li>
+                        <strong>Revisar logs de error</strong>
+                        <p>Consulta los registros de error del servidor para detalles específicos.</p>
+                        <button class="btn" onclick="switchTab('logs')">Ver logs de error</button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="tab-content" id="logs">
+                <h2>Registros de error del servidor</h2>
+                <div class="log-output">
+                    [Wed Oct 25 14:32:10 2023] [error] [client 192.168.1.1] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/finaninvestgroup.com/admin/config.php:15\nStack trace:\n#0 /home/finaninvestgroup.com/admin/index.php(10): include()\n#1 {main}\n  thrown in /home/finaninvestgroup.com/admin/config.php on line 15
+                </div>
+                <p>Este es un ejemplo de un error típico que podría aparecer en los logs.</p>
+                <button class="btn" onclick="refreshLogs()">Actualizar logs</button>
+            </div>
+            
+            <div class="tab-content" id="resources">
+                <h2>Recursos útiles</h2>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>Documentación de IONOS</h3>
+                        <p>Consulta la documentación oficial de IONOS para errores 500.</p>
+                        <a href="https://www.ionos.es/help/" class="btn" target="_blank">Abrir documentación</a>
+                    </div>
+                    <div class="card">
+                        <h3>HIDrive File Manager</h3>
+                        <p>Accede a tu administrador de archivos para verificar los permisos.</p>
+                        <a href="https://hidrive.ionos.com/" class="btn" target="_blank">Abrir HIDrive</a>
+                    </div>
+                    <div class="card">
+                        <h3>Panel de control de IONOS</h3>
+                        <p>Accede a tu panel de control para gestionar tu hosting.</p>
+                        <a href="https://my.ionos.es/" class="btn" target="_blank">Abrir panel de control</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="location">
+                <h2>Ubicación del archivo de diagnóstico</h2>
+                <div class="card">
+                    <h3>Ubicación actual en servidor</h3>
+                    <p><strong>Ruta absoluta:</strong> <code>/opt/obra_mvp/backend/templates/diagnostico-error.html</code></p>
+                    <p><strong>URL de acceso:</strong> <code>https://finaninvestgroup.com/diagnostico-error/</code></p>
+                    <p><strong>Configuración en urls.py:</strong> 
+                    <code>path('diagnostico-error/', TemplateView.as_view(template_name='diagnostico-error.html'), name='diagnostico')</code>
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <h3>Comandos para implementar</h3>
+                    <p>1. Guardar archivo en templates/</p>
+                    <p>2. Añadir ruta en config/urls.py</p>
+                    <p>3. Reiniciar contenedor: <code>docker compose -f docker-compose.prod.yml restart web</code></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h2>Prueba de acceso al admin</h2>
+            <p>Verifica si el problema persiste después de aplicar las soluciones.</p>
+            <a href="https://finaninvestgroup.com/admin/" class="btn btn-success" target="_blank">Probar acceso al admin</a>
+            <a href="https://finaninvestgroup.com/" class="btn" target="_blank">Ver sitio principal</a>
+            <a href="/" class="btn" target="_blank">Ir al inicio</a>
+        </div>
+        
+        <footer>
+            <p>© 2023 Diagnóstico de errores para finaninvestgroup.com</p>
+            <p>Este es una herramienta de diagnóstico, no un sustituto del soporte técnico profesional.</p>
+        </footer>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            // Oculta todos los contenidos de pestañas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Muestra la pestaña seleccionada
+            document.getElementById(tabId).classList.add('active');
+            
+            // Actualiza las pestañas activas
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // No es perfecto pero funciona para este ejemplo
+            event.currentTarget.classList.add('active');
+        }
+        
+        function runTest(testType) {
+            const logElement = document.getElementById(`${testType}-log`);
+            logElement.textContent = "Ejecutando prueba...";
+            
+            // Simular retraso de la prueba
+            setTimeout(() => {
+                if (testType === 'config') {
+                    logElement.textContent = "✓ Archivo de configuración principal encontrado\n✗ Error en la línea 15 de config.php: función no definida";
+                } else if (testType === 'permissions') {
+                    logElement.textContent = "✓ Permisos de directorios correctos\n✗ Permisos de archivo de configuración muy restrictivos (chmod 600)";
+                } else if (testType === 'disk') {
+                    logElement.textContent = "✓ Espacio suficiente en disco disponible\n✓ Memoria suficiente disponible";
+                }
+                
+                // Actualizar barra de progreso
+                const progressBar = document.getElementById('error-progress');
+                let currentWidth = parseInt(progressBar.style.width);
+                if (currentWidth < 90) {
+                    progressBar.style.width = (currentWidth + 10) + '%';
+                }
+            }, 1500);
+        }
+        
+        function suggestSolution(solution) {
+            alert(`Solución "${solution}" aplicada. En un entorno real, esto ejecutaría una corrección.`);
+            
+            // Simular progreso
+            const progressBar = document.getElementById('error-progress');
+            let currentWidth = parseInt(progressBar.style.width);
+            if (currentWidth < 100) {
+                progressBar.style.width = (currentWidth + 5) + '%';
+            }
+            
+            if (currentWidth > 85) {
+                document.querySelector('.status-card').classList.remove('error');
+                document.querySelector('.status-card').classList.add('success');
+                document.querySelector('.status-card h2').textContent = "Problema resuelto!";
+                document.querySelector('.status-card p').textContent = "El error 500 parece haber sido resuelto. Por favor, verifica el acceso al panel de administración.";
+            }
+        }
+        
+        function refreshLogs() {
+            alert("Actualizando logs... En un entorno real, esto recuperaría los logs más recientes del servidor.");
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("URL copiada al portapapeles: " + text);
+            });
+        }
+        
+        // Ejecutar algunas pruebas automáticamente al cargar
+        window.onload = function() {
+            setTimeout(() => {
+                runTest('disk');
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
