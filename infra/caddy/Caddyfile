@@ -36,4 +36,12 @@ finaninvestgroup.com {
     handle {
         reverse_proxy web:8000
     }
+
+    # Sirve /manual/* desde /srv/site (que es /opt/www en el host)
+    #handle /manual* {
+    #    root * /srv/site
+    #    file_server
+    #}
 }
+
+

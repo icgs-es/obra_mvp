@@ -1,0 +1,22 @@
+<form method="post" hx-post="{% url 'construccion:tab_obras' %}" hx-target="#tabcontent" class="mb-3">
+  {% csrf_token %}
+  <div style="display:flex; gap:.5rem; flex-wrap:wrap">
+    {{ form.codigo }} {{ form.nombre }}
+    <button type="submit">Agregar obra</button>
+  </div>
+</form>
+
+{% if obras or rows %}
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th></tr></thead>
+    <tbody>
+      {% for o in obras|default:rows %}
+      <tr><td>{{ o.codigo }}</td><td>{{ o.nombre }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-secondary">No hay obras para mostrar.</p>
+{% endif %}

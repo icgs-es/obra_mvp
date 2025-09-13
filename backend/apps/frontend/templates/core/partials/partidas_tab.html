@@ -1,0 +1,27 @@
+<form method="post" hx-post="{% url 'construccion:tab_partidas' %}" hx-target="#tabcontent" class="mb-3">
+  {% csrf_token %}
+  <div style="display:flex; gap:.5rem; flex-wrap:wrap">
+    {{ form.capitulo }} {{ form.nombre }}
+    <button type="submit">Agregar partida</button>
+  </div>
+</form>
+
+{% if partidas or rows %}
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Obra</th><th>SubObra</th><th>Capítulo</th><th>Nombre</th></tr></thead>
+    <tbody>
+      {% for p in partidas|default:rows %}
+      <tr>
+        <td>{{ p.capitulo.obra }}</td>
+        <td>{{ p.capitulo.subobra }}</td>
+        <td>{{ p.capitulo }}</td>
+        <td>{{ p.nombre }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-secondary">No hay partidas.</p>
+{% endif %}

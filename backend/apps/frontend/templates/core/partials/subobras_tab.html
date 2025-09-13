@@ -1,0 +1,26 @@
+<form method="post" hx-post="{% url 'construccion:tab_subobras' %}" hx-target="#tabcontent" class="mb-3">
+  {% csrf_token %}
+  <div style="display:flex; gap:.5rem; flex-wrap:wrap">
+    {{ form.obra }} {{ form.codigo }} {{ form.nombre }}
+    <button type="submit">Agregar subobra</button>
+  </div>
+</form>
+
+{% if subobras or rows %}
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Obra</th><th>Código</th><th>Nombre</th></tr></thead>
+    <tbody>
+      {% for s in subobras|default:rows %}
+      <tr>
+        <td>{{ s.obra }}</td>
+        <td>{{ s.codigo }}</td>
+        <td>{{ s.nombre }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-secondary">No hay subobras.</p>
+{% endif %}

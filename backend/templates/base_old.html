@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}INTASA{% endblock %}</title>
+  <style>
+    :root { --bg:#0f172a; --card:#111827; --muted:#6b7280; --brand:#22d3ee; --text:#e5e7eb; }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;}
+    a{color:var(--brand);text-decoration:none}
+    header{display:flex;align-items:center;gap:.75rem;padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(6px)}
+    nav a{margin-right:1rem;opacity:.9}
+    nav a.active{font-weight:700;opacity:1}
+    .wrap{max-width:1080px;margin:0 auto;padding:1rem}
+    .grid{display:grid;gap:1rem}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1rem}
+    .muted{color:var(--muted);font-size:.9rem}
+    .btn{background:var(--brand);color:#001318;border:none;padding:.6rem .9rem;border-radius:10px;cursor:pointer;font-weight:600}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.2)}
+    .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    input,select,textarea{background:#0b1220;border:1px solid rgba(255,255,255,.12);color:var(--text);padding:.55rem .7rem;border-radius:10px;width:100%}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:.6rem;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+    th{color:var(--muted);font-weight:600}
+    .right{margin-left:auto}
+    .tag{padding:0.15rem .5rem;border-radius:999px;border:1px solid rgba(255,255,255,.2);font-size:.8rem}
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <strong>INTASA</strong>
+    <nav>
+      <a href="/app/" class="{% if request.path == '/app/' %}active{% endif %}">Mi jornada</a>
+      <a href="/app/tareas/" class="{% if request.path|slice:':12' == '/app/tareas/' %}active{% endif %}">Tareas</a>
+      <a href="/app/agenda/" class="{% if request.path|slice:':12' == '/app/agenda/' %}active{% endif %}">Agenda</a>
+      <a href="/app/usuarios/" class="{% if request.path|slice:':14' == '/app/usuarios/' %}active{% endif %}">Usuarios</a>
+    </nav>
+    <div class="right muted">
+    {% if request.user.is_authenticated %}
+      {{ request.user.username }} ·
+      <form method="post" action="{% url 'logout' %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-link" style="background:none;border:0;color:var(--brand);cursor:pointer">Salir</button>
+      </form>
+    {% else %}
+      <a href="{% url 'login' %}?next={{ request.path }}">Entrar</a>
+    {% endif %}
+  </div>
+  </header>
+  <div class="wrap">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

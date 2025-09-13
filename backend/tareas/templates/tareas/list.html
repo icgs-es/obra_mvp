@@ -1,31 +1,77 @@
 {% extends "base.html" %}
-{% block title %}Tareas · INTASA{% endblock %}
+{% block title %}Tareas{% endblock %}
 {% block content %}
-<div class="row" style="justify-content:space-between;margin-bottom:1rem">
-  <div class="row">
-    <a class="btn" href="/app/tareas/nueva/">+ Nueva tarea</a>
-    <a class="btn btn-outline" href="/app/tareas/?f=hoy">Hoy</a>
-    <a class="btn btn-outline" href="/app/tareas/?f=atrasadas">Atrasadas</a>
-    <a class="btn btn-outline" href="/app/tareas/">Todas</a>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h4 mb-0"><i class="bi bi-list-check me-2"></i>Tareas</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="/app/tareas/?f=hoy"><i class="bi bi-sun me-1"></i>Hoy</a>
+    <a class="btn btn-outline-warning" href="/app/tareas/?f=atrasadas"><i class="bi bi-exclamation-triangle me-1"></i>Atrasadas</a>
+    <a class="btn btn-outline-secondary" href="/app/tareas/?f=todas"><i class="bi bi-collection me-1"></i>Todas</a>
+    <a class="btn btn-primary" href="/app/tareas/nueva/"><i class="bi bi-plus-lg me-1"></i>Nueva tarea</a>
   </div>
-  <a class="btn btn-outline" href="/app/tareas/kanban/">Ver Kanban</a>
 </div>
-<div class="card">
-  <table>
-    <thead><tr><th>Título</th><th>Estado</th><th>Prioridad</th><th>Vence</th><th></th></tr></thead>
-    <tbody>
-      {% for t in object_list %}
-      <tr>
-        <td>{{ t.titulo }}</td>
-        <td><span class="tag">{{ t.get_estado_display }}</span></td>
-        <td><span class="tag">{{ t.get_prioridad_display }}</span></td>
-        <td>{{ t.vencimiento|default:"—" }}</td>
-        <td><a href="/app/tareas/{{ t.pk }}/editar/">Editar</a></td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="5" class="muted">No hay tareas.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if tareas %}
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Título</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Vence</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tareas %}
+              <tr>
+                <td class="fw-medium">
+                  <a href="/app/tareas/{{ t.id }}/editar/">{{ t.titulo|default:t }}</a>
+                </td>
+                <td>
+                  {% with est=t.estado|default:"pendiente" %}
+                    <span class="badge {% if est == 'hecha' %}bg-success{% elif est == 'en_proceso' %}bg-info{% elif est == 'bloqueada' %}bg-danger{% else %}bg-secondary{% endif %}">
+                      {{ est|title }}
+                    </span>
+                  {% endwith %}
+                </td>
+                <td>
+                  {% with p=t.prioridad|default:0 %}
+                    <span class="badge {% if p >= 3 %}bg-danger{% elif p == 2 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                      {% if p == 3 %}Alta{% elif p == 2 %}Media{% else %}Baja{% endif %}
+                    </span>
+                  {% endwith %}
+                </td>
+                <td>
+                  {% if t.fecha_vencimiento %}
+                    {{ t.fecha_vencimiento|date:"d/m/Y" }}
+                  {% else %}
+                    <span class="text-secondary">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-secondary" href="/app/tareas/{{ t.id }}/editar/">
+                    <i class="bi bi-pencil-square"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="p-4 text-center empty-state">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        <h2 class="h5">No hay tareas</h2>
+        <p class="mb-3">Crea tu primera tarea para empezar a organizarte.</p>
+        <a class="btn btn-primary" href="/app/tareas/nueva/"><i class="bi bi-plus-lg me-1"></i>Nueva tarea</a>
+      </div>
+    {% endif %}
+  </div>
 </div>
+
 {% endblock %}

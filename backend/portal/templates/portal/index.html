@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Mi jornada{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <h1 class="h3 mb-0">Mi jornada</h1>
+    <p class="text-secondary">Último acceso: {{ now|date:"d/m/Y H:i" }}</p>
+  </div>
+
+  <div class="col-12 col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-calendar2-week me-2"></i>Agenda de hoy</h2>
+        <p class="text-secondary mb-0">Abre tu calendario para ver eventos y tareas en vista semanal o mensual.</p>
+      </div>
+      <div class="card-footer bg-white">
+        <a href="/app/agenda/" class="btn btn-primary"><i class="bi bi-calendar-event me-1"></i>Abrir agenda</a>
+        <a href="/app/agenda/nuevo/" class="btn btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Nuevo evento</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-list-check me-2"></i>Atajos de tareas</h2>
+        <div class="d-grid gap-2">
+          <a class="btn btn-outline-secondary" href="/app/tareas/"><i class="bi bi-inbox me-1"></i>Ver todas</a>
+          <a class="btn btn-outline-secondary" href="/app/tareas/?f=hoy"><i class="bi bi-sun me-1"></i>Para hoy</a>
+          <a class="btn btn-outline-secondary" href="/app/tareas/?f=atrasadas"><i class="bi bi-exclamation-triangle me-1"></i>Atrasadas</a>
+          <a class="btn btn-primary" href="/app/tareas/nueva/"><i class="bi bi-plus-lg me-1"></i>Nueva tarea</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

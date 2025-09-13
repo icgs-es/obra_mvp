@@ -1,11 +1,33 @@
-
 {% extends "core/_base.html" %}
 {% block title %}Catálogo · Obras/SubObras · Capítulos/Partidas{% endblock %}
 
 {% block content %}
+
+<!-- Botón flotante (fuera de #tabcontent) -->
+<a href="/app/" class="float-back" title="Volver al inicio">⬅</a>
+
 <h2>Catálogo</h2>
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
 <style>
+  /* botón flotante */
+  .float-back{
+    position: fixed;
+    right: auto; left: calc(16px + env(safe-area-inset-left));
+    bottom: auto; top: calc(16px + env(safe-area-inset-top));
+    width: 48px; height: 48px; line-height: 48px;
+    text-align: center;
+    background: #0d6efd;
+    color: #fff; text-decoration: none;
+    border-radius: 9999px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    z-index: 1050;
+    font-size: 22px; font-weight: 700;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .float-back:hover{ transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.22); background:#0b5ed7; }
+
+  /* (lo demás que ya tienes) */
   .tabs { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap: wrap; }
   .tabs a { padding:.5rem .75rem; border:1px solid #ccc; border-radius:.5rem; text-decoration:none; }
   .tabs a.active { background:#f2f2f2; }
@@ -23,51 +45,59 @@
 
 <nav class="tabs">
   <a id="tab-obras"
-     href="{% url 'tab_obras' %}"
-     hx-get="{% url 'tab_obras' %}"
+     href="{% url 'construccion:tab_obras' %}"
+     hx-get="{% url 'construccion:tab_obras' %}"
      hx-target="#tabcontent"
      hx-push-url="false"
      class="active">Obras</a>
 
   <a id="tab-subobras"
-     href="{% url 'tab_subobras' %}"
-     hx-get="{% url 'tab_subobras' %}"
+     href="{% url 'construccion:tab_subobras' %}"
+     hx-get="{% url 'construccion:tab_subobras' %}"
      hx-target="#tabcontent"
      hx-push-url="false">SubObras</a>
 
   <a id="tab-capitulos"
-     href="{% url 'tab_capitulos' %}"
-     hx-get="{% url 'tab_capitulos' %}"
+     href="{% url 'construccion:tab_capitulos' %}"
+     hx-get="{% url 'construccion:tab_capitulos' %}"
      hx-target="#tabcontent"
      hx-push-url="false">Capítulos</a>
 
   <a id="tab-partidas"
-     href="{% url 'tab_partidas' %}"
-     hx-get="{% url 'tab_partidas' %}"
+     href="{% url 'construccion:tab_partidas' %}"
+     hx-get="{% url 'construccion:tab_partidas' %}"
      hx-target="#tabcontent"
      hx-push-url="false">Partidas</a>
 </nav>
 
 <div id="tabcontent"
-     hx-get="{% url 'tab_obras' %}"
+     hx-get="{% url 'construccion:tab_obras' %}"
      hx-trigger="load">
 </div>
 
 <script>
+  // Marca la pestaña activa tras cada carga HTMX
   document.addEventListener('htmx:afterOnLoad', function(evt){
     const links = document.querySelectorAll('.tabs a');
     links.forEach(a => a.classList.remove('active'));
     if (evt.detail && evt.detail.requestConfig && evt.detail.requestConfig.path) {
       const path = evt.detail.requestConfig.path;
       const map = {
-        "{% url 'tab_obras' %}": "tab-obras",
-        "{% url 'tab_subobras' %}": "tab-subobras",
-        "{% url 'tab_capitulos' %}": "tab-capitulos",
-        "{% url 'tab_partidas' %}": "tab-partidas",
+        "{% url 'construccion:tab_obras' %}": "tab-obras",
+        "{% url 'construccion:tab_subobras' %}": "tab-subobras",
+        "{% url 'construccion:tab_capitulos' %}": "tab-capitulos",
+        "{% url 'construccion:tab_partidas' %}": "tab-partidas",
       };
       const id = map[path];
       if (id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
     }
+  });
+
+  // Muestra errores HTMX (403/404/500) en el contenedor
+  document.body.addEventListener('htmx:responseError', function (evt) {
+    const t = document.querySelector('#tabcontent');
+    if (t) t.innerHTML = '<pre style="color:#b00020;white-space:pre-wrap">Error '
+      + evt.detail.xhr.status + ':\n' + (evt.detail.xhr.responseText || '(sin cuerpo)') + '</pre>';
   });
 </script>
 {% endblock %}

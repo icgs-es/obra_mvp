@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Agenda{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="mb-3">Agenda</h1>
+
+  <div id="cal-controls" style="margin-bottom:1rem;">
+    <strong>Capas:</strong>
+    <span id="cal-list">Cargando…</span>
+    <a class="btn btn-primary" href="{% url 'agenda:create' %}" style="margin-left:1rem;">Nuevo evento</a>
+  </div>
+
+  <div id="calendar"></div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  const calEl = document.getElementById('calendar');
+  const calListEl = document.getElementById('cal-list');
+
+  const caps = await fetch("{% url 'agenda:api_calendars' %}", {credentials: 'same-origin'}).then(r=>r.json());
+  calListEl.innerHTML = '';
+  caps.forEach(c => {
+    const id = `cap-${c.id}`;
+    const label = document.createElement('label');
+    label.style.marginRight = '10px';
+    label.innerHTML = `<input type="checkbox" id="${id}" value="${c.id}" checked> ${c.name} <small>(${c.scope})</small>`;
+    calListEl.appendChild(label);
+  });
+
+  function selectedCaps(){
+    return Array.from(calListEl.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.value);
+  }
+
+  const calendar = new FullCalendar.Calendar(calEl, {
+    initialView: 'timeGridWeek',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+    },
+    navLinks: true,
+    nowIndicator: true,
+    slotMinTime: "07:00:00",
+    slotMaxTime: "22:00:00",
+    events: function(info, success, failure) {
+      const params = new URLSearchParams({ start: info.startStr, end: info.endStr });
+      selectedCaps().forEach(id => params.append('calendar', id));
+      fetch("{% url 'agenda:api_events' %}?"+params.toString(), {credentials:'same-origin'})
+        .then(r=>r.json()).then(data=>success(data))
+        .catch(err=>failure(err));
+    },
+    eventClick: function(info){
+      window.location.href = `/app/agenda/${info.event.id}/editar/`;
+    }
+  });
+  calendar.render();
+
+  calListEl.addEventListener('change', ()=>calendar.refetchEvents());
+});
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+<form method="post" hx-post="{% url 'construccion:tab_capitulos' %}" hx-target="#tabcontent" class="mb-3">
+  {% csrf_token %}
+  <div style="display:flex; gap:.5rem; flex-wrap:wrap">
+    {{ form.obra }} {{ form.subobra }} {{ form.codigo }} {{ form.nombre }}
+    <button type="submit">Agregar capítulo</button>
+  </div>
+</form>
+
+{% if capitulos or rows %}
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Obra</th><th>SubObra</th><th>Código</th><th>Nombre</th></tr></thead>
+    <tbody>
+      {% for c in capitulos|default:rows %}
+      <tr>
+        <td>{{ c.obra }}</td>
+        <td>{{ c.subobra }}</td>
+        <td>{{ c.codigo }}</td>
+        <td>{{ c.nombre }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-secondary">No hay capítulos.</p>
+{% endif %}
