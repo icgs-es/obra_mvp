@@ -1,9 +1,53 @@
+# Python / Django
 __pycache__/
 *.py[cod]
 *.log
+*.pot
+*.mo
+*.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.ipynb_checkpoints/
+
+# Env / secrets
 .env
 .env.*
+*.pem
+*.key
+
+# Django runtime
 /media/
 /staticfiles/
-backups/
+
+# DB / dumps / local data
 *.sqlite3
+*.db
+*.sql
+*.dump
+*.bak
+
+# Celery / schedules (runtime files)
+celerybeat-schedule
+**/celerybeat-schedule
+celerybeat.pid
+**/celerybeat.pid
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Docker local volumes / infra local
+backups/
+**/backups/
+dolibarr_farmasani/
+**/dolibarr_farmasani/
+
+# Node (por si aparece)
+node_modules/
+dist/
+build/
