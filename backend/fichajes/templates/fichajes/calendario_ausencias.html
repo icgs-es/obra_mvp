@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Calendario de ausencias{% endblock %}
+
+{% block head %}
+  {{ block.super }}
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css" rel="stylesheet">
+  <style>
+    #calendar-ausencias {
+      min-height: 600px;
+      background: #fff;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.05);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Calendario de ausencias</h2>
+
+  <div class="row mb-3 align-items-end">
+    <div class="col-md-3">
+      <label for="vista-select" class="form-label">Vista</label>
+      <select id="vista-select" class="form-select">
+        <option value="mis">Mis ausencias</option>
+        <option value="departamento">Mi departamento</option>
+        <option value="global" selected>Todas (según permisos)</option>
+      </select>
+    </div>
+
+    <div class="col-md-9 text-end">
+      <a href="{% url 'fichajes:ausencia_create' %}" class="btn btn-primary mt-3 mt-md-0">
+        Nueva ausencia
+      </a>
+    </div>
+  </div>
+
+  <div id="calendar-ausencias"></div>
+</div>
+
+<!-- Modal detalle -->
+<div class="modal fade" id="modalAusencia" tabindex="-1" aria-labelledby="modalAusenciaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalAusenciaLabel">Detalle de ausencia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Empleado:</strong> <span id="modal-empleado"></span></p>
+        <p><strong>Tipo:</strong> <span id="modal-tipo"></span></p>
+        <p><strong>Estado:</strong> <span id="modal-estado"></span></p>
+        <p><strong>Motivo:</strong></p>
+        <p id="modal-motivo"></p>
+      </div>
+      <div class="modal-footer">
+        <a id="modal-editar-link" href="#" class="btn btn-primary">Editar</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      console.log("Calendario de ausencias: DOM ready");
+
+      var calendarEl = document.getElementById('calendar-ausencias');
+      var vistaSelect = document.getElementById('vista-select');
+
+      console.log("calendarEl:", calendarEl);
+
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        firstDay: 1,
+        height: 'auto',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,listWeek'
+        },
+        events: function(fetchInfo, successCallback, failureCallback) {
+          var params = new URLSearchParams();
+          params.append("start", fetchInfo.startStr);
+          params.append("end", fetchInfo.endStr);
+          params.append("vista", vistaSelect.value);
+
+          var urlEvents = "{% url 'fichajes:api_ausencias_events' %}?" + params.toString();
+          console.log("Cargando eventos desde:", urlEvents);
+
+          fetch(urlEvents)
+            .then(function(response) {
+              if (!response.ok) throw new Error("Error al cargar ausencias");
+              return response.json();
+            })
+            .then(function(data) {
+              console.log("Eventos recibidos:", data);
+              successCallback(data);
+            })
+            .catch(function(err) {
+              console.error("Error en events():", err);
+              failureCallback(err);
+            });
+        },
+        dateClick: function(info) {
+          const url = "{% url 'fichajes:ausencia_create' %}"
+                      + "?fecha_inicio=" + info.dateStr
+                      + "&fecha_fin=" + info.dateStr;
+          window.location.href = url;
+        },
+        eventClick: function(info) {
+          var e = info.event;
+          var props = e.extendedProps || {};
+
+          document.getElementById("modal-empleado").innerText = props.empleado || "";
+          document.getElementById("modal-tipo").innerText = props.tipo_label || props.tipo || "";
+          document.getElementById("modal-estado").innerText = props.estado || "";
+          document.getElementById("modal-motivo").innerText = props.motivo || "";
+
+          var editarLink = document.getElementById("modal-editar-link");
+          editarLink.href = "{% url 'fichajes:ausencia_edit' 0 %}".replace("0", e.id);
+
+          var modal = new bootstrap.Modal(document.getElementById('modalAusencia'));
+          modal.show();
+        }
+      });
+
+      calendar.render();
+
+      vistaSelect.addEventListener("change", function() {
+        calendar.refetchEvents();
+      });
+    });
+  </script>
+{% endblock %}
+

@@ -11,8 +11,8 @@ services:
       - /opt/obra_mvp:/app               # ← MISMO mapeo que usarán worker/beat
       - static_data:/app/staticfiles
       - media_data:/app/media
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000" 
     depends_on:
       - db
     healthcheck:
@@ -51,6 +51,8 @@ services:
       - static_data:/srv/static
       - media_data:/srv/media
       - /opt/www:/srv/site:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - web
   

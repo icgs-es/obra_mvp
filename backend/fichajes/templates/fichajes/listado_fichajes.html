@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Historial de fichajes — Intasa Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  {# Submenú Fichaje: Mi jornada / Historial #}
+  {% include "fichajes/_subnav_fichajes.html" with active_tab="historial" %}
+
+  <div class="card shadow-sm p-4">
+
+    {# Cabecera: título + acciones #}
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h4 mb-1">Historial de fichajes</h1>
+        <p class="text-muted mb-0">
+          Consulta tus fichajes y descarga un informe en PDF para un rango de fechas.
+        </p>
+      </div>
+
+      <div class="btn-group">
+        {# PDF solo del día de hoy #}
+        <a href="{% url 'fichajes:fichajes_pdf_hoy' %}"
+           target="_blank"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-filetype-pdf me-1"></i> PDF de hoy
+        </a>
+
+        {# Botón que dispara el formulario oculto de PDF por rango #}
+        <button type="submit"
+                form="form-pdf-rango"
+                class="btn btn-primary btn-sm">
+          <i class="bi bi-download me-1"></i> PDF rango
+        </button>
+      </div>
+    </div>
+
+    {# Filtros de fecha (GET) #}
+    <form id="form-filtros" method="get" class="row g-2 mb-3">
+      <div class="col-12 col-sm-4 col-md-3">
+        <label class="form-label form-label-sm mb-1">Desde</label>
+        <input type="date"
+               name="desde"
+               class="form-control form-control-sm"
+               value="{{ desde|default:'' }}">
+      </div>
+
+      <div class="col-12 col-sm-4 col-md-3">
+        <label class="form-label form-label-sm mb-1">Hasta</label>
+        <input type="date"
+               name="hasta"
+               class="form-control form-control-sm"
+               value="{{ hasta|default:'' }}">
+      </div>
+
+      <div class="col-12 col-sm-4 col-md-3 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+          Filtrar
+        </button>
+        <a href="{% url 'fichajes:mis_fichajes' %}" class="btn btn-link btn-sm">
+          Limpiar
+        </a>
+      </div>
+    </form>
+
+    {# Formulario oculto para el PDF de rango (abre en otra pestaña) #}
+    <form id="form-pdf-rango"
+          method="get"
+          action="{% url 'fichajes:fichajes_pdf_rango' %}"
+          target="_blank">
+      <input type="hidden" name="desde" value="{{ desde|default:'' }}">
+      <input type="hidden" name="hasta" value="{{ hasta|default:'' }}">
+    </form>
+
+    {# Tabla de fichajes #}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Tipo</th>
+            <th>Lugar</th>
+            <th>Mapa</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in fichajes %}
+            <tr>
+              <td>{{ f.timestamp|date:"Y-m-d" }}</td>
+              <td>{{ f.timestamp|date:"H:i:s" }}</td>
+              <td>{{ f.get_tipo_display }}</td>
+              <td>
+                {% if f.location_text %}
+                  {{ f.location_text|truncatechars:80 }}
+                {% elif f.lat and f.lng %}
+                  {{ f.lat|floatformat:5 }}, {{ f.lng|floatformat:5 }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {% if f.lat and f.lng %}
+                  <a href="{{ f.maps_url }}"
+                     target="_blank"
+                     class="btn btn-link btn-sm p-0">
+                    Ver mapa
+                  </a>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td>{{ f.observaciones|default:"" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-muted text-center">
+                Todavía no hay fichajes en este rango.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>  {# .card #}
+</div>    {# .container #}
+
+{% endblock %}

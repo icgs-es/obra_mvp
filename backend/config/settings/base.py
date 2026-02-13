@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     "agenda",
     "tareas",
     "usuarios",
+    "fichajes",
+    "archivos",
 ]
 
 MIDDLEWARE = [

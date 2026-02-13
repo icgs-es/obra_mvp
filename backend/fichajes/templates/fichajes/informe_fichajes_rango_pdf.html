@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Fichajes por rango</title>
+  <style>
+    body {
+      font-family: DejaVu Sans, sans-serif;
+      font-size: 11px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      text-align: left;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #cccccc;
+      padding-bottom: 5px;
+    }
+    .header h1 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .header small {
+      color: #555555;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #cccccc;
+      padding: 4px 6px;
+    }
+    th {
+      background: #f3f4f6;
+      text-align: left;
+    }
+    .totales {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Fichajes</h1>
+  <small>
+    Empleado: {{ empleado.get_full_name|default:empleado.username }}<br/>
+    Rango: {{ desde }} &mdash; {{ hasta }}
+  </small>
+</div>
+
+<p class="totales">
+  Horas totales en el rango: {{ total_horas }} h
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Hora</th>
+      <th>Tipo</th>
+      <th>Lugar</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if fichajes %}
+      {% for f in fichajes %}
+        <tr>
+          <td>{{ f.timestamp|date:"Y-m-d" }}</td>
+          <td>{{ f.timestamp|date:"H:i:s" }}</td>
+          <td>{{ f.get_tipo_display }}</td>
+          <td>
+            {% if f.short_location %}
+              {{ f.short_location }}
+            {% elif f.lat and f.lng %}
+              {{ f.lat }}, {{ f.lng }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="4">No hay fichajes en este rango.</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+</body>
+</html>

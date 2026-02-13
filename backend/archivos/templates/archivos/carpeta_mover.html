@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Mover carpeta — {{ carpeta.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h5 mb-3">Mover carpeta</h1>
+
+          <p class="small text-muted">
+            Carpeta: <strong>{{ carpeta.get_ruta_display }}</strong>
+          </p>
+
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label">Destino</label>
+              <select name="carpeta_destino" class="form-select">
+                <option value="">— Selecciona —</option>
+                <option value="ROOT">📁 Nivel raíz</option>
+                {% for c in carpetas_destino %}
+                  <option value="{{ c.pk }}">{{ c.get_ruta_display }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                Cancelar
+              </a>
+              <button type="submit" class="btn btn-primary">
+                Mover carpeta
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

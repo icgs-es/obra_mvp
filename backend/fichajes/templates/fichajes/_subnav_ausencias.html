@@ -1,0 +1,18 @@
+{# fichajes/_subnav_ausencias.html #}
+<ul class="nav nav-tabs fj-subnav mb-3">
+  <li class="nav-item">
+    {# Para el listado usamos simplemente la URL actual, así evitamos problemas de nombre de URL #}
+    <a class="nav-link {% if active_tab == 'listado' %}active{% endif %}"
+       href="{{ request.path }}">
+       Listado
+    </a>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'calendario' %}active{% endif %}"
+       href="{% url 'fichajes:calendario_ausencias' %}">
+       Calendario
+    </a>
+  </li>
+</ul>
+

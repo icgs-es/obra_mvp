@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Renombrar carpeta — {{ carpeta.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h5 mb-3">Renombrar carpeta</h1>
+          <p class="text-muted small mb-3">
+            Carpeta actual: <strong>{{ carpeta.get_ruta_display }}</strong>
+          </p>
+
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              {{ form.nombre }}
+              {{ form.nombre.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Visibilidad</label>
+              {{ form.visibilidad }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Departamento</label>
+              {{ form.departamento }}
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

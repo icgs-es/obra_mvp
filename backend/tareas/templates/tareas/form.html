@@ -1,15 +1,83 @@
 {% extends "base.html" %}
-{% block title %}Editar tarea · INTASA{% endblock %}
+{% block title %}{% if mode == "create" %}Nueva tarea{% else %}Editar tarea{% endif %}{% endblock %}
 {% block content %}
+
+<style>
+  .card{ border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .card-header{ padding:.85rem 1rem; border-bottom:1px solid #eef2f7; font-weight:600; }
+  .card-body{ padding:1rem; }
+  .form-row{ display:grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .form-row-1{ display:grid; grid-template-columns: 1fr; gap: .75rem; }
+  .actions{ display:flex; gap:.5rem; justify-content:center; margin-top:1rem; }
+  label{ font-weight:500; margin-top:.35rem; }
+</style>
+
 <div class="card">
-  <form method="post">{% csrf_token %}
-    <div class="grid">
-      {{ form.as_p }}
-    </div>
-    <div class="row" style="margin-top:1rem">
-      <button class="btn" type="submit">Guardar</button>
-      <a class="btn btn-outline" href="/app/tareas/">Cancelar</a>
-    </div>
-  </form>
+  <div class="card-header">
+    {% if mode == "create" %}Nueva tarea{% else %}Editar tarea{% endif %}
+  </div>
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-row-1">
+        <div>
+          <label for="{{ form.titulo.id_for_label }}">Título</label>
+          {{ form.titulo }}
+          {% for e in form.titulo.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row-1">
+        <div>
+          <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+          {{ form.descripcion }}
+          {% for e in form.descripcion.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="{{ form.estado.id_for_label }}">Estado</label>
+          {{ form.estado }}
+          {% for e in form.estado.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+        <div>
+          <label for="{{ form.prioridad.id_for_label }}">Prioridad</label>
+          {{ form.prioridad }}
+          {% for e in form.prioridad.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="{{ form.vencimiento.id_for_label }}">Vencimiento</label>
+          {{ form.vencimiento }}
+          {% if form.vencimiento.help_text %}<small class="text-muted d-block">{{ form.vencimiento.help_text }}</small>{% endif %}
+          {% for e in form.vencimiento.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+        <div>
+          <label for="{{ form.etiquetas.id_for_label }}">Etiquetas</label>
+          {{ form.etiquetas }}
+          <small class="text-muted d-block">Separadas por coma</small>
+          {% for e in form.etiquetas.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row-1">
+        <div>
+          <label for="{{ form.visibilidad.id_for_label }}">Visibilidad</label>
+          {{ form.visibilidad }}
+          {% if form.visibilidad.help_text %}<small class="text-muted d-block">{{ form.visibilidad.help_text }}</small>{% endif %}
+          {% for e in form.visibilidad.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="/app/tareas/" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

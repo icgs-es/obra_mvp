@@ -1,0 +1,205 @@
+{% extends "base_terminal.html" %}
+
+{% block title %}Terminal de fichaje — Intasa{% endblock %}
+
+{% block content %}
+  <div class="card shadow-sm p-4 text-center bg-white text-dark rounded-4">
+    <h1 class="h4 mb-2">Terminal de fichaje</h1>
+    <p class="text-muted small mb-3">
+      Introduce tu PIN personal y pulsa el botón correspondiente.
+    </p>
+
+    <form method="post" id="terminal-form" autocomplete="off">
+      {% csrf_token %}
+
+      {# --- CAMPO PIN (solo lectura; se rellena con el teclado numérico) --- #}
+      <div class="mb-3">
+        <input type="password"
+               name="pin"
+               id="pin-input"
+               class="form-control form-control-lg text-center"
+               placeholder="PIN (4 dígitos)"
+               inputmode="numeric"
+               pattern="\d{4}"
+               maxlength="4"
+               required
+               readonly>
+      </div>
+
+      {# --- TECLADO NUMÉRICO --- #}
+      <div class="mb-3">
+        <div class="row g-2 mb-2">
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="1">1</button>
+          </div>
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="2">2</button>
+          </div>
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="3">3</button>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-2">
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="4">4</button>
+          </div>
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="5">5</button>
+          </div>
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="6">6</button>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-2">
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="7">7</button>
+          </div>
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="8">8</button>
+          </div>
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="9">9</button>
+          </div>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-4">
+            <button type="button"
+                    class="btn btn-outline-danger w-100"
+                    id="pin-backspace">
+              ⌫
+            </button>
+          </div>
+          <div class="col-4">
+            <button type="button" class="btn btn-outline-secondary btn-lg w-100 btn-pin-digit" data-digit="0">0</button>
+          </div>
+          <div class="col-4">
+            <button type="button"
+                    class="btn btn-outline-dark w-100"
+                    id="pin-clear">
+              C
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {# Campo oculto para el tipo de fichaje #}
+      <input type="hidden" name="tipo" id="id_tipo_terminal">
+
+      {# --- BOTONES DE FICHAJE --- #}
+
+      <!-- Entrada / Salida -->
+      <div class="d-grid gap-2 mb-3">
+        <button type="button"
+                class="btn btn-success btn-lg"
+                onclick="enviarFichaje('IN')">
+          Entrada
+        </button>
+        <button type="button"
+                class="btn btn-danger btn-lg"
+                onclick="enviarFichaje('OUT')">
+          Salida
+        </button>
+      </div>
+
+      <!-- Pausa -->
+      <div class="d-grid gap-2 mb-3">
+        <button type="button"
+                class="btn btn-warning"
+                onclick="enviarFichaje('PAUSA_IN')">
+          Inicio pausa
+        </button>
+        <button type="button"
+                class="btn btn-outline-warning"
+                onclick="enviarFichaje('PAUSA_OUT')">
+          Fin pausa
+        </button>
+      </div>
+
+      <!-- Permiso corto -->
+      <div class="d-grid gap-2">
+        <button type="button"
+                class="btn btn-primary"
+                onclick="enviarFichaje('OTRO_IN')">
+          Inicio permiso corto
+        </button>
+        <button type="button"
+                class="btn btn-outline-primary"
+                onclick="enviarFichaje('OTRO_OUT')">
+          Fin permiso corto
+        </button>
+      </div>
+
+      <div class="mt-3">
+        <button type="button"
+                class="btn btn-link btn-sm text-muted"
+                onclick="limpiarPIN()">
+          Borrar PIN
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script>
+    // --- Teclado numérico ---
+    (function() {
+      const pinInput = document.getElementById("pin-input");
+      if (!pinInput) return;
+
+      // Añadir dígito
+      document.querySelectorAll(".btn-pin-digit").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const d = this.dataset.digit || "";
+          if (!d) return;
+          if (pinInput.value.length >= 4) return;  // máximo 4 dígitos
+          pinInput.value = pinInput.value + d;
+        });
+      });
+
+      // Borrar último dígito
+      const backspaceBtn = document.getElementById("pin-backspace");
+      if (backspaceBtn) {
+        backspaceBtn.addEventListener("click", function() {
+          pinInput.value = pinInput.value.slice(0, -1);
+        });
+      }
+
+      // Borrar todo
+      const clearBtn = document.getElementById("pin-clear");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function() {
+          pinInput.value = "";
+        });
+      }
+    })();
+
+    // --- Enviar fichaje con tipo ---
+    function enviarFichaje(tipo) {
+      const form = document.getElementById("terminal-form");
+      const tipoInput = document.getElementById("id_tipo_terminal");
+      const pinInput = document.getElementById("pin-input");
+
+      if (!form || !tipoInput || !pinInput) return;
+
+      if (!pinInput.value || pinInput.value.length !== 4) {
+        alert("Introduce un PIN de 4 dígitos.");
+        return;
+      }
+
+      tipoInput.value = tipo;
+      form.submit();
+    }
+
+    function limpiarPIN() {
+      const pinInput = document.getElementById("pin-input");
+      if (pinInput) {
+        pinInput.value = "";
+      }
+    }
+  </script>
+{% endblock %}

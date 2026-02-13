@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Renombrar archivo — {{ archivo.nombre_original }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h5 mb-3">Renombrar archivo</h1>
+
+          <p class="small text-muted">
+            Carpeta: <strong>{{ carpeta.get_ruta_display }}</strong>
+          </p>
+
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+            <div class="mb-3">
+              <label class="form-label">Nombre del archivo</label>
+              <input type="text"
+                     name="nombre_original"
+                     value="{{ archivo.nombre_original }}"
+                     class="form-control">
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                Cancelar
+              </a>
+              <button type="submit" class="btn btn-primary">
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

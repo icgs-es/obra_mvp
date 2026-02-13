@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar archivo — {{ archivo.nombre_original }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h5 mb-3 text-danger">Eliminar archivo</h1>
+
+          <p>
+            Vas a eliminar el archivo:
+            <strong>{{ archivo.nombre_original }}</strong><br>
+            Carpeta: <strong>{{ carpeta.get_ruta_display }}</strong>
+          </p>
+
+          <div class="alert alert-danger">
+            Esta acción no se puede deshacer. ¿Seguro que deseas eliminarlo?
+          </div>
+
+          <form method="post" class="d-flex flex-column flex-sm-row justify-content-between gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+            <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-danger">
+              Sí, eliminar archivo
+            </button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

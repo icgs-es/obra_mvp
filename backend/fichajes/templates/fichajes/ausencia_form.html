@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if modo == "editar" %}
+    Editar ausencia — Intasa Platform
+  {% else %}
+    Nueva ausencia — Intasa Platform
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h1 class="h4 mb-4">
+      {% if modo == "editar" %}
+        Editar ausencia
+      {% else %}
+        Nueva ausencia
+      {% endif %}
+    </h1>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <div class="row">
+        <!-- Columna izquierda -->
+        <div class="col-md-6">
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.empleado.id_for_label }}">Empleado</label>
+            {{ form.empleado }}
+            {% if form.empleado.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.empleado.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.fecha_inicio.id_for_label }}">Fecha inicio</label>
+            {{ form.fecha_inicio }}
+            {% if form.fecha_inicio.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.fecha_inicio.errors.0 }}
+              </div>
+            {% endif %}
+            <div class="form-text text-muted">
+              DEBUG fecha_inicio: {{ form.fecha_inicio.value }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.horas.id_for_label }}">Horas</label>
+            <div class="form-text">Opcional, para medias jornadas u horas sueltas.</div>
+            {{ form.horas }}
+            {% if form.horas.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.horas.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.estado.id_for_label }}">Estado</label>
+            {{ form.estado }}
+            {% if form.estado.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.estado.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+        </div>
+
+        <!-- Columna derecha -->
+        <div class="col-md-6">
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.tipo.id_for_label }}">Tipo</label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.tipo.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.fecha_fin.id_for_label }}">Fecha fin</label>
+            {{ form.fecha_fin }}
+            {% if form.fecha_fin.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.fecha_fin.errors.0 }}
+              </div>
+            {% endif %}
+            <div class="form-text text-muted">
+              DEBUG fecha_fin: {{ form.fecha_fin.value }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.motivo.id_for_label }}">Motivo</label>
+            {{ form.motivo }}
+            {% if form.motivo.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.motivo.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+
+      <div class="mt-3 text-end">
+        <a href="{% url 'fichajes:ausencias_list' %}" class="btn btn-outline-secondary btn-sm">
+          Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary btn-sm">
+          {% if modo == "editar" %}
+            Guardar cambios
+          {% else %}
+            Guardar ausencia
+          {% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

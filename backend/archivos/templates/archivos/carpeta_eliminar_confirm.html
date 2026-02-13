@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar carpeta — {{ carpeta.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h5 mb-3 text-danger">Eliminar carpeta</h1>
+
+          <p>
+            Vas a eliminar la carpeta:
+            <strong>{{ carpeta.get_ruta_display }}</strong>
+          </p>
+
+          {% if tiene_subcarpetas or tiene_archivos %}
+            <div class="alert alert-warning">
+              Esta carpeta tiene
+              {% if tiene_subcarpetas %} subcarpetas{% endif %}
+              {% if tiene_subcarpetas and tiene_archivos %} y{% endif %}
+              {% if tiene_archivos %} archivos{% endif %}.
+              No se puede eliminar mientras no esté vacía.
+            </div>
+          {% else %}
+            <div class="alert alert-danger">
+              Esta acción no se puede deshacer. ¿Seguro que deseas eliminarla?
+            </div>
+
+            <form method="post" class="d-flex justify-content-between">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+              {% if carpeta.parent %}
+              <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
+              {% else %}
+                <a href="{% url 'archivos:explorador_raiz' %}"
+                   class="btn btn-outline-secondary">
+                  Cancelar
+                </a>
+              {% endif %}
+
+              <button type="submit" class="btn btn-danger">
+                Sí, eliminar carpeta
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

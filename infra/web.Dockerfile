@@ -15,6 +15,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl && \
     rm -rf /var/lib/apt/lists/*
 
+# --- NUEVO: dependencias del sistema para xhtml2pdf / Cairo ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libcairo2 \
+    libcairo2-dev \
+    pkg-config \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # instala requirements
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install -r /app/backend/requirements.txt

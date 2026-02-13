@@ -1,0 +1,870 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mi jornada — Intasa Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+  {% include "fichajes/_subnav_fichajes.html" with active_tab="mi_jornada" %}
+  <div class="row g-3 align-items-stretch">
+    <!-- Columna izquierda: tarjeta principal de jornada -->
+    <div class="col-12 col-lg-5">
+      <div class="fj-card shadow-sm h-100">
+        <h1 class="h4 mb-1">Mi jornada</h1>
+        <p class="fj-fecha mb-2">Hoy: {{ hoy }}</p>
+
+        <div class="fj-estado fj-estado-{{ estado }} mb-3">
+          {% if estado == "dentro" %}
+              <span>Actualmente: <strong>DENTRO de jornada</strong></span>
+          {% elif estado == "pausa" %}
+              <span>Actualmente: <strong>EN PAUSA</strong></span>
+          {% elif estado == "permiso" %}
+              <span>Actualmente: <strong>EN PERMISO CORTO</strong></span>
+          {% else %}
+              <span>Actualmente: <strong>FUERA de jornada</strong></span>
+          {% endif %}
+        </div>
+
+        <div class="fj-horas mb-2">
+          <span>Horas trabajadas hoy:</span>
+          <strong>{{ horas_hoy }} h</strong>
+        </div>
+
+        <!--<div class="fj-horas mb-3">
+          <span>Total horas hoy: <strong>{{ horas_hoy }}</strong></span><br>
+          <span>Total horas esta semana: <strong>{{ horas_semana }}</strong></span><br>
+          <span>Total horas este mes: <strong>{{ horas_mes }}</strong></span>
+        </div>-->
+        {% if ultimo_lugar %}
+          <div class="fj-lugar-actual mb-3">
+            <span>Último fichaje en:</span><br>
+            {% if ultimo_fichaje %}
+              <div class="fj-lugar-actual mb-1" style="font-size:0.75rem; color:#9ca3af;">
+                {{ ultimo_fichaje.lat }}, {{ ultimo_fichaje.lng }}
+              </div>
+            {% endif %}
+
+            {% if ultimo_maps %}
+              <a href="{{ ultimo_maps }}" target="_blank">
+                {{ ultimo_lugar }}
+              </a>
+            {% else %}
+              <strong>{{ ultimo_lugar }}</strong>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if jornada_larga %}
+          <div class="fj-badge-jornada mb-3">
+            ⚠ Has superado las <strong>9 horas</strong> de jornada hoy.
+          </div>
+        {% endif %}
+
+        <div id="fj-badge-jornada" class="fj-badge-jornada-activa mb-2" style="display:none;">
+          <span>Tiempo en jornada: <strong id="fj-jornada-tiempo">0:00</strong></span>
+        </div>
+
+        <div id="fj-badge-pausa" class="fj-badge-pausa mb-2" style="display:none;">
+          <span>Tiempo en pausa: <strong id="fj-pausa-tiempo">0:00</strong></span>
+          <small id="fj-pausa-aviso" class="mt-1" style="display:none;">
+            ⚠ Llevas más de 30 minutos en pausa.
+          </small>
+        </div>
+
+        <div id="fj-badge-permiso" class="fj-badge-permiso mb-2" style="display:none;">
+          <span>Tiempo en permiso: <strong id="fj-permiso-tiempo">0:00</strong></span>
+          <small id="fj-permiso-aviso" class="mt-1" style="display:none;">
+            ⚠ Llevas más de 60 minutos en permiso corto.
+          </small>
+        </div>
+
+        <!-- Formulario de fichaje con geolocalización -->
+        <form method="post" action="{% url 'fichajes:fichar' %}" id="fichar-form">
+          {% csrf_token %}
+          <input type="hidden" name="lat" id="id_lat">
+          <input type="hidden" name="lng" id="id_lng">
+          <input type="hidden" name="tipo" id="id_tipo">
+          
+          {% if estado == "fuera" %}
+            {# Botón Fichar ENTRADA (activo) #}
+            <button type="button"
+                    class="fj-boton fj-boton-entrada d-flex align-items-center fj-btn-tipo"
+                    data-tipo="IN">
+              <img src="{% static 'portal/icons/fichar_entrada.png' %}"
+                   alt="Fichar entrada"
+                   class="fj-icono me-3">
+              <div class="text-start">
+                <div class="fw-semibold">Fichar entrada</div>
+                <small class="text-light">Iniciar jornada</small>
+              </div>
+            </button>
+
+          {% elif estado == "dentro" %}
+            {# Botón Fichar SALIDA (activo) #}
+            <button type="button"
+                    class="fj-boton fj-boton-salida d-flex align-items-center fj-btn-tipo"
+                    data-tipo="OUT">
+              <img src="{% static 'portal/icons/fichar_salida.png' %}"
+                   alt="Fichar salida"
+                   class="fj-icono me-3">
+              <div class="text-start">
+                <div class="fw-semibold">Fichar salida</div>
+                <small class="text-light">Cerrar jornada</small>
+              </div>
+            </button>
+
+          {% elif estado == "pausa" or estado == "permiso" %}
+            {# Botón SALIDA bloqueado mientras hay pausa/permiso #}
+            <button type="button"
+                    class="fj-boton fj-boton-salida d-flex align-items-center"
+                    disabled>
+              <img src="{% static 'portal/icons/fichar_salida.png' %}"
+                   alt="Fichar salida"
+                   class="fj-icono me-3" style="opacity:0.4;">
+              <div class="text-start">
+                <div class="fw-semibold" style="opacity:0.6;">Fichar salida</div>
+                <small style="opacity:0.4;">Cierra primero la pausa o permiso</small>
+              </div>
+            </button>
+          {% endif %}
+
+          <div class="fj-botones-secundarios mt-2">
+
+            {# PAUSA #}
+            <button type="button"
+                    class="fj-boton-sec fj-boton-pausa fj-btn-tipo"
+                    data-tipo="PAUSA_IN"
+                    {% if estado != "dentro" %}disabled{% endif %}>
+              Iniciar pausa
+            </button>
+
+            <button type="button"
+                    class="fj-boton-sec fj-boton-pausa fj-btn-tipo"
+                    data-tipo="PAUSA_OUT"
+                    {% if estado != "pausa" %}disabled{% endif %}>
+              Fin pausa
+            </button>
+
+            {# PERMISO CORTO #}
+            <button type="button"
+                    class="fj-boton-sec fj-boton-permiso fj-btn-tipo"
+                    data-tipo="OTRO_IN"
+                    {% if estado != "dentro" %}disabled{% endif %}>
+              Inicio permiso corto
+            </button>
+
+            <button type="button"
+                    class="fj-boton-sec fj-boton-permiso fj-btn-tipo"
+                    data-tipo="OTRO_OUT"
+                    {% if estado != "permiso" %}disabled{% endif %}>
+              Fin permiso corto
+            </button>
+
+          </div>
+
+
+        </form>
+        <div class="mt-3 d-flex flex-column flex-sm-row gap-2">
+          <a href="{% url 'fichajes:mis_fichajes' %}" 
+            class="btn btn-sm btn-outline-secondary">
+            Ver historial completo
+          </a>
+
+          <a href="{% url 'fichajes:fichajes_pdf_hoy' %}"
+             class="btn btn-sm btn-outline-secondary"
+             onclick="descargarPdfFichajesHoy(event);">
+            Descargar PDF (hoy)
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna derecha: fichajes de hoy -->
+    <div class="col-12 col-lg-7">
+      <div class="fj-card shadow-sm h-100">
+        <h2 class="h5 mb-3">Fichajes de hoy</h2>
+
+        {% if fichajes_hoy %}
+          <ul class="fj-lista">
+            {% for f in fichajes_hoy %}
+              <li>
+                <div class="d-flex flex-column w-100">
+                  <div class="d-flex justify-content-between">
+                    <span class="fj-tipo fj-tipo-{{ f.tipo }}">{{ f.get_tipo_display }}</span>
+                    <span class="fj-hora">{{ f.timestamp|date:"H:i:s" }}</span>
+                  </div>
+
+                  {% if f.location_text %}
+                    <span class="fj-lugar">
+                      {{ f.location_text|truncatechars:60 }}
+                    </span>
+                  {% elif f.lat and f.lng %}
+                    <span class="fj-lugar">
+                      {{ f.lat|floatformat:5 }}, {{ f.lng|floatformat:5 }}
+                    </span>
+                  {% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="empty-state mb-0">No hay fichajes registrados hoy.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>  {# fin row fichajes #}
+
+  <!-- =========================
+       Panel personal unificado
+       ========================= -->
+  <div class="row g-3 mt-3">
+    <!-- Bloque TAREAS -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="fj-card shadow-sm h-100">
+        <h2 class="h6 mb-2">
+          <i class="bi bi-check2-square me-1"></i> Mis tareas
+        </h2>
+        <p class="small text-muted mb-3">
+          Accede a tus tareas abiertas y crea nuevas acciones.
+        </p>
+        <div class="d-grid gap-2">
+          <a href="/app/tareas/" class="btn btn-outline-primary btn-sm">
+            Ver tareas
+          </a>
+          <a href="/app/tareas/nueva/" class="btn btn-primary btn-sm">
+            + Nueva tarea
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bloque AGENDA -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="fj-card shadow-sm h-100">
+        <h2 class="h6 mb-2">
+          <i class="bi bi-calendar-event me-1"></i> Agenda
+        </h2>
+        <p class="small text-muted mb-3">
+          Consulta tu agenda y los eventos de hoy.
+        </p>
+        <div class="d-grid gap-2">
+          <a href="/app/agenda/" class="btn btn-outline-success btn-sm">
+            Abrir agenda
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bloque ARCHIVOS -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="fj-card shadow-sm h-100">
+        <h2 class="h6 mb-2">
+          <i class="bi bi-folder2-open me-1"></i> Archivos
+        </h2>
+        <p class="small text-muted mb-3">
+          Accede al explorador de carpetas corporativas.
+        </p>
+        <div class="d-grid gap-2">
+          <a href="{% url 'archivos:explorador_raiz' %}" class="btn btn-outline-secondary btn-sm">
+            Abrir archivos
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bloque CORREO -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="fj-card shadow-sm h-100">
+        <h2 class="h6 mb-2">
+          <i class="bi bi-envelope-open me-1"></i> Correo
+        </h2>
+        <p class="small text-muted mb-3">
+          Enlace rápido al correo corporativo (configurable).
+        </p>
+        <div class="d-grid gap-2">
+          <a href="https://mail.ionos.es/" target="_blank" class="btn btn-outline-dark btn-sm">
+            Abrir correo
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>  {# fin container #}
+
+<style>
+
+  </div>
+</div>
+
+<!-- ===== Panel personal: Tareas + Agenda + Archivos ===== -->
+<div class="mt-4">
+  <h2 class="h5 mb-3">Panel personal</h2>
+
+  <div class="row g-3">
+
+    <!-- Tarjeta TAREAS -->
+    <div class="col-12 col-md-4">
+      <div class="fj-card shadow-sm h-100 d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <div class="me-2">
+            <i class="bi bi-check2-square fs-4 text-primary"></i>
+          </div>
+          <div>
+            <h3 class="h6 mb-0">Tareas</h3>
+            <small class="text-muted">Gestiona tu lista de pendientes</small>
+          </div>
+        </div>
+
+        <p class="text-muted small mb-3">
+          Acceso directo al módulo de tareas para ver lo que tienes hoy,
+          pendientes y en curso.
+        </p>
+
+        <div class="mt-auto">
+          <a href="/app/tareas/" class="btn btn-sm btn-outline-primary w-100">
+            Abrir tareas
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta AGENDA -->
+    <div class="col-12 col-md-4">
+      <div class="fj-card shadow-sm h-100 d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <div class="me-2">
+            <i class="bi bi-calendar3 fs-4 text-success"></i>
+          </div>
+          <div>
+            <h3 class="h6 mb-0">Agenda</h3>
+            <small class="text-muted">Citas y eventos</small>
+          </div>
+        </div>
+
+        <p class="text-muted small mb-3">
+          Consulta tu calendario, reuniones y recordatorios importantes
+          desde la agenda central.
+        </p>
+
+        <div class="mt-auto">
+          <a href="/app/agenda/" class="btn btn-sm btn-outline-success w-100">
+            Abrir agenda
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta ARCHIVOS -->
+    <div class="col-12 col-md-4">
+      <div class="fj-card shadow-sm h-100 d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <div class="me-2">
+            <i class="bi bi-folder2-open fs-4 text-warning"></i>
+          </div>
+          <div>
+            <h3 class="h6 mb-0">Archivos</h3>
+            <small class="text-muted">Documentos de la empresa</small>
+          </div>
+        </div>
+
+        <p class="text-muted small mb-3">
+          Accede al repositorio de carpetas compartidas según tu
+          departamento y permisos.
+        </p>
+
+        <div class="mt-auto">
+          <a href="{% url 'archivos:explorador_raiz' %}"
+              class="btn btn-sm btn-outline-warning w-100">
+            Abrir archivos
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .fj-card {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.2rem 1.4rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+
+  .fj-fecha {
+    color: #555;
+    font-size: 0.95rem;
+  }
+
+  .fj-estado {
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.6rem;
+    font-size: 0.95rem;
+  }
+  .fj-estado-dentro {
+    background: #e0f7e9;
+    color: #146c2e;
+  }
+  .fj-estado-fuera {
+    background: #ffe9e9;
+    color: #b71c1c;
+  }
+
+  .fj-horas {
+    font-size: 1rem;
+  }
+
+  .fj-boton {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border: none;
+    border-radius: 0.9rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+  }
+
+  .fj-boton-entrada {
+    background: #22c55e; /* verde */
+    color: #fff;
+  }
+
+  .fj-boton-salida {
+    background: #f97316; /* naranja */
+    color: #fff;
+  }
+
+  .fj-icono {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+
+  .fj-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .fj-lista li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+  }
+
+  .fj-tipo-IN {
+    color: #22c55e;
+    font-weight: 600;
+  }
+  .fj-tipo-OUT {
+    color: #f97316;
+    font-weight: 600;
+  }
+
+  .fj-hora {
+    color: #555;
+  }
+
+  .fj-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 600px) {
+    .fj-card {
+      border-radius: 0.7rem;
+      padding: 1rem 1.1rem;
+    }
+  }
+
+  .fj-botones-secundarios {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .fj-boton-sec {
+    padding: 0.6rem 0.4rem;
+    border-radius: 0.7rem;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    color: #fff;
+    opacity: 1;
+  }
+
+  .fj-boton-pausa {
+    background: #ffb300; /* ámbar */
+    color: #fff;
+  }
+
+  .fj-boton-permiso {
+    background: #7b1fa2; /* morado */
+    color: #fff;
+  }
+
+  .fj-boton-pausa:hover,
+  .fj-boton-permiso:hover {
+    opacity: 0.85;
+  }
+  /* Forzar colores vivos en los botones secundarios,
+     por encima de cualquier CSS global */
+  button.fj-boton-sec.fj-boton-pausa {
+    background-color: #ffb300 !important;  /* ámbar */
+    color: #fff !important;
+    opacity: 1 !important;
+  }
+
+  button.fj-boton-sec.fj-boton-permiso {
+    background-color: #7b1fa2 !important;  /* morado */
+    color: #fff !important;
+    opacity: 1 !important;
+  }
+
+  button.fj-boton-sec.fj-boton-pausa:hover,
+  button.fj-boton-sec.fj-boton-permiso:hover {
+    filter: brightness(0.95);
+  }
+
+  /* ============================
+    FORZAR ESTILO BOTONES DISABLED
+    ============================ */
+  .fj-boton-sec[disabled],
+  .fj-boton-sec:disabled {
+      background-color: #e5e7eb !important;   /* gris claro */
+      color: #9ca3af !important;              /* gris medio */
+      border: none !important;
+      cursor: not-allowed !important;
+      opacity: 1 !important; /* importante: evita efectos de opacidad de Bootstrap */
+      box-shadow: none !important;
+  }
+
+  /* Evitar hover con colores activos */
+  .fj-boton-sec[disabled]:hover,
+  .fj-boton-sec:disabled:hover {
+      background-color: #e5e7eb !important;
+      color: #9ca3af !important;
+  }
+
+  .fj-badge-pausa {
+    background: #fff3cd;   /* amarillo suave */
+    color: #8a6d3b;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .fj-badge-permiso {
+    background: #e8def8;   /* morado claro */
+    color: #4a148c;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+  }
+  
+  .fj-lugar {
+    font-size: 0.8rem;
+    color: #6b7280;      /* gris suave */
+    margin-top: 0.1rem;
+  }
+
+  .fj-lugar-actual {
+    font-size: 0.85rem;
+    color: #4b5563;  /* gris medio */
+  }
+
+  .fj-lugar-actual strong {
+    font-weight: 500;
+  }
+
+  .fj-badge-jornada {
+    background: #fee2e2;   /* rojo claro */
+    color: #b91c1c;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .fj-badge-jornada-activa {
+    background: #e0f2fe;   /* azul muy suave */
+    color: #1d4ed8;        /* azul medio */
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .fj-subnav .nav-link {
+    font-size: 0.9rem;
+  }
+  .fj-subnav .nav-link.active {
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script>
+    // Geolocalización: rellenar lat/lng si el usuario lo permite
+    if (navigator.geolocation) {
+      // Función auxiliar para calcular distancia aproximada en km
+      function distanciaKm(lat1, lon1, lat2, lon2) {
+        function toRad(x) { return x * Math.PI / 180; }
+        var R = 6371; // radio Tierra
+        var dLat = toRad(lat2 - lat1);
+        var dLon = toRad(lon2 - lon1);
+        var a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          var newLat = pos.coords.latitude;
+          var newLng = pos.coords.longitude;
+
+          var latInput = document.getElementById("id_lat");
+          var lngInput = document.getElementById("id_lng");
+          if (!latInput || !lngInput) return;
+
+          // Última posición guardada en este navegador
+          var lastLat = parseFloat(localStorage.getItem("fj_last_lat"));
+          var lastLng = parseFloat(localStorage.getItem("fj_last_lng"));
+          var maxJumpKm = 50;  // salto máximo aceptable (ej. 50 km)
+
+          var usarNueva = true;
+
+          if (!isNaN(lastLat) && !isNaN(lastLng)) {
+            var d = distanciaKm(lastLat, lastLng, newLat, newLng);
+            if (d > maxJumpKm) {
+              console.warn(
+                "Salto de ubicación sospechoso (" + d.toFixed(1) + " km). " +
+                "Manteniendo la última posición conocida."
+              );
+              usarNueva = false;
+            }
+          }
+
+          if (usarNueva) {
+            latInput.value = newLat;
+            lngInput.value = newLng;
+            localStorage.setItem("fj_last_lat", newLat);
+            localStorage.setItem("fj_last_lng", newLng);
+          } else if (!isNaN(lastLat) && !isNaN(lastLng)) {
+            // Si el salto es raro, usamos la anterior
+            latInput.value = lastLat;
+            lngInput.value = lastLng;
+          }
+        },
+        function (error) {
+          console.log("Geolocalización no disponible o denegada.", error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+
+    // 🔹 Nueva lógica: todos los botones con .fj-btn-tipo
+    // ponen su data-tipo en el hidden y envían el formulario
+    document.querySelectorAll('.fj-btn-tipo').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var tipo = this.dataset.tipo;                    // p.ej. "IN", "PAUSA_IN"
+        var tipoInput = document.getElementById('id_tipo');
+        var form = document.getElementById('fichar-form');
+
+        if (tipoInput && form) {
+          tipoInput.value = tipo;                        // guardamos el tipo
+          form.submit();                                 // enviamos el formulario
+        }
+      });
+    });
+
+    // ==========================
+    // Contador de tiempo en PAUSA
+    // ==========================
+    (function() {
+      var estadoActual = "{{ estado }}";
+      var pausaInMs = {{ pausa_in_ms|default:"null" }};
+
+      if (estadoActual !== "pausa" || !pausaInMs) {
+        return;  // no estamos en pausa ahora mismo
+      }
+
+      var badge = document.getElementById("fj-badge-pausa");
+      var txtTiempo = document.getElementById("fj-pausa-tiempo");
+      var aviso = document.getElementById("fj-pausa-aviso");
+
+      if (!badge || !txtTiempo) return;
+
+      badge.style.display = "block";
+
+      function actualizarPausa() {
+        var ahora = Date.now();
+        var diffMs = ahora - pausaInMs;
+
+        if (diffMs < 0) diffMs = 0;
+
+        var totalSeg = Math.floor(diffMs / 1000);
+        var minutos = Math.floor(totalSeg / 60);
+        var segundos = totalSeg % 60;
+
+        var mm = minutos.toString();
+        var ss = segundos.toString().padStart(2, "0");
+
+        txtTiempo.textContent = mm + ":" + ss;
+
+        // Aviso a partir de 30 minutos
+        if (aviso) {
+          if (minutos >= 30) {
+            aviso.style.display = "block";
+          } else {
+            aviso.style.display = "none";
+          }
+        }
+      }
+
+      // Actualizar cada segundo
+      actualizarPausa();
+      setInterval(actualizarPausa, 1000);
+    })();
+
+    // ==========================
+    // Contador de JORNADA ACTIVA
+    // ==========================
+    (function() {
+      var estadoActual = "{{ estado }}";
+      var jornadaInMs = {{ jornada_in_ms|default:"null" }};
+
+      // Solo tiene sentido si no estamos fuera de jornada y tenemos IN
+      if (!jornadaInMs || estadoActual === "fuera") {
+        return;
+      }
+
+      var badgeJornada = document.getElementById("fj-badge-jornada");
+      var txtJornada = document.getElementById("fj-jornada-tiempo");
+
+      if (!badgeJornada || !txtJornada) return;
+
+      badgeJornada.style.display = "block";
+
+      function actualizarJornada() {
+        var ahora = Date.now();
+        var diffMs = ahora - jornadaInMs;
+
+        if (diffMs < 0) diffMs = 0;
+
+        var totalSeg = Math.floor(diffMs / 1000);
+        var horas = Math.floor(totalSeg / 3600);
+        var minutos = Math.floor((totalSeg % 3600) / 60);
+        var segundos = totalSeg % 60;
+
+        var hh = horas.toString();
+        var mm = minutos.toString().padStart(2, "0");
+        var ss = segundos.toString().padStart(2, "0");
+
+        txtJornada.textContent = hh + ":" + mm + ":" + ss;
+      }
+
+      actualizarJornada();
+      setInterval(actualizarJornada, 1000);
+    })();
+
+    // ==========================
+    // Contador de PERMISO CORTO
+    // ==========================
+    (function() {
+      var estadoActual = "{{ estado }}";
+      var permisoInMs = {{ permiso_in_ms|default:0 }};
+
+      if (estadoActual !== "permiso" || !permisoInMs) {
+        return;  // no estamos en permiso corto ahora mismo
+      }
+
+      var badgePermiso = document.getElementById("fj-badge-permiso");
+      var txtPermiso = document.getElementById("fj-permiso-tiempo");
+      var avisoPermiso = document.getElementById("fj-permiso-aviso");
+
+      if (!badgePermiso || !txtPermiso) return;
+
+      badgePermiso.style.display = "block";
+
+      function actualizarPermiso() {
+        var ahora = Date.now();
+        var diffMs = ahora - permisoInMs;
+
+        if (diffMs < 0) diffMs = 0;
+
+        var totalSeg = Math.floor(diffMs / 1000);
+        var minutos = Math.floor(totalSeg / 60);
+        var segundos = totalSeg % 60;
+
+        var mm = minutos.toString();
+        var ss = segundos.toString().padStart(2, "0");
+
+        txtPermiso.textContent = mm + ":" + ss;
+
+        // Aviso a partir de 60 minutos
+        if (avisoPermiso) {
+          if (minutos >= 60) {
+            avisoPermiso.style.display = "block";
+          } else {
+            avisoPermiso.style.display = "none";
+          }
+        }
+      }
+
+      actualizarPermiso();
+      setInterval(actualizarPermiso, 1000);
+    })();
+
+    // ==========================
+    // Descargar PDF de fichajes HOY sin salir de la página
+    // ==========================
+    function descargarPdfFichajesHoy(event) {
+      if (event) {
+        event.preventDefault();
+      }
+
+      var url = "{% url 'fichajes:fichajes_pdf_hoy' %}";
+      // Nombre sugerido para el archivo
+      var filename = "fichajes_{{ request.user.username }}_{{ hoy }}.pdf";
+
+      fetch(url, {
+        method: "GET",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Error al descargar el PDF");
+          }
+          return response.blob();
+        })
+        .then(function (blob) {
+          var blobUrl = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(blobUrl);
+        })
+        .catch(function (error) {
+          console.error(error);
+          alert("No se ha podido descargar el PDF de fichajes.");
+        });
+    }
+  </script>
+{% endblock %}

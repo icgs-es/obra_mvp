@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="fj-container">
+  <div class="fj-card">
+    <h1>Mi jornada</h1>
+    <p class="fj-fecha">Hoy: {{ hoy }}</p>
+
+    <div class="fj-estado fj-estado-{{ estado }}">
+      {% if estado == "dentro" %}
+        <span>Actualmente: <strong>DENTRO de jornada</strong></span>
+      {% else %}
+        <span>Actualmente: <strong>FUERA de jornada</strong></span>
+      {% endif %}
+    </div>
+
+    <div class="fj-horas">
+      <span>Horas trabajadas hoy:</span>
+      <strong>{{ horas_hoy }} h</strong>
+    </div>
+
+    <form method="post" action="{% url 'fichajes:fichar' %}" id="fichar-form">
+      {% csrf_token %}
+      <input type="hidden" name="lat" id="id_lat">
+      <input type="hidden" name="lng" id="id_lng">
+
+      {% if estado == "dentro" %}
+        <button type="submit" class="fj-boton fj-boton-salida">Fichar salida</button>
+      {% else %}
+        <button type="submit" class="fj-boton fj-boton-entrada">Fichar entrada</button>
+      {% endif %}
+    </form>
+
+    <h2>Fichajes de hoy</h2>
+    <ul class="fj-lista">
+      {% for f in fichajes_hoy %}
+        <li>
+          <span class="fj-tipo fj-tipo-{{ f.tipo }}">{{ f.get_tipo_display }}</span>
+          <span class="fj-hora">{{ f.timestamp|date:"H:i:s" }}</span>
+        </li>
+      {% empty %}
+        <li>No hay fichajes registrados hoy.</li>
+      {% endfor %}
+    </ul>
+
+    <a href="{% url 'fichajes:mis_fichajes' %}" class="fj-link">Ver historial completo</a>
+  </div>
+</div>
+
+<style>
+.fj-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+.fj-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.fj-fecha {
+  color: #555;
+}
+.fj-estado {
+  margin: 0.8rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+}
+.fj-estado-dentro {
+  background: #e0f7e9;
+  color: #146c2e;
+}
+.fj-estado-fuera {
+  background: #ffe9e9;
+  color: #b71c1c;
+}
+.fj-horas {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+.fj-boton {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: none;
+  border-radius: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1.2rem;
+}
+.fj-boton-entrada {
+  background: #2196f3;
+  color: #fff;
+}
+.fj-boton-salida {
+  background: #ff9800;
+  color: #fff;
+}
+.fj-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+.fj-lista li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+}
+.fj-tipo-IN {
+  color: #2196f3;
+}
+.fj-tipo-OUT {
+  color: #ff9800;
+}
+.fj-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+@media (max-width: 600px) {
+  .fj-card {
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+}
+</style>
+
+<script>
+// Intento de obtener geolocalización si el usuario lo permite
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      document.getElementById("id_lat").value = pos.coords.latitude;
+      document.getElementById("id_lng").value = pos.coords.longitude;
+    },
+    function(error) {
+      console.log("Geolocalización no disponible o denegada.", error);
+    },
+    { enableHighAccuracy: true, timeout: 5000 }
+  );
+}
+</script>
+{% endblock %}

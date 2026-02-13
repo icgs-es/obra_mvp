@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Vacaciones y ausencias — Intasa Platform{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+  {# ---- SUBMENÚ AUSENCIAS: LISTADO / CALENDARIO ---- #}
+  <ul class="nav nav-tabs fj-subnav mb-3">
+    <li class="nav-item">
+      <a class="nav-link active"
+         href="{% url 'fichajes:ausencias_list' %}">
+        Listado
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link"
+         href="{% url 'fichajes:calendario_ausencias' %}">
+        Calendario
+      </a>
+    </li>
+  </ul>
+
+  {# ---- TARJETA PRINCIPAL (la que ya tenías antes) ---- #}
+  <div class="card shadow-sm p-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Vacaciones, permisos y ausencias</h1>
+
+        <div class="btn-group">
+          <a href="{% url 'fichajes:ausencia_create' %}" class="btn btn-primary btn-sm">
+            + Nueva ausencia
+          </a>
+          <a href="{% url 'fichajes:informe_ausencias_pdf' %}?{{ request.GET.urlencode }}"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-filetype-pdf me-1"></i> Descargar PDF
+          </a>
+          <a href="{% url 'fichajes:informe_ausencias_csv' %}?{{ request.GET.urlencode }}"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV
+          </a>
+          <a href="{% url 'fichajes:calendario_ausencias' %}"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-calendar3 me-1"></i> Ver Calendario
+          </a>
+        </div>
+      </div>
+
+    {# Filtros #}
+    <form method="get" class="row g-2 mb-3">
+      <div class="col-md-3">
+        <label class="form-label mb-0 small">Estado</label>
+        <select name="estado" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for value,label in estado_choices %}
+            <option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label mb-0 small">Tipo</label>
+        <select name="tipo" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for value,label in tipo_choices %}
+            <option value="{{ value }}" {% if filtros.tipo == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if request.user.is_staff %}
+      <div class="col-md-4">
+        <label class="form-label mb-0 small">Empleado</label>
+        <select name="empleado" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for emp in empleados %}
+            <option value="{{ emp.id }}" {% if filtros.empleado|default:'' == emp.id|stringformat:'s' %}selected{% endif %}>
+              {{ emp.get_full_name|default:emp.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-outline-secondary btn-sm w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i> Filtrar
+        </button>
+      </div>
+    </form>
+
+    {% if ausencias %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Tipo</th>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Horas</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in ausencias %}
+              <tr>
+                <td>{{ a.empleado.get_full_name|default:a.empleado.username }}</td>
+                <td>{{ a.get_tipo_display }}</td>
+                <td>{{ a.fecha_inicio }}</td>
+                <td>{{ a.fecha_fin }}</td>
+                <td>{{ a.horas|default:"-" }}</td>
+                <td>
+                  {% if a.estado == "PENDIENTE" %}
+                    <span class="badge" style="background-color:#ff9800; color:#000;">
+                      {{ a.get_estado_display }}
+                    </span>
+
+                  {% elif a.estado == "APROBADA" %}
+                    <span class="badge" style="background-color:#4caf50;">
+                      {{ a.get_estado_display }}
+                    </span>
+
+                  {% elif a.estado == "RECHAZADA" %}
+                    <span class="badge" style="background-color:#f44336;">
+                      {{ a.get_estado_display }}
+                    </span>
+
+                  {% else %}
+                    <span class="badge bg-secondary">
+                      {{ a.get_estado_display }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-link btn-sm" href="{% url 'fichajes:ausencia_edit' a.pk %}">
+                    Editar
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty-state mb-0">No hay ausencias registradas.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

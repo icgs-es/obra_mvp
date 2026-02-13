@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="fj-container">
+  <div class="fj-card">
+    <h1>Informe de control horario</h1>
+
+    <form method="get" class="fj-filtro-form">
+      <div class="fj-filtros">
+        <div>
+          <label>Desde</label>
+          <input type="date" name="inicio" value="{{ inicio|date:'Y-m-d' }}">
+        </div>
+        <div>
+          <label>Hasta</label>
+          <input type="date" name="fin" value="{{ fin|date:'Y-m-d' }}">
+        </div>
+
+        {% if request.user.is_staff %}
+        <div>
+          <label>Empleado</label>
+          <select name="user_id">
+            <option value="{{ empleado.id }}">{{ empleado.get_full_name|default:empleado.username }}</option>
+            <option disabled>──────────</option>
+            {% for u in empleados %}
+              <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% else %}
+          <input type="hidden" name="user_id" value="{{ empleado.id }}">
+        {% endif %}
+      </div>
+
+      <button type="submit" class="fj-boton fj-boton-entrada">Actualizar</button>
+
+      <a
+        href="{% url 'fichajes:informe_control_horario_csv' %}?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}{% if request.user.is_staff %}&user_id={{ empleado.id }}{% endif %}"
+        class="btn btn-outline-secondary btn-sm ms-2"
+      >
+        Exportar CSV
+      </a>
+    </form>
+
+    <h2>Empleado: {{ empleado.get_full_name|default:empleado.username }}</h2>
+    <p>Periodo: {{ inicio }} – {{ fin }}</p>
+    <p><strong>Total horas: {{ total_horas }} h</strong></p>
+
+    <table class="fj-tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Horas</th>
+          <th>Detalles fichajes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dias %}
+        <tr>
+          <td>{{ d.fecha }}</td>
+          <td>{{ d.horas }}</td>
+          <td>
+            {% if d.fichajes %}
+              {% for f in d.fichajes %}
+                {{ f.get_tipo_display }}: {{ f.timestamp|date:"H:i:s" }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+.fj-container { max-width: 900px; margin: 0 auto; padding: 1rem; }
+.fj-card { background: #fff; border-radius: 1rem; padding: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.fj-filtros { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.fj-filtros label { display:block; font-size: 0.85rem; color:#555; margin-bottom:0.2rem; }
+.fj-filtros input, .fj-filtros select { padding:0.3rem 0.4rem; font-size:0.9rem; }
+.fj-tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 1rem; }
+.fj-tabla th, .fj-tabla td { border-bottom: 1px solid #eee; padding: 0.4rem 0.3rem; text-align:left; }
+.fj-boton { padding: 0.5rem 1rem; border-radius:0.6rem; border:none; cursor:pointer; margin-top:0.4rem; }
+.fj-boton-entrada { background:#2196f3; color:#fff; }
+@media (max-width: 700px) {
+  .fj-filtros { flex-direction: column; }
+}
+</style>
+{% endblock %}

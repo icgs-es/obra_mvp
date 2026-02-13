@@ -1,15 +1,159 @@
 {% extends "base.html" %}
-{% block title %}Evento · INTASA{% endblock %}
+{% block title %}{% if mode == "create" %}Nuevo evento{% else %}Editar evento{% endif %}{% endblock %}
 {% block content %}
-<div class="card">
-  <form method="post">{% csrf_token %}
-    <div class="grid">
-      {{ form.as_p }}
+
+<style>
+  .card{ border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .card-header{ padding:1rem 1.25rem; border-bottom:1px solid #eef2f7; font-weight:700; }
+  .card-body{ padding:1.25rem; }
+
+  .form-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
+  .form-grid-1{ display:grid; grid-template-columns: 1fr; gap:1rem; }
+
+  label{ font-weight:600; margin-bottom:.25rem; }
+  .form-text{ font-size:.85rem; color:#6b7280; }
+
+  input, textarea, select{
+    width:100%;
+    padding:.45rem .55rem;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+  }
+
+  textarea{ min-height:90px; }
+
+  .form-check{
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    margin-top:1.8rem;
+  }
+
+  .actions{
+    display:flex;
+    gap:.75rem;
+    justify-content:flex-end;
+    margin-top:1.5rem;
+  }
+</style>
+
+<div class="container py-3">
+  <div class="card">
+    <div class="card-header">
+      {% if mode == "create" %}Nuevo evento{% else %}Editar evento{% endif %}
     </div>
-    <div class="row" style="margin-top:1rem">
-      <button class="btn" type="submit">Guardar</button>
-      <a class="btn btn-outline" href="/app/agenda/">Cancelar</a>
+
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <!-- TÍTULO -->
+        <div class="form-grid-1">
+          <div>
+            <label for="{{ form.title.id_for_label }}">Título</label>
+            {{ form.title }}
+            {% for e in form.title.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- INICIO / FIN -->
+        <div class="form-grid">
+          <div>
+            <label for="{{ form.start.id_for_label }}">Inicio</label>
+            {{ form.start }}
+            {% for e in form.start.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div>
+            <label for="{{ form.end.id_for_label }}">Fin</label>
+            {{ form.end }}
+            {% for e in form.end.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- TODO EL DÍA / VISIBILIDAD -->
+        <div class="form-grid">
+          <div class="form-check">
+            {{ form.all_day }}
+            <label for="{{ form.all_day.id_for_label }}">Todo el día</label>
+          </div>
+
+          <div>
+            <label for="{{ form.visibility.id_for_label }}">Visibilidad</label>
+            {{ form.visibility }}
+            <div class="form-text">Privada · Departamento · Global</div>
+            {% for e in form.visibility.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- UBICACIÓN / ASISTENTES -->
+        <div class="form-grid">
+          <div>
+            <label for="{{ form.location.id_for_label }}">Ubicación</label>
+            {{ form.location }}
+            {% for e in form.location.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div>
+            <label for="{{ form.who_users.id_for_label }}">Asistentes</label>
+            {{ form.who_users }}
+            <div class="form-text">Mantén Ctrl/Cmd para seleccionar varios</div>
+            {% for e in form.who_users.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- DESCRIPCIÓN -->
+        <div class="form-grid-1">
+          <div>
+            <label for="{{ form.description.id_for_label }}">Notas</label>
+            {{ form.description }}
+            {% for e in form.description.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- RECORDATORIO -->
+        {% if form.reminder_minutes %}
+        <div class="form-grid">
+          <div>
+            <label for="{{ form.reminder_minutes.id_for_label }}">Recordatorio (min)</label>
+            {{ form.reminder_minutes }}
+            <div class="form-text">Minutos antes del inicio (0 = sin recordatorio)</div>
+            {% for e in form.reminder_minutes.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          <div></div>
+        </div>
+        {% endif %}
+
+        <!-- ACCIONES -->
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <a href="{% url 'agenda:home' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </div>
+
+<script>
+  // UX: si es Todo el día y no hay FIN, copia INICIO
+  const chk = document.getElementById('{{ form.all_day.id_for_label }}');
+  const fin = document.getElementById('{{ form.end.id_for_label }}');
+  const ini = document.getElementById('{{ form.start.id_for_label }}');
+
+  if(chk && fin && ini){
+    chk.addEventListener('change', () => {
+      if(chk.checked && !fin.value && ini.value){
+        fin.value = ini.value;
+      }
+    });
+  }
+</script>
+
 {% endblock %}
+

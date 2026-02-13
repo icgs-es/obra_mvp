@@ -1,21 +1,21 @@
 from django.urls import path
 from . import views
-from .views import AgendaView, EventoCreateView, EventoUpdateView
 
 app_name = "agenda"
 
 urlpatterns = [
-    path("", AgendaView.as_view(), name="home"),
-    path("nuevo/", EventoCreateView.as_view(), name="create"),
-    path("<int:pk>/editar/", EventoUpdateView.as_view(), name="update"),
+    # UI
+    path("", views.calendar_view, name="home"),
+    path("nuevo/", views.create_view, name="create"),
+    path("<int:pk>/editar/", views.update_view, name="edit"),
 
-    # Calendario principal
-    path("", views.calendar_view, name="list"),
-
-    # API para FullCalendar
+    # API FullCalendar
     path("api/calendars/", views.api_calendars, name="api_calendars"),
     path("api/events/", views.api_events, name="api_events"),
+    path("api/events/<int:pk>/", views.api_event_detail, name="api_event_detail"),
 
-    path("nuevo/", views.EventoCreateView.as_view(), name="create"),
-    path("<int:pk>/editar/", views.EventoUpdateView.as_view(), name="update"),
+    # Import / Export
+    path("importar/", views.import_view, name="import"),
+    path("exportar/", views.export_view, name="export"),
+    path("feed/<str:token>.ics", views.ics_feed, name="ics_feed"),
 ]

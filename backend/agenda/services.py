@@ -1,10 +1,12 @@
+# backend/agenda/services.py
+from __future__ import annotations
+
 from django.db import models
-from django.contrib.auth.models import Group
-from django.utils import timezone
 
 ADMIN_GROUPS = {"Administrador", "Gerencia"}
 
-def user_is_admin_like(user):
+
+def user_is_admin_like(user) -> bool:
     if not user.is_authenticated:
         return False
     if user.is_superuser:
@@ -12,56 +14,54 @@ def user_is_admin_like(user):
     names = set(user.groups.values_list("name", flat=True))
     return bool(ADMIN_GROUPS & names)
 
-def _creator_id_safe(obj):
-    try:
-        return obj.id
-    except Exception:
-        return None
 
-def user_can_see_event(user, evento):
+def user_can_see_event(user, ev) -> bool:
     """
-    Reglas de visibilidad:
+    Reglas de visibilidad (alineadas con models.Event):
     - Admin/Gerencia/superuser: todo.
-    - visibilidad == global: todos.
-    - visibilidad == privada: creador (si hay created_by) o invitado (asistentes).
-    - visibilidad == depto: si comparte 'departamento' (si existe FK),
-      o si está invitado como asistente (fallback).
+    - visibility == GLOBAL: todos.
+    - visibility == PRIVADA: created_by o invitado (who_users).
+    - visibility == DEPARTAMENTO: (si hay calendar.departamento) o invitado (fallback).
     """
     if user_is_admin_like(user):
         return True
 
-    vis = (evento.visibilidad or "privada").lower()
+    vis = (getattr(ev, "visibility", None) or "PRIVADA").upper()
 
-    if vis == "global":
+    if vis == "GLOBAL":
         return True
 
-    # privada
-    if vis == "privada":
-        creator = getattr(evento, "created_by", None)
-        if creator and _creator_id_safe(creator) == user.id:
+    # PRIVADA
+    if vis == "PRIVADA":
+        creator = getattr(ev, "created_by", None)
+        if creator and getattr(creator, "id", None) == user.id:
             return True
-        return evento.asistentes.filter(id=user.id).exists()
+        return ev.who_users.filter(id=user.id).exists()
 
-    # depto: intenta con FK departamento (opcional)
-    if vis == "depto":
-        dep = getattr(evento, "departamento", None)  # si no existe, es None
+    # DEPARTAMENTO
+    if vis == "DEPARTAMENTO":
+        cal = getattr(ev, "calendar", None)
+        dep = getattr(cal, "departamento", None) if cal else None
         if dep is not None:
-            # El modelo Team/Departamento debería tener members/leads
+            # Si tu modelo de departamento/equipo tiene members/leads, lo aprovechamos.
             try:
                 if user in dep.members.all() or user in dep.leads.all():
                     return True
             except Exception:
                 pass
         # Fallback: si está invitado, también ve
-        return evento.asistentes.filter(id=user.id).exists()
+        return ev.who_users.filter(id=user.id).exists()
 
     return False
 
+
 def events_between_for_user(user, start, end, base_qs):
     """
-    Ventana [start, end) y filtro por user_can_see_event.
+    Ventana [start, end) + filtro por reglas de user_can_see_event.
+    Compatible con FullCalendar.
     """
-    qs = base_qs.filter(inicio__lt=end).filter(
-        models.Q(fin__gte=start) | models.Q(fin__isnull=True)
+    qs = base_qs.filter(start__lt=end).filter(
+        models.Q(end__gte=start) | models.Q(end__isnull=True)
     )
-    return [e for e in qs.select_related() if user_can_see_event(user, e)]
+    return [e for e in qs.select_related("calendar", "created_by") if user_can_see_event(user, e)]
+

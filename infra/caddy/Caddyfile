@@ -1,12 +1,18 @@
-# ─────────────────────────────────────────────────────────────
-# FinanInvest Group - Caddyfile (prod)
-# Sirve /static y /media desde Caddy; TODO lo demás → Django
-# ─────────────────────────────────────────────────────────────
+{
+    auto_https off
+}
 
-finaninvestgroup.com {
+portal.finaninvestgroup.com:80 {
+    encode gzip
+    reverse_proxy nextcloud:80 {
+        header_up X-Forwarded-Proto https
+        header_up Host {host}
+    }
+}
+
+finaninvestgroup.com:80 {
     encode gzip
 
-    # --- estáticos ---
     handle_path /static/* {
         root * /srv/static
         file_server
@@ -17,31 +23,26 @@ finaninvestgroup.com {
         file_server
     }
 
-    # --- preview protegido (mantén tu hash real) ---
-    # basic_auth /preview/* {
-    #     icgs $2a$14$........TU_HASH........
-    # }
-    handle_path /preview/* {
-        reverse_proxy web-preview:8001
-    }
-
-    # --- n8n (si lo tienes levantado) ---
-    handle_path /n8n/* {
-        reverse_proxy n8n:5678
-    }
-
-    # --- CATCH-ALL → Django ---
-    # IMPORTANTÍSIMO: sin file_server por defecto; 
-    # cualquier ruta no capturada arriba (incluida "/") va a Django.
     handle {
-        reverse_proxy web:8000
+        reverse_proxy web:8000 {
+            header_up X-Forwarded-Proto https
+            header_up Host {host}
+        }
     }
-
-    # Sirve /manual/* desde /srv/site (que es /opt/www en el host)
-    #handle /manual* {
-    #    root * /srv/site
-    #    file_server
-    #}
 }
 
+competa.finaninvestgroup.com:80 {
+    encode gzip
+    reverse_proxy http://172.17.0.1:8010 {
+        header_up X-Forwarded-Proto https
+        header_up Host {host}
+    }
+}
 
+farmasani.finaninvestgroup.com:80 {
+    encode gzip
+    reverse_proxy farmasani_dolibarr:80 {
+        header_up X-Forwarded-Proto https
+        header_up Host {host}
+    }
+}

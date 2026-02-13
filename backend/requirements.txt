@@ -6,3 +6,4 @@ djangorestframework==3.15.2
 django-cors-headers==4.4.0
 celery==5.3.*
 redis==5.*
+xhtml2pdf>=0.2.15

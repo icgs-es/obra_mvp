@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Archivos — Carpetas principales{% endblock %}
+
+{% block content %}
+<div class="container my-3">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1 class="h5 mb-0">Archivos — Carpetas principales</h1>
+          <p class="text-muted small mb-0">
+            Selecciona una carpeta para ver su contenido o crear subcarpetas.
+          </p>
+        </div>
+
+        {# Solo staff / superuser pueden crear carpetas raíz #}
+        {% if request.user.is_superuser or request.user.is_staff %}
+          <a href="{% url 'archivos:carpeta_raiz_create' %}" class="btn btn-sm btn-primary">
+            + Nueva carpeta principal
+          </a>
+        {% endif %}
+      </div>
+
+      {% if carpetas %}
+        <ul class="list-group list-group-flush">
+          {% for carpeta in carpetas %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <a href="{% url 'archivos:explorador_carpeta' carpeta.pk %}">
+                  {{ carpeta.nombre }}
+                </a>
+                <div class="small text-muted">
+                  Visibilidad: {{ carpeta.get_visibilidad_display }}
+                  {% if carpeta.departamento %}
+                    · Depto: {{ carpeta.departamento }}
+                  {% endif %}
+                </div>
+              </div>
+              <div class="btn-group btn-group-sm" role="group">
+                {# Permiso simple: superuser, staff o owner de la carpeta #}
+                {% if request.user.is_superuser or request.user.is_staff or carpeta.owner == request.user %}
+                  <a href="{% url 'archivos:carpeta_renombrar' carpeta.pk %}"
+                     class="btn btn-outline-secondary">
+                    Renombrar
+                  </a>
+                  <a href="{% url 'archivos:carpeta_eliminar' carpeta.pk %}"
+                     class="btn btn-outline-danger">
+                    Eliminar
+                  </a>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted mb-0">Todavía no hay carpetas configuradas.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

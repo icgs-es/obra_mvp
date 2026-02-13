@@ -1,7 +1,8 @@
 from celery import shared_task
 from django.utils import timezone
 from django.core.mail import send_mail
-from .models import Evento
+from .models import Task
+
 
 @shared_task
 def enviar_recordatorios_eventos():

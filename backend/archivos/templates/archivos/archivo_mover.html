@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Mover archivo — {{ archivo.nombre_original }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h5 mb-3">Mover archivo</h1>
+
+          <p class="small text-muted mb-2">
+            Archivo: <strong>{{ archivo.nombre_original }}</strong><br>
+            Carpeta origen: <strong>{{ carpeta_origen.get_ruta_display }}</strong>
+          </p>
+
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+            <div class="mb-3">
+              <label class="form-label">Carpeta destino</label>
+              <select name="carpeta_destino" class="form-select" required>
+                <option value="">— Selecciona una carpeta —</option>
+                {% for c in carpetas_destino %}
+                  <option value="{{ c.pk }}">{{ c.get_ruta_display }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">
+                Solo aparecen carpetas donde tienes permiso para mover.
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                Cancelar
+              </a>
+              <button type="submit" class="btn btn-primary">
+                Mover
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

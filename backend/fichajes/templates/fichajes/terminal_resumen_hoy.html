@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Resumen terminal hoy — Intasa{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="card shadow-sm p-4">
+    <h1 class="h4 mb-3">Resumen fichajes en terminal ({{ hoy }})</h1>
+
+    {% if filas %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Estado</th>
+              <th>Horas hoy</th>
+              <th>Último fichaje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in filas %}
+              <tr>
+                <td>{{ f.usuario.get_full_name|default:f.usuario.username }}</td>
+                <td>
+                  {% if f.estado == "dentro" %}
+                    <span class="badge bg-success">Dentro</span>
+                  {% elif f.estado == "pausa" %}
+                    <span class="badge bg-warning text-dark">En pausa</span>
+                  {% elif f.estado == "permiso" %}
+                    <span class="badge bg-info text-dark">Permiso corto</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Fuera</span>
+                  {% endif %}
+                </td>
+                <td>{{ f.horas_hoy }} h</td>
+                <td>
+                  {% if f.ultimo %}
+                    {{ f.ultimo.timestamp|date:"H:i:s" }} · {{ f.ultimo.get_tipo_display }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted mb-0">Hoy aún nadie ha fichado en la terminal.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
