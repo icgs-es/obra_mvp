@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     "usuarios",
     "fichajes",
     "archivos",
+    "crm",
+    "activos",
 ]
 
 MIDDLEWARE = [
@@ -80,5 +82,16 @@ TIME_ZONE = "Europe/Madrid"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ============================================================
+# Configuración Agenda
+# ============================================================
+# Asignación opcional de colores por usuario en la Agenda (ids -> color hex)
+# Ejemplo:
+# AGENDA_USER_COLORS = {
+#     1: "#2563eb",  # usuario 1 -> azul
+#     2: "#16a34a",  # usuario 2 -> verde
+# }
+AGENDA_USER_COLORS = {}
