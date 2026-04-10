@@ -5,25 +5,6 @@ from pathlib import Path
 from .base import *
 
 # -------------------------
-# Configuración de TEMPLATES (AÑADIR ESTO)
-# -------------------------
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # ← CRÍTICO: Ruta a tu carpeta templates
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-# -------------------------
 # Núcleo producción
 # -------------------------
 
@@ -44,11 +25,18 @@ ALLOWED_HOSTS = [
 # Estás detrás de Caddy/SSL → respeta cabecera X-Forwarded-Proto
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Fuerza HTTPS a Django (si tu proxy ya termina TLS, esto va bien)
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Fuerza HTTPS y cookies seguras según entorno (controlado por FORCE_SSL)
+FORCE_SSL = os.getenv("FORCE_SSL", "1") == "1"
+SECURE_SSL_REDIRECT = FORCE_SSL
+SESSION_COOKIE_SECURE = FORCE_SSL
+CSRF_COOKIE_SECURE = FORCE_SSL
 SESSION_COOKIE_HTTPONLY = True
+
+# HSTS solo si forzamos SSL real (producción con HTTPS)
+if FORCE_SSL:
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # CSRF Trusted Origins (http y https para cada host listado)
 CSRF_TRUSTED_ORIGINS = [

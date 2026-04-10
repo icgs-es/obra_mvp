@@ -55,12 +55,32 @@
             <li class="nav-item">
               <a class="nav-link" href="/app/agenda/">Agenda</a>
             </li>
+            {% if request.user.is_authenticated %}
+              {% if request.user.teams.all or request.user.teams_led.all %}
+                <li class="nav-item">
+                  <a class="nav-link {% if request.path|slice:':5' == '/crm/' %}active{% endif %}" href="/crm/leads/">
+                    <i class="bi bi-people me-1"></i> CRM
+                  </a>
+                </li>
+              {% endif %}
+            {% endif %}
+            <!-- {% if request.user.is_authenticated and request.user.teams_led.all %}
+
+            {% endif %} -->
+            
+            <li class="nav-item">
+              <a class="nav-link {% if request.path|slice:':9' == '/activos/' %}active{% endif %}"
+                href="{% url 'activos:list' %}">
+                <i class="bi bi-box-seam me-1"></i> Activos
+              </a>
+            </li>
             
             <li class="nav-item">
               <a class="nav-link" href="{% url 'archivos:explorador_raiz' %}">
                 Archivos
               </a>
             </li>
+
             {# Ausencias: dropdown único #}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle"
@@ -90,8 +110,42 @@
             </li>
           </ul>
           <div class="d-flex align-items-center gap-3">
+            {% if request.user.is_authenticated and request.user.teams.all|length > 1 %}
+              <div class="dropdown">
+                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="activeTeamDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  {% if request.session.active_team_id == "all" %}
+                    Todas
+                  {% elif request.session.active_team_id %}
+                    {% for team in request.user.teams.all %}
+                      {% if team.id|stringformat:'s' == request.session.active_team_id|stringformat:'s' %}
+                        {{ team.name }}
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                    {{ request.user.teams.all.0.name }}
+                  {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="activeTeamDropdown">
+                  <li>
+                    <a class="dropdown-item {% if request.session.active_team_id == "all" %}active{% endif %}"
+                       href="{% url 'crm:set_active_team' 0 %}">
+                      Todas mis empresas
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  {% for team in request.user.teams.all %}
+                    <li>
+                      <a class="dropdown-item {% if request.session.active_team_id|stringformat:'s' == team.id|stringformat:'s' %}active{% endif %}"
+                         href="{% url 'crm:set_active_team' team.id %}">
+                        {{ team.name }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
             {% if request.user.is_authenticated %}
-              <span class="text-secondary small">Hola, <strong>{{ request.user.username }}</strong></span>
+              <span class="text-secondary small">Hola, <strong>{{ request.user.first_name|default:request.user.username }}</strong></span>
               <form method="post" action="{% url 'logout' %}" class="m-0">{% csrf_token %}
                 <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Salir</button>
               </form>

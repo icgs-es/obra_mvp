@@ -28,4 +28,7 @@ urlpatterns = [
     
     path("carpeta/<int:pk>/subir-carpeta/", views.subir_carpeta, name="subir_carpeta"),
     path("carpeta/<int:pk>/eliminar-masivo/", views.eliminar_archivos_masivo, name="eliminar_archivos_masivo"),
+    
+    path("archivo/<int:pk>/descargar/", views.archivo_descargar, name="archivo_descargar"),
+
 ]

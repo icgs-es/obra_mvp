@@ -15,6 +15,14 @@
   <a href="#" hx-get="{% url 'tab_obras' %}" hx-target="#tabcontent">Limpiar</a>
 </form>
 
+{% if q %}
+  <div class="span-12" style="margin:.25rem 0 .5rem 0; font-size:.9rem;">
+    <strong>Filtro activo:</strong>
+    <span style="border:1px solid #ddd; border-radius:999px; padding:.1rem .5rem;">Búsqueda: “{{ q }}”</span>
+    <a href="#" hx-get="{% url 'tab_obras' %}" hx-target="#tabcontent" style="margin-left:.5rem;">Quitar</a>
+  </div>
+{% endif %}
+
 <div class="table-scroll">
   <table role="grid">
     <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th class="actions">Acciones</th></tr></thead>

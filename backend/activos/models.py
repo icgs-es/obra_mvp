@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -120,6 +121,15 @@ class ActivoCore(models.Model):
         help_text='Ej: "Pendiente de Cargas"',
     )
 
+    gestor_actual = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="activos_core_asignados",
+        help_text="Usuario actual responsable del activo",
+    )
+
     gestor_principal = models.CharField(
         max_length=255,
         blank=True,
@@ -238,6 +248,35 @@ class ActivoCore(models.Model):
         auto_now=True,
     )
 
+    # --- Integración SeaTable ---
+    seatable_row_id = models.CharField(
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="ID de fila origen en SeaTable"
+    )
+
+    origen_sync = models.CharField(
+        max_length=32,
+        blank=True,
+        default="",
+        help_text="Origen de sincronización externa (ej: seatable)"
+    )
+
+    sync_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Hash para detectar cambios"
+    )
+
+    last_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Última sincronización desde origen externo"
+    )
     class Meta:
         db_table = "activos_core_activo"
         verbose_name = "Activo CORE"

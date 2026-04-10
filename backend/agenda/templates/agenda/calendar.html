@@ -53,6 +53,23 @@
     font-size: 1.25rem;
     font-weight: 700;
   }
+
+  /* Colores por tipo de visibilidad */
+  #calendar .fc-event.ev-private {
+    background-color:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+  }
+  #calendar .fc-event.ev-depto {
+    background-color:#16a34a;
+    border-color:#16a34a;
+    color:#fff;
+  }
+  #calendar .fc-event.ev-global {
+    background-color:#f97316;
+    border-color:#f97316;
+    color:#fff;
+  }
 </style>
 
 <div class="card">
@@ -198,8 +215,30 @@ console.log("AGENDA: script cargado");
       center: "title",
       right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
     },
+    buttonText: {
+      today: "Hoy",
+      month: "Mes",
+      week: "Semana",
+      day: "Día",
+      list: "Lista",
+    },
+    allDayText: "Todo el día",
+    moreLinkText: "más",
+    noEventsText: "No hay eventos para mostrar",
     selectable: true,
     selectMirror: true,
+    // Evitar que los eventos se "pisen" visualmente y limitar el apilado
+    slotEventOverlap: false,
+    eventMaxStack: 4,
+    dayMaxEvents: true,
+    dayMaxEventRows: true,
+    eventClassNames: function(info){
+      const vis = (info.event.extendedProps.visibility || "").toUpperCase();
+      if (vis === "PRIVADA") return ["ev-private"];
+      if (vis === "DEPARTAMENTO") return ["ev-depto"];
+      if (vis === "GLOBAL") return ["ev-global"];
+      return [];
+    },
 
     dateClick: function(info){
       const start = info.date;
@@ -209,11 +248,38 @@ console.log("AGENDA: script cargado");
     select: function(info){
       openQuickModal({ start: info.start, end: info.end, allDay: info.allDay === true });
     },
+    eventClick: function(info){
+      // Navegar a la página de edición real del evento
+      const editUrl = info.event.extendedProps?.edit_url;
+      if (editUrl) {
+        window.location.href = editUrl;
+      } else {
+        console.warn("Evento sin edit_url en extendedProps", info.event);
+      }
+    },
 
     events: function(fetchInfo, successCallback, failureCallback){
-      fetch("{% url 'agenda:api_events' %}?start="+fetchInfo.startStr+"&end="+fetchInfo.endStr,
-        {credentials:"same-origin"}
-      )
+      // Diagnóstico: ver qué pide FullCalendar
+      const layers = [];
+      if (document.getElementById("f-mis")?.checked) layers.push("mis");
+      if (document.getElementById("f-depto")?.checked) layers.push("depto");
+      if (document.getElementById("f-global")?.checked) layers.push("global");
+
+      const baseUrl = "{% url 'agenda:api_events' %}";
+      const params = new URLSearchParams();
+      params.set("start", fetchInfo.startStr);
+      params.set("end", fetchInfo.endStr);
+      layers.forEach(l => params.append("calendar", l));
+      const finalUrl = baseUrl + "?" + params.toString();
+
+      console.log("FC events fetch:", {
+        startStr: fetchInfo.startStr,
+        endStr: fetchInfo.endStr,
+        layers,
+        url: finalUrl,
+      });
+
+      fetch(finalUrl, {credentials:"same-origin"})
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(successCallback)
       .catch(failureCallback);

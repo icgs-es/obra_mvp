@@ -14,12 +14,14 @@
             Carpeta: <strong>{{ carpeta.get_ruta_display }}</strong>
           </p>
 
-          <form method="post">
+          <form method="post" novalidate>
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.GET.next }}">
+
             <div class="mb-3">
-              <label class="form-label">Nombre del archivo</label>
+              <label class="form-label" for="id_nombre_original">Nombre del archivo</label>
               <input type="text"
+                     id="id_nombre_original"
                      name="nombre_original"
                      value="{{ archivo.nombre_original }}"
                      class="form-control">

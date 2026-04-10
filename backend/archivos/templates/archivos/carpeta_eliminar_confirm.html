@@ -16,35 +16,37 @@
           </p>
 
           {% if tiene_subcarpetas or tiene_archivos %}
-            <div class="alert alert-warning">
-              Esta carpeta tiene
+            <div class="alert alert-danger">
+              Atención: esta carpeta tiene
               {% if tiene_subcarpetas %} subcarpetas{% endif %}
               {% if tiene_subcarpetas and tiene_archivos %} y{% endif %}
               {% if tiene_archivos %} archivos{% endif %}.
-              No se puede eliminar mientras no esté vacía.
+              <br>
+              Si continúas, se eliminarán <strong>la carpeta y todo su contenido</strong>
+              de forma permanente. Esta acción no se puede deshacer.
             </div>
           {% else %}
             <div class="alert alert-danger">
-              Esta acción no se puede deshacer. ¿Seguro que deseas eliminarla?
+              Esta acción no se puede deshacer. ¿Seguro que deseas eliminar la carpeta?
             </div>
-
-            <form method="post" class="d-flex justify-content-between">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
-              {% if carpeta.parent %}
-              <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
-              {% else %}
-                <a href="{% url 'archivos:explorador_raiz' %}"
-                   class="btn btn-outline-secondary">
-                  Cancelar
-                </a>
-              {% endif %}
-
-              <button type="submit" class="btn btn-danger">
-                Sí, eliminar carpeta
-              </button>
-            </form>
           {% endif %}
+
+          <form method="post" class="d-flex justify-content-between mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+            {% if carpeta.parent %}
+              <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
+            {% else %}
+              <a href="{% url 'archivos:explorador_raiz' %}"
+                 class="btn btn-outline-secondary">
+                Cancelar
+              </a>
+            {% endif %}
+
+            <button type="submit" class="btn btn-danger">
+              Sí, eliminar carpeta
+            </button>
+          </form>
         </div>
       </div>
     </div>

@@ -20,10 +20,41 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timezone import is_aware, make_aware
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
+from django.urls import reverse
+from django.conf import settings
 
 from .forms import EventoForm
 from .models import Event
+from usuarios.models import Team
 from .services import events_between_for_user
+
+
+# ============================================================
+# Colores de usuario para eventos (ids -> color hex)
+# ============================================================
+
+def _get_user_color(user):
+    """Devuelve el color hex configurado para un usuario (ids -> color hex).
+
+    Orden de prioridad:
+    1) Perfil de usuario (UserProfile.color), si existe.
+    2) settings.AGENDA_USER_COLORS = {user_id: "#RRGGBB", ...}.
+    """
+    if not user or not getattr(user, "id", None):
+        return None
+
+    # 1) Intentar leer desde perfil de usuario, si existe
+    try:
+        from usuarios.models import UserProfile
+        profile = UserProfile.objects.get(user_id=user.id)
+        if profile.color:
+            return profile.color
+    except Exception:
+        pass
+
+    # 2) Fallback a mapping estático en settings (ids -> #hex)
+    mapping = getattr(settings, "AGENDA_USER_COLORS", {}) or {}
+    return mapping.get(user.id)
 
 
 # ============================================================
@@ -113,6 +144,29 @@ def _layer_to_visibility_values(layers: list[str]) -> list[str]:
 
 
 # ============================================================
+# Helper Team activo (empresa obligatoria al crear eventos)
+# ============================================================
+
+def _get_active_team(request):
+    """Devuelve el Team activo del usuario o None si no tiene ninguno.
+
+    Regla:
+    - Si request.session['active_team_id'] existe y pertenece a request.user.teams -> usarlo.
+    - Si no, usar request.user.teams.first().
+    - Si el usuario no tiene teams -> None.
+    """
+    teams = request.user.teams.all()
+    if not teams.exists():
+        return None
+    active_team_id = request.session.get("active_team_id")
+    if active_team_id:
+        team = teams.filter(id=active_team_id).first()
+        if team:
+            return team
+    return teams.first()
+
+
+# ============================================================
 # Pantallas
 # ============================================================
 @login_required
@@ -165,28 +219,45 @@ def api_events(request):
     # POST (crear)
     # -------------------------
     if request.method == "POST":
-        logger.error("API_EVENTS POST LLEGÓ")
         try:
             data = json.loads(request.body.decode("utf-8"))
+            print("api_events POST payload =", data)
         except Exception:
-            return HttpResponseBadRequest("JSON inválido")
+            logger.warning("api_events 400: JSON inválido body=%s", request.body)
+            print("api_events 400: JSON inválido", request.body)
+            return HttpResponseBadRequest(f"JSON inválido. body={request.body!r}")
+
+        logger.warning("api_events POST payload=%s", data)
+        keys = sorted(list(data.keys()))
 
         title = (data.get("title") or "").strip()
-        start = data.get("start")
-        end = data.get("end")
+        start = data.get("start") or data.get("startStr")
+        end = data.get("end") or data.get("endStr")
         all_day = data.get("allDay")
-        ubicacion = (data.get("ubicacion") or "").strip()
-        vis = (data.get("visibilidad") or "privada").strip().lower()
+        location = (data.get("location") or data.get("ubicacion") or "").strip()
+        vis_ui = (data.get("visibility") or data.get("visibilidad") or "privada").strip().lower()
 
         if not title:
-            return HttpResponseBadRequest("Falta title")
+            logger.warning("api_events 400: Falta title payload=%s", data)
+            print("api_events 400: Falta title", data)
+            return HttpResponseBadRequest(f"Falta title. keys={keys}")
         if not start:
-            return HttpResponseBadRequest("Falta start")
+            logger.warning("api_events 400: Falta start payload=%s", data)
+            print("api_events 400: Falta start", data)
+            return HttpResponseBadRequest(
+                f"Falta start. keys={keys} start={data.get('start')} startStr={data.get('startStr')} "
+                f"end={data.get('end')} endStr={data.get('endStr')}"
+            )
 
         start_dt = _parse_to_aware(start)
         end_dt = _parse_to_aware(end) if end else None
         if not start_dt:
-            return HttpResponseBadRequest("start inválido")
+            logger.warning("api_events 400: start inválido start=%s payload=%s", start, data)
+            print("api_events 400: start inválido", start, data)
+            return HttpResponseBadRequest(
+                f"start inválido. keys={keys} start={start} startStr={data.get('startStr')} "
+                f"end={end} endStr={data.get('endStr')}"
+            )
 
         all_day_bool = bool(all_day)
 
@@ -194,37 +265,55 @@ def api_events(request):
             end_dt = start_dt
 
         if end_dt and end_dt < start_dt:
-            return HttpResponseBadRequest("fin < inicio")
+            logger.warning("api_events 400: fin < inicio start=%s end=%s payload=%s", start, end, data)
+            print("api_events 400: fin < inicio", start_dt, end_dt, data)
+            return HttpResponseBadRequest(
+                f"fin < inicio. keys={keys} start={start} startStr={data.get('startStr')} "
+                f"end={end} endStr={data.get('endStr')}"
+            )
 
-        if vis not in ("privada", "depto", "global"):
-            vis = "privada"
+        if vis_ui not in ("privada", "depto", "global"):
+            vis_ui = "privada"
+        # Map UI -> modelo
+        vis_map = {
+            "privada": "PRIVADA",
+            "depto": "DEPARTAMENTO",
+            "global": "GLOBAL",
+        }
+        visibility = vis_map.get(vis_ui, "PRIVADA")
 
-        # 👉 OJO: usa el modelo correcto (en tu archivo aparece Event)
-        ev = Event.objects.create(
-            titulo=title,
-            inicio=start_dt,
-            fin=end_dt,
+        create_kwargs = dict(
+            title=title,
+            start=start_dt,
+            end=end_dt,
             all_day=all_day_bool,
-            visibilidad=vis,
-            ubicacion=ubicacion,
-            notas="",
+            visibility=visibility,
+            location=location,
+            description="",
+            created_by=request.user,
         )
 
-        # opcional: si tienes asistentes M2M y quieres auto-asignar al creador
-        try:
-            ev.asistentes.add(request.user)
-        except Exception:
-            pass
+        # Asignar empresa (team) obligatoria si el modelo tiene ese campo
+        if hasattr(Event, "team"):
+            team = _get_active_team(request)
+            if team is None:
+                msg = "No tienes ninguna empresa asignada; no se puede crear el evento."
+                logger.warning("api_events 400: %s user=%s payload=%s", msg, request.user, data)
+                print("api_events 400: sin team activo", data)
+                return HttpResponseBadRequest(msg)
+            create_kwargs["team"] = team
+
+        ev = Event.objects.create(**create_kwargs)
 
         return JsonResponse({
             "id": ev.id,
-            "title": ev.titulo,
-            "start": ev.inicio.isoformat(),
-            "end": (ev.fin or ev.inicio).isoformat(),
+            "title": ev.title,
+            "start": ev.start.isoformat(),
+            "end": (ev.end or ev.start).isoformat(),
             "allDay": bool(ev.all_day),
             "extendedProps": {
-                "ubicacion": ev.ubicacion,
-                "visibilidad": ev.visibilidad,
+                "location": ev.location,
+                "visibility": ev.visibility,
             }
         }, status=201)
 
@@ -246,30 +335,27 @@ def api_events(request):
     base = Event.objects.all()
 
     if layers:
-        vis_list = []
-        if "global" in layers:
-            vis_list.append("global")
-        if "depto" in layers:
-            vis_list.append("depto")
-        if "mis" in layers:
-            vis_list.append("privada")
+        vis_list = _layer_to_visibility_values(layers)
         if vis_list:
-            base = base.filter(visibilidad__in=vis_list)
+            base = base.filter(visibility__in=vis_list)
 
     filtered = events_between_for_user(request.user, start_dt, end_dt, base)
 
     data_out = []
     for e in filtered:
-        end_val = e.fin or e.inicio
+        end_val = e.end or e.start
         data_out.append({
             "id": e.id,
-            "title": e.titulo,
-            "start": e.inicio.isoformat(),
+            "title": e.title,
+            "start": e.start.isoformat(),
             "end": end_val.isoformat(),
             "allDay": bool(e.all_day),
             "extendedProps": {
-                "ubicacion": e.ubicacion,
-                "visibilidad": e.visibilidad,
+                "location": e.location,
+                "visibility": e.visibility,
+                "edit_url": reverse("agenda:edit", args=[e.id]),
+                "created_by_id": e.created_by_id,
+                "user_color": _get_user_color(getattr(e, "created_by", None)),
             }
         })
     return JsonResponse(data_out, safe=False)
@@ -327,12 +413,19 @@ def create_view(request):
             if getattr(ev, "all_day", False) and not getattr(ev, "end", None):
                 ev.end = ev.start
             ev.created_by = request.user
-            ev.save()
-            form.save_m2m()
-            _save_extra_fields_into_description(ev, form, request)
 
-            messages.success(request, "Evento creado.")
-            return redirect("agenda:home")
+            # Asignar siempre un Team activo; si no hay, error de validación y no guardar
+            team = _get_active_team(request)
+            if team is None:
+                form.add_error(None, "No tienes ninguna empresa asignada; no se puede crear el evento.")
+            else:
+                ev.team = team
+                ev.save()
+                form.save_m2m()
+                _save_extra_fields_into_description(ev, form, request)
+
+                messages.success(request, "Evento creado.")
+                return redirect("agenda:home")
     else:
         initial = {}
         start_qs = request.GET.get("start")

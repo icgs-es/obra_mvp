@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Carpeta, Archivo
+from .models import Carpeta, Archivo, ArchivoLog
 
 
 @admin.register(Carpeta)
@@ -17,3 +17,12 @@ class ArchivoAdmin(admin.ModelAdmin):
     search_fields = ("nombre_original", "carpeta__nombre", "subido_por__username")
     autocomplete_fields = ("carpeta", "subido_por")
     readonly_fields = ("tamano_bytes", "created_at")
+
+
+@admin.register(ArchivoLog)
+class ArchivoLogAdmin(admin.ModelAdmin):
+    list_display = ("archivo", "accion", "usuario", "fecha")
+    list_filter = ("accion", "usuario")
+    search_fields = ("archivo__nombre_original", "usuario__username")
+    autocomplete_fields = ("archivo", "usuario")
+    readonly_fields = ("fecha",)

@@ -23,6 +23,18 @@
   <a href="#" hx-get="{% url 'tab_subobras' %}" hx-target="#tabcontent">Limpiar</a>
 </form>
 
+{% if obra_id %}
+  <div class="span-12" style="margin:.25rem 0 .5rem 0; font-size:.9rem;">
+    <strong>Filtro activo:</strong>
+    {% for o in obras %}
+      {% if obra_id == o.id %}
+        <span style="border:1px solid #ddd; border-radius:999px; padding:.1rem .5rem;">Obra: {{ o }}</span>
+      {% endif %}
+    {% endfor %}
+    <a href="#" hx-get="{% url 'tab_subobras' %}" hx-target="#tabcontent" style="margin-left:.5rem;">Quitar</a>
+  </div>
+{% endif %}
+
 <div class="table-scroll">
   <table role="grid">
     <thead><tr><th>ID</th><th>Obra</th><th>Código</th><th>Nombre</th><th class="actions">Acciones</th></tr></thead>

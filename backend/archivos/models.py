@@ -169,9 +169,10 @@ class Carpeta(models.Model):
         return False
 
 class Archivo(models.Model):
-    """
-    Archivo almacenado en el sistema. Se guarda físicamente en MEDIA_ROOT
-    y se relaciona lógicamente con una Carpeta.
+    """Archivo almacenado en el sistema.
+
+    Se guarda físicamente en MEDIA_ROOT y se relaciona lógicamente con una
+    Carpeta. Puede tener múltiples versiones lógicas (nombre_logico + version).
     """
     carpeta = models.ForeignKey(
         Carpeta,
@@ -193,10 +194,14 @@ class Archivo(models.Model):
     tamano_bytes = models.BigIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    nombre_logico = models.CharField(max_length=255, null=True, blank=True)
+    version = models.PositiveIntegerField(default=1)
+
     class Meta:
         verbose_name = "archivo"
         verbose_name_plural = "archivos"
         ordering = ["-created_at"]
+        unique_together = ("carpeta", "nombre_logico", "version")
 
     def __str__(self):
         return self.nombre_original
@@ -238,3 +243,43 @@ class Archivo(models.Model):
     @property
     def es_pdf(self):
         return self.mimetype == "application/pdf"
+
+
+class ArchivoLog(models.Model):
+    """Registro de acciones realizadas sobre un archivo.
+
+    Permite auditar quién ha subido, renombrado, movido, eliminado o descargado
+    un fichero y cuándo lo hizo.
+    """
+
+    ACCION_CHOICES = [
+        ("SUBIR", "Subida"),
+        ("RENOMBRAR", "Renombrar"),
+        ("MOVER", "Mover"),
+        ("ELIMINAR", "Eliminar"),
+        ("DESCARGAR", "Descargar"),
+    ]
+
+    archivo = models.ForeignKey(
+        Archivo,
+        on_delete=models.CASCADE,
+        related_name="logs",
+    )
+    usuario = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="archivo_logs",
+    )
+    accion = models.CharField(max_length=20, choices=ACCION_CHOICES)
+    detalle = models.TextField(blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "log de archivo"
+        verbose_name_plural = "logs de archivo"
+        ordering = ["-fecha"]
+
+    def __str__(self):
+        return f"{self.archivo.nombre_original} — {self.accion} — {self.fecha:%Y-%m-%d %H:%M}"

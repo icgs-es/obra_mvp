@@ -15,12 +15,12 @@
             Carpeta origen: <strong>{{ carpeta_origen.get_ruta_display }}</strong>
           </p>
 
-          <form method="post">
+          <form method="post" novalidate>
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.GET.next }}">
             <div class="mb-3">
-              <label class="form-label">Carpeta destino</label>
-              <select name="carpeta_destino" class="form-select" required>
+              <label class="form-label" for="id_carpeta_destino">Carpeta destino</label>
+              <select id="id_carpeta_destino" name="carpeta_destino" class="form-select" required>
                 <option value="">— Selecciona una carpeta —</option>
                 {% for c in carpetas_destino %}
                   <option value="{{ c.pk }}">{{ c.get_ruta_display }}</option>

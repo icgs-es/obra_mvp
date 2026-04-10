@@ -1,7 +1,7 @@
-# backend/agenda/models.py
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+
 
 class Calendar(models.Model):
     TIPO_CHOICES = (
@@ -32,7 +32,8 @@ class Calendar(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.tipo})"
-    
+
+
 class Event(models.Model):
     class TaskStatus(models.TextChoices):
         PENDIENTE = "PENDIENTE", "Pendiente"
@@ -80,13 +81,21 @@ class Event(models.Model):
     obra_id = models.IntegerField(null=True, blank=True)
     obra_nombre = models.CharField(max_length=255, blank=True, default="")
 
+    team = models.ForeignKey("usuarios.Team", null=True, blank=True, on_delete=models.SET_NULL)
+
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True,
-        on_delete=models.SET_NULL, related_name="events_created"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="events_created",
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True,
-        on_delete=models.SET_NULL, related_name="events_updated"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="events_updated",
     )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -96,13 +105,15 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+
 class Reminder(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reminders")
     # minutos antes del inicio; negativo no permitido
     minutes_before = models.PositiveIntegerField(default=15)
     # canal: email / web / push / sms (de momento email+web)
     channel = models.CharField(max_length=20, default="email")  # "email" | "web"
+
 
 class Attachment(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="attachments")

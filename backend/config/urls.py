@@ -1,11 +1,18 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import TemplateView
-from django.views.generic import RedirectView
+from django.views.generic.base import RedirectView
+from django.http import HttpResponse
+
+def health(request):
+    return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
-    # Home pública (puede ser tu homes.html)
-    path("", TemplateView.as_view(template_name="homes.html"), name="home"),
+    # Health
+    path("health", health, name="health"),
+
+    # Legacy CRM redirects
+    path("crm/", RedirectView.as_view(url="/app/crm/", permanent=False)),
+    path("crm/leads/", RedirectView.as_view(url="/app/crm/leads/", permanent=False)),
 
     # Auth
     path("accounts/", include("django.contrib.auth.urls")),
@@ -23,12 +30,16 @@ urlpatterns = [
     # --- CONSTRUCTORA (usa tu app core)
     path("manual/", include(("apps.core.ui_urls", "core_ui"), namespace="construccion")),
 
+    # CRM
+    path("app/crm/", include("crm.urls")),
+    
     # Admin
     path("admin/", admin.site.urls),
     
     path("app/archivos/", include("archivos.urls", namespace="archivos")),
     
-    
     path("", RedirectView.as_view(url="/app/", permanent=False), name="root"),
 
+    # Activos
+    path("activos/", include(("activos.urls", "activos"), namespace="activos")),
 ]

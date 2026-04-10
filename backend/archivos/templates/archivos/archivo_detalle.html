@@ -49,22 +49,86 @@
       </div>
     </div>
 
-    <!-- Área de previsualización -->
+    <!-- Área de previsualización + Histórico -->
     <div class="col-12 col-lg-8">
       <div class="card shadow-sm h-100">
         <div class="card-body">
 
-          <h2 class="h6 mb-3">Previsualización</h2>
+          <!-- Tabs -->
+          <ul class="nav nav-tabs mb-3" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="tab-preview" data-bs-toggle="tab"
+                      data-bs-target="#tabPreview" type="button" role="tab"
+                      aria-controls="tabPreview" aria-selected="true">
+                Previsualización
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-historico" data-bs-toggle="tab"
+                      data-bs-target="#tabHistorico" type="button" role="tab"
+                      aria-controls="tabHistorico" aria-selected="false">
+                Histórico
+              </button>
+            </li>
+          </ul>
 
-          {% if archivo.es_imagen %}
-            <img src="{{ archivo.fichero.url }}" class="img-fluid rounded">
-          {% elif archivo.es_pdf %}
-            <iframe src="{{ archivo.fichero.url }}" style="width:100%; height:70vh; border:none;"></iframe>
-          {% else %}
-            <p class="text-muted">
-              No hay previsualización disponible para este tipo de archivo.
-            </p>
-          {% endif %}
+          <div class="tab-content">
+            <!-- Tab: Previsualización -->
+            <div class="tab-pane fade show active" id="tabPreview" role="tabpanel" aria-labelledby="tab-preview">
+              {% if archivo.es_imagen %}
+                <img src="{{ archivo.fichero.url }}" class="img-fluid rounded">
+              {% elif archivo.es_pdf %}
+                <iframe src="{{ archivo.fichero.url }}" style="width:100%; height:70vh; border:none;"></iframe>
+              {% else %}
+                <p class="text-muted">
+                  No hay previsualización disponible para este tipo de archivo.
+                </p>
+              {% endif %}
+            </div>
+
+            <!-- Tab: Histórico -->
+            <div class="tab-pane fade" id="tabHistorico" role="tabpanel" aria-labelledby="tab-historico">
+              {% with logs=archivo.logs.all %}
+                {% if logs %}
+                  <div class="table-responsive mt-2">
+                    <table class="table table-sm align-middle mb-0">
+                      <thead class="table-light">
+                        <tr class="small text-muted">
+                          <th style="width: 160px;">Fecha</th>
+                          <th style="width: 140px;">Acción</th>
+                          <th style="width: 180px;">Usuario</th>
+                          <th>Detalle</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for log in logs|slice:":20" %}
+                          <tr class="small">
+                            <td>{{ log.fecha|date:"d/m/Y H:i" }}</td>
+                            <td>{{ log.get_accion_display }}</td>
+                            <td>
+                              {% if log.usuario %}
+                                {{ log.usuario.get_full_name|default:log.usuario.username }}
+                              {% else %}
+                                —
+                              {% endif %}
+                            </td>
+                            <td>{{ log.detalle }}</td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                    <p class="text-muted small mt-2 mb-0">
+                      Mostrando las 20 últimas acciones.
+                    </p>
+                  </div>
+                {% else %}
+                  <p class="text-muted small mt-2 mb-0">
+                    No hay acciones registradas todavía para este archivo.
+                  </p>
+                {% endif %}
+              {% endwith %}
+            </div>
+          </div>
 
         </div>
       </div>

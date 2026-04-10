@@ -24,7 +24,7 @@ finaninvestgroup.com:80 {
     }
 
     handle {
-        reverse_proxy web:8000 {
+        reverse_proxy infra-web-1:8000 {
             header_up X-Forwarded-Proto https
             header_up Host {host}
         }
@@ -33,7 +33,7 @@ finaninvestgroup.com:80 {
 
 competa.finaninvestgroup.com:80 {
     encode gzip
-    reverse_proxy http://172.17.0.1:8010 {
+    reverse_proxy http://172.18.0.1:8010 {
         header_up X-Forwarded-Proto https
         header_up Host {host}
     }
@@ -46,3 +46,13 @@ farmasani.finaninvestgroup.com:80 {
         header_up Host {host}
     }
 }
+
+n8n.finaninvestgroup.com:80 {
+    encode gzip
+    reverse_proxy n8n-n8n-1:5678 {
+        header_up X-Forwarded-Proto https
+        header_up Host {host}
+        header_up X-Forwarded-Host {host}
+    }
+}
+

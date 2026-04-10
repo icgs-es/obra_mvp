@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block head %}
+<meta name="csrf-token" content="{{ csrf_token }}">
 <link rel="stylesheet" href="{% static 'archivos/files.css' %}?v=20260213-3">
 {% endblock %}
 
@@ -52,12 +53,8 @@
           {% csrf_token %}
           <label class="btn btn-primary btn-sm mb-0">
             Subir archivos
-            <input type="file" name="fichero" multiple hidden>
+            <input type="file" name="fichero" multiple hidden onchange="this.form.submit()">
           </label>
-
-          <button type="submit" class="btn btn-outline-primary btn-sm">
-            Subir
-          </button>
         </form>
 
         <label class="btn btn-outline-primary btn-sm mb-0">
@@ -80,8 +77,7 @@
                   type="button"
                   data-url="{% url 'archivos:eliminar_archivos_masivo' carpeta.id %}"
                   class="btn btn-outline-danger"
-                  disabled
-                  onclick="return confirm('¿Seguro que quieres eliminar los elementos seleccionados?')">
+                  disabled>
             Eliminar seleccionados
           </button>
         </form>
@@ -101,10 +97,31 @@
 
         <div class="list-group list-group-flush">
           {% for f in subcarpetas %}
-            <a href="{% url 'archivos:explorador_carpeta' f.pk %}"
-               class="list-group-item list-group-item-action d-flex align-items-center gap-2">
-              📁 <span class="text-truncate">{{ f.nombre }}</span>
-            </a>
+            <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
+              <a href="{% url 'archivos:explorador_carpeta' f.pk %}"
+                 class="text-decoration-none d-flex align-items-center gap-2 flex-grow-1">
+                📁 <span class="text-truncate">{{ f.nombre }}</span>
+              </a>
+
+              {% if request.user.is_superuser or request.user.is_staff or f.owner == request.user %}
+                {% if f.pk %}
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-light border dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            title="Acciones">⋯</button>
+
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item" href="{% url 'archivos:carpeta_renombrar' f.pk %}">✏️ Renombrar</a></li>
+                      <li><a class="dropdown-item" href="{% url 'archivos:carpeta_mover' f.pk %}">📁 Mover</a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger" href="{% url 'archivos:carpeta_eliminar' f.pk %}">🗑️ Eliminar</a></li>
+                    </ul>
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
           {% empty %}
             <div class="p-3 text-muted">No hay subcarpetas.</div>
           {% endfor %}
@@ -128,7 +145,7 @@
                     <input type="checkbox" id="checkAll">
                   </th>
                   <th>Nombre</th>
-                  <th style="width:160px;">Fecha</th>
+                  <th style="width:200px;">Fecha / Usuario</th>
                   <th style="width:220px;" class="text-end">Acciones</th>
                 </tr>
               </thead>
@@ -143,28 +160,64 @@
                   <td>
                     <a href="{% url 'archivos:preview' a.id %}"
                       target="_blank"
-                      class="text-decoration-none">
-                      {{ a.nombre_original }}
+                      class="text-decoration-none file-name d-block">
+                      {% with n=a.nombre_logico|default_if_none:a.nombre_original %}
+                        {{ n|default:"(sin nombre)" }}
+                      {% endwith %}
+                      {% if a.version|default:1 > 1 %}
+                        <span class="badge bg-secondary">v{{ a.version }}</span>
+                      {% endif %}
                     </a>
+                    <div class="file-meta">
+                      {{ a.mimetype|default:"(desconocido)" }} · {{ a.tamano_kb|floatformat:1 }} KB
+                    </div>
                   </td>
 
-                  <td>
-                    {{ a.created_at|date:"d/m/Y H:i" }}
+                  <td class="text-muted small">
+                    {{ a.created_at|date:"d/m/Y H:i" }}<br>
+                    {% if a.subido_por %}
+                      {{ a.subido_por.username }}
+                    {% else %}
+                      —
+                    {% endif %}
                   </td>
 
                   <td class="text-end">
-                    <div class="btn-group btn-group-sm">
-                      <a href="{% url 'archivos:archivo_renombrar' a.pk %}" class="btn btn-outline-secondary">
-                        Renombrar
-                      </a>
-                      <a href="{% url 'archivos:archivo_mover' a.pk %}" class="btn btn-outline-primary">
-                        Mover
-                      </a>
-                      <a href="{% url 'archivos:archivo_eliminar' a.pk %}" class="btn btn-outline-danger">
-                        Eliminar
-                      </a>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-light border dropdown-toggle"
+                              type="button"
+                              data-bs-toggle="dropdown"
+                              aria-expanded="false"
+                              title="Acciones">
+                        ⋯
+                      </button>
+
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                          <a class="dropdown-item" href="{% url 'archivos:archivo_renombrar' a.pk %}">
+                            ✏️ Renombrar
+                          </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="{% url 'archivos:archivo_mover' a.pk %}">
+                            📁 Mover
+                          </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="{% url 'archivos:archivo_descargar' a.pk %}">
+                            ⬇️ Descargar
+                          </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <a class="dropdown-item text-danger" href="{% url 'archivos:archivo_eliminar' a.pk %}">
+                            🗑️ Eliminar
+                          </a>
+                        </li>
+                      </ul>
                     </div>
                   </td>
+
                 </tr>
                 {% empty %}
                 <tr>

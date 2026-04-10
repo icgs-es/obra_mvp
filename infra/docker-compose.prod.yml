@@ -63,6 +63,9 @@ services:
       dockerfile: infra/web.Dockerfile
     env_file:
       - /opt/obra_mvp/deploy/.env.prod
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      FORCE_SSL: "0"
     volumes:
       - ../:/app
       - static_data:/app/staticfiles

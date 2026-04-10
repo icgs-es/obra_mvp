@@ -16,23 +16,8 @@ ESTADO_TAREA_CHOICES = (
     ("CANCELADO", "Cancelado"),
 )
 
-VISIBILIDAD_CHOICES = (
-    ("privada", "Privada"),
-    ("depto", "Departamento"),
-    ("global", "Global"),
-)
-
-
 class EventoForm(forms.ModelForm):
     # ---- CAMPOS EXTRA (no son de modelo) ----
-    visibilidad = forms.ChoiceField(
-        choices=VISIBILIDAD_CHOICES,
-        required=False,
-        label="Visibilidad",
-        widget=forms.Select(attrs={"class": "form-select"}),
-        help_text="privada · depto · global",
-    )
-
     recordatorio_min = forms.IntegerField(
         required=False,
         min_value=0,
@@ -65,6 +50,7 @@ class EventoForm(forms.ModelForm):
             "description",
             "status",
             "location",
+            "visibility",
         ]
         labels = {
             "title": "Título",
@@ -88,10 +74,12 @@ class EventoForm(forms.ModelForm):
                 attrs={"class": "form-select"}
             ),
             "start": forms.DateTimeInput(
-                attrs={"type": "datetime-local", "class": "form-control"}
+                attrs={"type": "datetime-local", "class": "form-control"},
+                format="%Y-%m-%dT%H:%M",
             ),
             "end": forms.DateTimeInput(
-                attrs={"type": "datetime-local", "class": "form-control"}
+                attrs={"type": "datetime-local", "class": "form-control"},
+                format="%Y-%m-%dT%H:%M",
             ),
             "all_day": forms.CheckboxInput(
                 attrs={"class": "form-check-input"}
@@ -130,7 +118,34 @@ class EventoForm(forms.ModelForm):
                     "placeholder": "Sala / Dirección / Link",
                 }
             ),
+            "visibility": forms.Select(
+                attrs={"class": "form-select"}
+            ),
         }
+
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+
+        # Asegurar formatos compatibles con <input type="datetime-local">
+        dt_formats = [
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M:%S%z",
+        ]
+        for name in ("start", "end"):
+            field = self.fields.get(name)
+            if field is not None:
+                field.input_formats = dt_formats
+
+        # Si estamos editando un evento existente, inicializar start/end en zona local
+        if instance is not None:
+            tz = timezone.get_current_timezone()
+            fmt = "%Y-%m-%dT%H:%M"
+            if instance.start:
+                self.fields["start"].initial = instance.start.astimezone(tz).strftime(fmt)
+            if instance.end:
+                self.fields["end"].initial = instance.end.astimezone(tz).strftime(fmt)
 
     def clean(self):
         data = super().clean()

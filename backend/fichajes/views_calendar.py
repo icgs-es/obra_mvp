@@ -27,6 +27,7 @@ COLOR_ESTADO = {
     "RECHAZADA": "#f44336",   # rojo
 }
 
+
 @login_required
 def calendario_ausencias(request):
     """
@@ -92,6 +93,9 @@ def ausencias_events(request):
         end_plus_one = a.fecha_fin + datetime.timedelta(days=1)
         empleado_nombre = a.empleado.get_full_name() or a.empleado.username
         color = COLOR_ESTADO.get(a.estado, "#2196f3")
+
+        if hasattr(a.empleado, "userprofile") and a.empleado.userprofile and a.empleado.userprofile.color:
+            color = a.empleado.userprofile.color
 
         eventos.append({
             "id": a.id,

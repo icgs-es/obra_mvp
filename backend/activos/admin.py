@@ -13,6 +13,7 @@ class ActivoCoreAdmin(admin.ModelAdmin):
         "situacion_activo",
         "crm_disponible",
         "crm_activo",
+        "gestor_actual",
         "team",
         "updated_at",
     )
@@ -72,6 +73,7 @@ class ActivoCoreAdmin(admin.ModelAdmin):
                 "estado_operativo",
                 "estado_operativo_raw",
                 "situacion_activo",
+                "gestor_actual",
                 "gestor_principal",
                 "gestores_raw",
                 "historial_resumen",

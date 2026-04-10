@@ -89,6 +89,35 @@
       </div>
     </form>
 
+    {# Filtros activos #}
+    {% if filtros.estado or filtros.tipo or (request.user.is_staff and filtros.empleado) %}
+      <div class="mb-2 small">
+        <strong>Filtros activos:</strong>
+        {% if filtros.estado %}
+          {% for value,label in estado_choices %}
+            {% if value == filtros.estado %}
+              <span class="badge bg-light text-dark border">Estado: {{ label }}</span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if filtros.tipo %}
+          {% for value,label in tipo_choices %}
+            {% if value == filtros.tipo %}
+              <span class="badge bg-light text-dark border">Tipo: {{ label }}</span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if request.user.is_staff and filtros.empleado %}
+          {% for emp in empleados %}
+            {% if emp.id|stringformat:'s' == filtros.empleado %}
+              <span class="badge bg-light text-dark border">Empleado: {{ emp.get_full_name|default:emp.username }}</span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        <a class="ms-2" href="{% url 'fichajes:ausencias_list' %}">Quitar todos</a>
+      </div>
+    {% endif %}
+
     {% if ausencias %}
       <div class="table-responsive">
         <table class="table table-sm align-middle">

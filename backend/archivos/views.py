@@ -1,8 +1,10 @@
 import mimetypes
+import os
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponseForbidden, FileResponse, Http404, JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
@@ -13,7 +15,7 @@ from pathlib import PurePosixPath
 
 from django import forms
 from .forms import CarpetaForm # 👈 importar el form
-from .models import Carpeta, Archivo
+from .models import Carpeta, Archivo, ArchivoLog
 
 class SubirArchivoForm(forms.ModelForm):
     class Meta:
@@ -118,12 +120,33 @@ def subir_archivo(request, pk):
         return redirect_next(request, fallback_url)
 
     for f in ficheros:
-        Archivo.objects.create(
+        nombre_base, _ = os.path.splitext(os.path.basename(f.name))
+
+        # Buscar última versión
+        ultima = Archivo.objects.filter(
+            carpeta=carpeta,
+            nombre_logico=nombre_base
+        ).order_by("-version").first()
+
+        if ultima:
+            nueva_version = ultima.version + 1
+        else:
+            nueva_version = 1
+
+        archivo = Archivo.objects.create(
             carpeta=carpeta,
             fichero=f,
             nombre_original=f.name,
+            nombre_logico=nombre_base,
+            version=nueva_version,
             descripcion=descripcion,
             subido_por=request.user,
+        )
+        ArchivoLog.objects.create(
+            archivo=archivo,
+            usuario=request.user,
+            accion="SUBIR",
+            detalle=f"Subida de archivo (v{nueva_version})",
         )
 
     messages.success(request, f"Subidos {len(ficheros)} archivo(s).")
@@ -253,36 +276,32 @@ def carpeta_renombrar(request, pk):
 
 @login_required
 def carpeta_eliminar(request, pk):
-    """
-    Eliminar una carpeta si está vacía (sin subcarpetas ni archivos).
-    Respeta el parámetro ?next para volver a vista tabla/lista exacta.
+    """Eliminar una carpeta (aunque tenga contenido), con confirmación clara.
+
+    Si la carpeta tiene subcarpetas y/o archivos, se eliminará todo el árbol
+    por cascada (on_delete=CASCADE). Por eso mostramos un aviso fuerte antes
+    de permitir el POST.
     """
     carpeta = get_object_or_404(Carpeta, pk=pk)
 
     if not carpeta.puede_escribir(request.user):
         return HttpResponseForbidden("No tienes permisos para eliminar esta carpeta.")
 
-    # OJO: recalcularemos en POST también por seguridad (por si cambió en paralelo)
+    # Datos para el mensaje de confirmación
     tiene_subcarpetas = carpeta.hijas.exists()
     tiene_archivos = carpeta.archivos.exists()
 
     if request.method == "POST":
-        # Recalcular en POST por seguridad
-        tiene_subcarpetas = carpeta.hijas.exists()
-        tiene_archivos = carpeta.archivos.exists()
-
-        if tiene_subcarpetas or tiene_archivos:
-            messages.error(
-                request,
-                "No se puede eliminar la carpeta porque contiene subcarpetas o archivos.",
-            )
-            fallback_url = reverse("archivos:carpeta_eliminar", kwargs={"pk": carpeta.pk})
-            return redirect_next(request, fallback_url)
-
         parent = carpeta.parent
         nombre = carpeta.nombre
+
+        # IMPORTANTE: gracias a on_delete=CASCADE en parent y archivos,
+        # al borrar esta carpeta se elimina todo su contenido.
         carpeta.delete()
-        messages.success(request, f"Carpeta «{nombre}» eliminada correctamente.")
+        messages.success(
+            request,
+            f"Carpeta «{nombre}» y todo su contenido se han eliminado correctamente.",
+        )
 
         if parent:
             fallback_url = reverse("archivos:explorador_carpeta", kwargs={"pk": parent.pk})
@@ -327,6 +346,12 @@ def archivo_eliminar(request, pk):
 
     if request.method == "POST":
         nombre = archivo.nombre_original
+        ArchivoLog.objects.create(
+            archivo=archivo,
+            usuario=request.user,
+            accion="ELIMINAR",
+            detalle=f"Eliminado archivo «{nombre}»",
+        )
         archivo.delete()
         messages.success(request, f"Archivo «{nombre}» eliminado correctamente.")
         return redirect_next(request, fallback_url)
@@ -344,22 +369,31 @@ def archivo_eliminar(request, pk):
     )
 
 @require_POST
+@csrf_protect
 @login_required
 def eliminar_archivos_masivo(request, pk):
     carpeta = get_object_or_404(Carpeta, pk=pk)
-
     if not carpeta.puede_escribir(request.user):
         return JsonResponse({"ok": False, "error": "Sin permisos"}, status=403)
 
     ids = request.POST.getlist("ids")
     if not ids:
-        return JsonResponse({"ok": False, "error": "No hay elementos seleccionados"}, status=400)
+        return JsonResponse({"ok": False, "error": "Sin ids"}, status=400)
 
-    qs = Archivo.objects.filter(pk__in=ids, carpeta=carpeta)
-    deleted = qs.count()
-    qs.delete()
-
-    return JsonResponse({"ok": True, "deleted": deleted})
+    try:
+        qs = Archivo.objects.filter(carpeta=carpeta, id__in=ids)
+        n = qs.count()
+        for a in qs:
+            ArchivoLog.objects.create(
+                archivo=a,
+                usuario=request.user,
+                accion="ELIMINAR",
+                detalle="Eliminación masiva",
+            )
+        qs.delete()
+        return JsonResponse({"ok": True, "deleted": n})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)
 
 @login_required
 def archivo_detalle(request, pk):
@@ -405,8 +439,15 @@ def archivo_renombrar(request, pk):
             messages.error(request, "El nombre no puede estar vacío.")
             return redirect_next(request, form_url)
 
+        viejo = archivo.nombre_original
         archivo.nombre_original = nuevo_nombre
         archivo.save()
+        ArchivoLog.objects.create(
+            archivo=archivo,
+            usuario=request.user,
+            accion="RENOMBRAR",
+            detalle=f"De '{viejo}' a '{nuevo_nombre}'",
+        )
         messages.success(request, "Archivo renombrado correctamente.")
         fallback_url = reverse("archivos:explorador_carpeta", kwargs={"pk": carpeta.pk})
         return redirect_next(request, fallback_url)
@@ -466,8 +507,15 @@ def archivo_mover(request, pk):
             fallback_url = reverse("archivos:explorador_carpeta", kwargs={"pk": carpeta_origen.pk})
             return redirect_next(request, fallback_url)
 
+        carpeta_anterior = carpeta_origen
         archivo.carpeta = carpeta_destino
         archivo.save()
+        ArchivoLog.objects.create(
+            archivo=archivo,
+            usuario=request.user,
+            accion="MOVER",
+            detalle=f"De '{carpeta_anterior.get_ruta_display()}' a '{carpeta_destino.get_ruta_display()}'",
+        )
         messages.success(request, f"Archivo movido a «{carpeta_destino.nombre}».")
         fallback_url = reverse("archivos:explorador_carpeta", kwargs={"pk": carpeta_destino.pk})
         return redirect_next(request, fallback_url)
@@ -623,12 +671,18 @@ def subir_carpeta(request, pk):
             for folder_name in folders:
                 current = get_or_create_child(current, folder_name)
 
-        Archivo.objects.create(
+        archivo = Archivo.objects.create(
             carpeta=current,
             fichero=f,
             nombre_original=f.name,
             descripcion="",
             subido_por=request.user,
+        )
+        ArchivoLog.objects.create(
+            archivo=archivo,
+            usuario=request.user,
+            accion="SUBIR",
+            detalle=f"Subida dentro de carpeta importada ({rp})",
         )
         created += 1
 
@@ -701,7 +755,7 @@ def file_preview(request, file_id: int):
     return resp
 
 @login_required
-def file_download(request, file_id: int):
+def archivo_descargar(request, file_id: int):
     a = get_object_or_404(Archivo, pk=file_id)
 
     if not _can_access_file(request.user, a):
@@ -710,6 +764,14 @@ def file_download(request, file_id: int):
     if not a.fichero:
         raise Http404("Archivo sin fichero asociado")
 
+    # Log de descarga
+    ArchivoLog.objects.create(
+        archivo=a,
+        usuario=request.user,
+        accion="DESCARGAR",
+        detalle="Descarga de archivo",
+    )
+
     fh = a.fichero.open("rb")
     resp = FileResponse(fh, content_type="application/octet-stream")
 
@@ -717,3 +779,9 @@ def file_download(request, file_id: int):
     resp["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     return resp
+
+# Alias para compatibilidad con el nombre antiguo
+# (muchos sitios pueden seguir apuntando a archivos:download)
+@login_required
+def file_download(request, file_id: int):
+    return archivo_descargar(request, file_id)

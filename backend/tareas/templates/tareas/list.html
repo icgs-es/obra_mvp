@@ -5,9 +5,11 @@
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h1 class="h4 mb-0"><i class="bi bi-list-check me-2"></i>Tareas</h1>
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-primary" href="/app/tareas/?f=hoy"><i class="bi bi-sun me-1"></i>Hoy</a>
-    <a class="btn btn-outline-warning" href="/app/tareas/?f=atrasadas"><i class="bi bi-exclamation-triangle me-1"></i>Atrasadas</a>
-    <a class="btn btn-outline-secondary" href="/app/tareas/?f=todas"><i class="bi bi-collection me-1"></i>Todas</a>
+    {% with f=request.GET.f %}
+      <a class="btn {% if f == 'hoy' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?f=hoy"><i class="bi bi-sun me-1"></i>Hoy</a>
+      <a class="btn {% if f == 'atrasadas' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}" href="?f=atrasadas"><i class="bi bi-exclamation-triangle me-1"></i>Atrasadas</a>
+      <a class="btn {% if f != 'hoy' and f != 'atrasadas' %}btn-secondary{% else %}btn-outline-secondary{% endif %}" href="?f=todas"><i class="bi bi-collection me-1"></i>Todas</a>
+    {% endwith %}
     <a class="btn btn-primary" href="/app/tareas/nueva/"><i class="bi bi-plus-lg me-1"></i>Nueva tarea</a>
   </div>
 </div>
@@ -34,21 +36,21 @@
                 </td>
                 <td>
                   {% with est=t.estado|default:"pendiente" %}
-                    <span class="badge {% if est == 'hecha' %}bg-success{% elif est == 'en_proceso' %}bg-info{% elif est == 'bloqueada' %}bg-danger{% else %}bg-secondary{% endif %}">
-                      {{ est|title }}
+                    <span class="badge {% if est == 'hecha' %}bg-success{% elif est == 'en_curso' %}bg-info{% elif est == 'bloqueada' %}bg-danger{% else %}bg-secondary{% endif %}">
+                      {% if est == 'en_curso' %}En curso{% elif est == 'bloqueada' %}Bloqueada{% elif est == 'hecha' %}Hecha{% else %}Pendiente{% endif %}
                     </span>
                   {% endwith %}
                 </td>
                 <td>
-                  {% with p=t.prioridad|default:0 %}
-                    <span class="badge {% if p >= 3 %}bg-danger{% elif p == 2 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                      {% if p == 3 %}Alta{% elif p == 2 %}Media{% else %}Baja{% endif %}
+                  {% with p=t.prioridad|default:"media" %}
+                    <span class="badge {% if p == 'alta' %}bg-danger{% elif p == 'media' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                      {% if p == 'alta' %}Alta{% elif p == 'media' %}Media{% else %}Baja{% endif %}
                     </span>
                   {% endwith %}
                 </td>
                 <td>
-                  {% if t.fecha_vencimiento %}
-                    {{ t.fecha_vencimiento|date:"d/m/Y" }}
+                  {% if t.vencimiento %}
+                    {{ t.vencimiento|date:"d/m/Y" }}
                   {% else %}
                     <span class="text-secondary">—</span>
                   {% endif %}

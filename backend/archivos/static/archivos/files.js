@@ -1,6 +1,21 @@
 window.__FILES_JS_LOADED__ = true;
 console.log("✅ files.js cargado");
 
+// ---------------- CSRF helper (meta tag) ----------------
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return (parts.pop().split(";").shift() || "").trim();
+  return "";
+}
+
+function getCsrfToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  const metaToken = (meta?.getAttribute("content") || "").trim();
+  return metaToken || getCookie("csrftoken"); // fallback
+}
+
+// ---------------- Preview + search (IIFE) ----------------
 (function () {
   const tbody = document.getElementById("filesTbody");
   const previewTitle = document.getElementById("previewTitle");
@@ -8,7 +23,6 @@ console.log("✅ files.js cargado");
   const previewSurface = document.getElementById("previewSurface");
   const openBtn = document.getElementById("previewOpenBtn");
   const dlBtn = document.getElementById("previewDownloadBtn");
-
   const searchInput = document.getElementById("searchInput");
 
   function setPreview(row) {
@@ -17,18 +31,21 @@ console.log("✅ files.js cargado");
     const previewUrl = row.dataset.previewUrl;
     const downloadUrl = row.dataset.downloadUrl;
 
-    previewTitle.textContent = name;
-    previewMeta.textContent = mime || "—";
+    if (previewTitle) previewTitle.textContent = name;
+    if (previewMeta) previewMeta.textContent = mime || "—";
 
-    openBtn.classList.remove("d-none");
-    dlBtn.classList.remove("d-none");
-    openBtn.href = previewUrl;
-    dlBtn.href = downloadUrl;
+    if (openBtn) {
+      openBtn.classList.remove("d-none");
+      openBtn.href = previewUrl;
+    }
+    if (dlBtn) {
+      dlBtn.classList.remove("d-none");
+      dlBtn.href = downloadUrl;
+    }
 
-    // limpiar
+    if (!previewSurface) return;
     previewSurface.innerHTML = "";
 
-    // render
     if (mime.startsWith("image/")) {
       const img = document.createElement("img");
       img.src = previewUrl;
@@ -42,7 +59,6 @@ console.log("✅ files.js cargado");
 
     if (mime === "application/pdf" || mime.includes("pdf")) {
       const iframe = document.createElement("iframe");
-      // Si quieres ocultar UI del visor PDF:
       iframe.src = previewUrl + "#toolbar=0&navpanes=0";
       iframe.onerror = () => {
         previewSurface.innerHTML = `<div class="text-muted">No se pudo previsualizar el PDF.</div>`;
@@ -54,12 +70,11 @@ console.log("✅ files.js cargado");
     previewSurface.innerHTML = `<div class="text-muted">Sin previsualización para este tipo. Usa “Abrir” o “Descargar”.</div>`;
   }
 
-  // selección
+  // selección preview
   tbody?.addEventListener("click", (e) => {
     const row = e.target.closest(".file-row");
     if (!row) return;
 
-    // click en enlace o botón Ver => preview
     if (e.target.classList.contains("file-open") || e.target.classList.contains("btn-preview")) {
       e.preventDefault();
       tbody.querySelectorAll(".file-row.table-active").forEach(r => r.classList.remove("table-active"));
@@ -68,24 +83,90 @@ console.log("✅ files.js cargado");
     }
   });
 
-  // filtro
+  // filtro búsqueda
   searchInput?.addEventListener("input", () => {
     const q = searchInput.value.trim().toLowerCase();
-    tbody.querySelectorAll(".file-row").forEach(row => {
-      const name = row.dataset.name || "";
+    tbody?.querySelectorAll(".file-row").forEach(row => {
+      const name = (row.dataset.name || "").toLowerCase();
       row.style.display = name.includes(q) ? "" : "none";
     });
   });
 })();
 
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-}
-
+// ---------------- DOMContentLoaded: masivo + subir carpeta ----------------
 document.addEventListener("DOMContentLoaded", () => {
-  // ---------- Subir carpeta ----------
+  console.log("📂 files.js DOMContentLoaded");
+
+  // ---------- Eliminar masivo ----------
+  const deleteBtn = document.getElementById("btnDeleteSelected");
+  const checkAll  = document.getElementById("checkAll");
+  const rowChecks = Array.from(document.querySelectorAll(".rowCheck"));
+
+  function getSelectedIds() {
+    return rowChecks.filter(cb => cb.checked).map(cb => cb.value);
+  }
+
+  function refreshDeleteButton() {
+    if (!deleteBtn) return;
+    deleteBtn.disabled = getSelectedIds().length === 0;
+  }
+
+  rowChecks.forEach(cb => cb.addEventListener("change", refreshDeleteButton));
+  if (checkAll) {
+    checkAll.addEventListener("change", () => {
+      rowChecks.forEach(cb => cb.checked = checkAll.checked);
+      refreshDeleteButton();
+    });
+  }
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async () => {
+      const selected = getSelectedIds();
+      if (!selected.length) return;
+
+      if (!confirm(`¿Eliminar ${selected.length} archivo(s) seleccionado(s)?`)) return;
+
+      const csrf = getCsrfToken();
+      const formData = new URLSearchParams();
+      selected.forEach(id => formData.append("ids", id));
+
+      try {
+        const res = await fetch(deleteBtn.dataset.url, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            ...(csrf ? { "X-CSRFToken": csrf } : {}),
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: formData.toString(),
+        });
+
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) {
+          const txt = await res.text();
+          console.error("Eliminar masivo: no JSON", res.status, txt.slice(0, 500));
+          alert(`Eliminar masivo: respuesta no-JSON (status ${res.status}).`);
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          alert(data.error || `No se pudieron eliminar (status ${res.status}).`);
+          return;
+        }
+
+        location.reload();
+      } catch (err) {
+        console.error("Error fetch eliminar-masivo:", err);
+        alert("Error de red eliminando archivos.");
+      }
+    });
+  }
+
+  refreshDeleteButton();
+
+  // ---------- Subir carpeta completa (input#folderUploadInput) ----------
   const folderInput = document.getElementById("folderUploadInput");
   if (folderInput) {
     folderInput.addEventListener("change", async () => {
@@ -93,6 +174,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!files.length) return;
 
       const url = folderInput.dataset.uploadUrl;
+      if (!url) {
+        console.error("folderUploadInput sin data-upload-url");
+        return;
+      }
+
       const form = new FormData();
       form.append("keep_root", "1");
 
@@ -101,76 +187,38 @@ document.addEventListener("DOMContentLoaded", () => {
         form.append("relpath", file.webkitRelativePath || file.name);
       }
 
-      const csrf = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: csrf ? { "X-CSRFToken": csrf } : {},
-        body: form,
-      });
+      const csrf = getCsrfToken();
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) {
-        alert(data.error || "Error subiendo carpeta");
-        return;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            ...(csrf ? { "X-CSRFToken": csrf } : {}),
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: form, // NO Content-Type manual
+        });
+
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) {
+          const txt = await res.text();
+          console.error("Subir carpeta: no JSON", res.status, txt.slice(0, 500));
+          alert(`Subir carpeta: respuesta no-JSON (status ${res.status}).`);
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          alert(data.error || `Error subiendo carpeta (status ${res.status}).`);
+          return;
+        }
+
+        window.location.reload();
+      } catch (err) {
+        console.error("Error de red al subir carpeta:", err);
+        alert("Error de red subiendo carpeta");
       }
-      window.location.reload();
     });
   }
-
-  // ---------- Selección + eliminar masivo ----------
-  const deleteBtn = document.getElementById("btnDeleteSelected");
-  const checkAll = document.getElementById("checkAll");
-
-  function getSelectedIds() {
-    return Array.from(document.querySelectorAll(".rowCheck:checked")).map(cb => cb.value);
-  }
-
-  function refreshDeleteButton() {
-    if (!deleteBtn) return;
-    deleteBtn.disabled = getSelectedIds().length === 0;
-  }
-
-  // activar/desactivar botón al marcar
-  document.querySelectorAll(".rowCheck").forEach(cb => {
-    cb.addEventListener("change", refreshDeleteButton);
-  });
-
-  // checkAll
-  if (checkAll) {
-    checkAll.addEventListener("change", () => {
-      document.querySelectorAll(".rowCheck").forEach(cb => {
-        cb.checked = checkAll.checked;
-      });
-      refreshDeleteButton();
-    });
-  }
-
-// click eliminar masivo
-if (deleteBtn) {
-  deleteBtn.addEventListener("click", () => {
-    const selected = getSelectedIds();
-    if (!selected.length) return;
-
-    if (!confirm(`¿Eliminar ${selected.length} archivo(s) seleccionado(s)?`)) return;
-
-    fetch(deleteBtn.dataset.url, {
-      method: "POST",
-      headers: {
-        "X-CSRFToken": getCookie("csrftoken"),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams(selected.map(id => ["ids", id])),
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.ok) {
-        alert(data.error || "No se pudieron eliminar.");
-        return;
-      }
-      location.reload();
-    })
-    .catch(() => alert("Error de red eliminando archivos."));
-  });
-
-  refreshDeleteButton();
-}
+});

@@ -2,6 +2,29 @@ name: "OBRA MVP – Senior Dev"
 version: "1.0"
 description: "Agente experto para OBRA/INTASA (Django/Postgres/Docker). Respuestas cortas y accionables."
 
+models:
+  # 🔹 CHAT RÁPIDO (más ágil en CPU)
+  - name: MistralChat
+    provider: ollama
+    model: mistral:7b
+    apiBase: http://127.0.0.1:11434
+    contextLength: 1024
+    completionOptions:
+      temperature: 0.2
+      top_p: 0.8
+      max_tokens: 192
+
+  # 🔹 CÓDIGO (mejor razonamiento para Django)
+  - name: QwenCoder
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://127.0.0.1:11434
+    contextLength: 1536
+    completionOptions:
+      temperature: 0.1
+      top_p: 0.9
+      max_tokens: 256
+
 # Instrucciones del agente
 systemMessage: |
   Eres un desarrollador senior para el proyecto OBRA/INTASA Platform (obra_mvp).
