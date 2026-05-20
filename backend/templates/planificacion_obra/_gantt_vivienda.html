@@ -1,0 +1,114 @@
+{% if vista_vivienda %}
+<style>
+  .planning-gantt-vivienda {
+    font-size: .68rem;
+  }
+  .planning-gantt-vivienda .gantt-row {
+    display: grid;
+    grid-template-columns: 260px 1fr 145px;
+    gap: .5rem;
+    align-items: center;
+    padding: .28rem .5rem;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .planning-gantt-vivienda .gantt-task {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .planning-gantt-vivienda .gantt-track {
+    position: relative;
+    height: 24px;
+    background: #f1f3f5;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .planning-gantt-vivienda .gantt-bar {
+    position: absolute;
+    border-radius: 999px;
+    min-width: 4px;
+  }
+  .planning-gantt-vivienda .gantt-prev {
+    top: 5px;
+    height: 6px;
+    background: #adb5bd;
+  }
+  .planning-gantt-vivienda .gantt-real {
+    bottom: 5px;
+    height: 8px;
+    background: #198754;
+  }
+  .planning-gantt-vivienda .gantt-late {
+    background: #dc3545;
+  }
+  .planning-gantt-vivienda .gantt-dates {
+    font-size: .62rem;
+    color: #6c757d;
+    text-align: right;
+    white-space: nowrap;
+  }
+</style>
+
+<div class="card shadow-sm border-0 mb-3 planning-gantt-vivienda">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <strong>Gantt previsto vs real</strong>
+      <div class="text-secondary small">Gris = previsto · Verde = real · Rojo = real fuera de plazo.</div>
+    </div>
+    <span class="badge bg-secondary">{{ gantt_rows|length }} tareas</span>
+  </div>
+
+  {% if gantt_inicio and gantt_fin %}
+  <div class="px-3 py-2 border-bottom small text-secondary">
+    <div class="d-flex justify-content-between align-items-center">
+      <strong>Rango temporal visible</strong>
+      <span>{{ gantt_inicio|date:"d/m/Y" }} → {{ gantt_fin|date:"d/m/Y" }}</span>
+    </div>
+    <div class="d-flex justify-content-between mt-1" style="margin-left:260px; margin-right:145px; font-size:.62rem;">
+      <span>{{ gantt_inicio|date:"d/m/y" }}</span>
+      <span>Previsto / Real</span>
+      <span>{{ gantt_fin|date:"d/m/y" }}</span>
+    </div>
+  </div>
+  {% endif %}
+  <div class="card-body p-0">
+    {% for item in gantt_rows %}
+      <div class="gantt-row">
+        <div class="gantt-task" title="{{ item.partida_label }}">
+          <a href="/app/planificacion-obra/planning/tareas/{{ item.tarea_id }}/?next={{ request.get_full_path|urlencode }}" class="text-decoration-none">
+            {{ item.orden|default:"—" }}
+          </a>
+          <span class="text-secondary">·</span>
+          {{ item.partida_label }}
+          {% if item.warnings_count %}
+            <span class="badge bg-warning text-dark ms-1">⚠ {{ item.warnings_count }}</span>
+          {% endif %}
+        </div>
+
+        <div class="gantt-track">
+          {% if item.prev_bar %}
+            <div class="gantt-bar gantt-prev"
+                 style="left: {{ item.prev_bar.left }}%; width: {{ item.prev_bar.width }}%;"
+                 title="Previsto"></div>
+          {% endif %}
+
+          {% if item.real_bar %}
+            <div class="gantt-bar gantt-real {% if item.late %}gantt-late{% endif %}"
+                 style="left: {{ item.real_bar.left }}%; width: {{ item.real_bar.width }}%;"
+                 title="Real"></div>
+          {% endif %}
+        </div>
+
+        <div class="gantt-dates">
+          P: {% if item.inicio_tarea %}{{ item.inicio_tarea|date:"d/m" }}{% else %}—{% endif %}→{% if item.fin_tarea %}{{ item.fin_tarea|date:"d/m" }}{% else %}—{% endif %}
+          <br>
+          R: {% if item.inicio_real %}{{ item.inicio_real|date:"d/m" }}{% else %}—{% endif %}→{% if item.fin_real %}{{ item.fin_real|date:"d/m" }}{% else %}—{% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="p-3 text-center text-secondary">No hay fechas suficientes para construir el Gantt.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

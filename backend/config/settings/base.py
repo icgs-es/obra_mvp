@@ -9,6 +9,8 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+    'planificacion_obra.apps.PlanificacionObraConfig',
+
     # Django apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -28,6 +30,7 @@ INSTALLED_APPS = [
     "tareas",
     "usuarios",
     "fichajes",
+    "rrhh",
     "archivos",
     "crm",
     "activos",

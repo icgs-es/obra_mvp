@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% load planning_format %}
+
+{% block title %}Obra · {{ obra.nombre }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ obra.nombre }}</h1>
+    <p class="text-secondary mb-0">
+      {{ obra.team.name }} · Código legacy {{ obra.legacy_cod_obra }}
+      {% if obra.poblacion %} · {{ obra.poblacion }}{% endif %}
+    </p>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a href="{% url 'planificacion_obra:obras_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-bar-chart-line"></i> Resumen de obras
+    </a>
+    <a href="{% url 'planificacion_obra:index' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-calendar-check"></i> Planificación
+    </a>
+    <a href="{% url 'planificacion_obra:planning_list' %}?obra={{ obra.pk }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-diagram-3"></i> Planning de esta obra
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="text-secondary small mb-1">Previsto</div>
+        <div class="h3 mb-0">{{ metricas.coste_previsto|money_es }}</div>
+        <div class="text-secondary small">{{ metricas.previstos_count }} recursos previstos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="text-secondary small mb-1">Real</div>
+        <div class="h3 mb-0">{{ metricas.coste_real|money_es }}</div>
+        <div class="text-secondary small">{{ metricas.reales_count }} recursos reales</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="text-secondary small mb-1">Desviación</div>
+        <div class="h3 mb-0 {% if metricas.desviacion > 0 %}text-danger{% else %}text-success{% endif %}">
+          {{ metricas.desviacion|money_es }}
+        </div>
+        <div class="text-secondary small">
+          {% if metricas.desviacion > 0 %}Sobrecoste{% else %}Bajo previsto{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="text-secondary small mb-1">Ejecución económica</div>
+        <div class="h3 mb-0">
+          {% if metricas.ejecucion_pct %}{{ metricas.ejecucion_pct }} %{% else %}—{% endif %}
+        </div>
+        <div class="progress mt-2" style="height: 8px;">
+          <div class="progress-bar" role="progressbar"
+               style="width: {% if metricas.ejecucion_pct and metricas.ejecucion_pct < 100 %}{{ metricas.ejecucion_pct|floatformat:0 }}{% elif metricas.ejecucion_pct %}100{% else %}0{% endif %}%;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <strong>Fases de obra</strong>
+          <div class="text-secondary small">Unidades, tareas y coste real por fase.</div>
+        </div>
+        <span class="badge bg-primary">{{ metricas.fases_count }} fases</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Fase</th>
+              <th class="text-end">Unidades</th>
+              <th class="text-end">Tareas</th>
+              <th class="text-end">Coste real</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in fases_rows %}
+              <tr>
+                <td>
+                  <strong>{{ row.fase.nombre }}</strong>
+                  <div class="small text-secondary">Código {{ row.fase.legacy_cod_fase }}</div>
+                </td>
+                <td class="text-end">{{ row.unidades_count }}</td>
+                <td class="text-end">{{ row.tareas_count }}</td>
+                <td class="text-end">{{ row.coste_real|money_es }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-secondary py-4">Sin fases registradas.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <strong>Coste real por tipo</strong>
+        <div class="text-secondary small">Distribución de recursos imputados.</div>
+      </div>
+
+      <div class="list-group list-group-flush">
+        {% for row in tipo_costes %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ row.legacy_tipo_recurso|default:"Sin tipo" }}</strong>
+                <div class="small text-secondary">{{ row.lineas }} líneas</div>
+              </div>
+              <div class="text-end">{{ row.total|money_es }}</div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="list-group-item text-secondary">Sin costes reales por tipo.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <strong>Últimas tareas</strong>
+          <div class="text-secondary small">Tareas recientes de la obra.</div>
+        </div>
+        <a href="{% url 'planificacion_obra:obra_tareas_list' obra.pk %}" class="btn btn-outline-primary btn-sm">
+          Ver tareas
+        </a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Tarea</th>
+              <th>Vivienda</th>
+              <th>Planta</th>
+              <th>Capítulo</th>
+              <th>Partida</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tarea in ultimas_tareas %}
+              <tr>
+                <td>
+                  <a href="{% url 'planificacion_obra:planning_tarea_detail' tarea.pk %}?next={% url 'planificacion_obra:obra_detail' obra.pk %}" class="text-decoration-none">
+                    #{{ tarea.pk }}
+                  </a>
+                </td>
+                <td>{{ tarea.legacy_cod_vivienda|default:"-" }}</td>
+                <td>{{ tarea.legacy_planta|default:"-" }}</td>
+                <td>{{ tarea.capitulo.codigo|default:"-" }}</td>
+                <td>{{ tarea.partida.codigo|default:"-" }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-secondary py-4">Sin tareas recientes.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <strong>Últimos movimientos de almacén</strong>
+        <div class="text-secondary small">Movimientos vinculados por obra legacy.</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Recurso</th>
+              <th class="text-end">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mov in ultimos_movimientos %}
+              <tr>
+                <td>{{ mov.fecha_movimiento|default:"-" }}</td>
+                <td>{{ mov.tipo_movimiento|default:"-" }}</td>
+                <td>
+                  {% if mov.recurso %}
+                    {{ mov.recurso.nombre }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ mov.cantidad|floatformat:2 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-secondary py-4">Sin movimientos recientes.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white">
+    <strong>Resumen técnico</strong>
+    <div class="text-secondary small">Volumen importado de estructura, planificación, ejecución y almacén.</div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-2">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="text-secondary small">Unidades</div>
+          <div class="h4 mb-0">{{ metricas.unidades_count }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="text-secondary small">Tareas</div>
+          <div class="h4 mb-0">{{ metricas.tareas_count }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="text-secondary small">Incidencias</div>
+          <div class="h4 mb-0">{{ metricas.tareas_incidencias_count }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="text-secondary small">Almacenes</div>
+          <div class="h4 mb-0">{{ metricas.almacenes_count }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="text-secondary small">Movimientos</div>
+          <div class="h4 mb-0">{{ metricas.movimientos_count }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="text-secondary small">Reales</div>
+          <div class="h4 mb-0">{{ metricas.reales_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

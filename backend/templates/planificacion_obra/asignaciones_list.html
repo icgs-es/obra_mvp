@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}Planificación de personal{% endblock %}
+
+{% block content %}
+<style>
+.pi-page {
+  padding: 24px 28px;
+}
+
+.pi-toolbar,
+.pi-card,
+.pi-kpi {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+}
+
+.pi-toolbar {
+  padding: 18px;
+}
+
+.pi-kpi {
+  padding: 18px;
+  min-height: 96px;
+}
+
+.pi-kpi .label {
+  color: #64748b;
+  font-size: .86rem;
+}
+
+.pi-kpi .value {
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.pi-card {
+  overflow: hidden;
+}
+
+.pi-table {
+  width: 100%;
+  font-size: .86rem;
+  margin: 0;
+}
+
+.pi-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: .76rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.pi-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+.pi-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.pi-muted {
+  color: #64748b;
+}
+
+.pi-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.pi-actions a,
+.pi-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  text-decoration: none;
+  font-size: .95rem;
+  cursor: pointer;
+}
+
+.pi-actions a:hover,
+.pi-actions button:hover {
+  background: #eef2ff;
+  border-radius: 7px;
+}
+
+.pi-filters select,
+.pi-filters input {
+  min-height: 38px;
+  border-radius: 8px;
+}
+
+  /* Ajuste final: listado denso, una línea por registro */
+  .pi-table {
+    min-width: 1280px;
+    font-size: .74rem;
+  }
+
+  .pi-table th,
+  .pi-table td {
+    white-space: nowrap !important;
+  }
+
+  .pi-table td,
+  .pi-table td * {
+    line-height: 1.15;
+  }
+
+  .pi-cell-truncate {
+    display: block !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+
+  .pi-employee { max-width: 235px; }
+  .pi-obra { max-width: 170px; }
+  .pi-capitulo { max-width: 210px; }
+  .pi-partida { max-width: 360px; }
+
+  .pi-actions {
+    width: 74px;
+  }
+
+  
+  /* Cierre usuario: tabla dentro del contenedor */
+  .pi-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed;
+    font-size: .70rem;
+  }
+
+  .pi-table th,
+  .pi-table td {
+    padding: 5px 6px !important;
+    white-space: nowrap !important;
+    overflow: hidden;
+  }
+
+  .pi-table th:nth-child(1), .pi-table td:nth-child(1) { width: 7%; }
+  .pi-table th:nth-child(2), .pi-table td:nth-child(2) { width: 6%; }
+  .pi-table th:nth-child(3), .pi-table td:nth-child(3) { width: 18%; }
+  .pi-table th:nth-child(4), .pi-table td:nth-child(4) { width: 12%; }
+  .pi-table th:nth-child(5), .pi-table td:nth-child(5) { width: 7%; }
+  .pi-table th:nth-child(6), .pi-table td:nth-child(6) { width: 7%; }
+  .pi-table th:nth-child(7), .pi-table td:nth-child(7) { width: 15%; }
+  .pi-table th:nth-child(8), .pi-table td:nth-child(8) { width: 20%; }
+  .pi-table th:nth-child(9), .pi-table td:nth-child(9) { width: 6%; }
+  .pi-table th:nth-child(10), .pi-table td:nth-child(10) { width: 2%; }
+
+  .pi-cell-truncate {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+
+  .pi-code {
+    display: none;
+  }
+
+  .pi-origin {
+    display: none !important;
+  }
+
+  
+  /* Ajuste final contenedor + nombres catálogo */
+  .pi-card {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .table-responsive {
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .pi-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: collapse;
+    box-sizing: border-box;
+    font-size: .68rem !important;
+  }
+
+  .pi-table *,
+  .pi-table th,
+  .pi-table td {
+    box-sizing: border-box;
+  }
+
+  .pi-table th,
+  .pi-table td {
+    padding: 4px 5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis;
+  }
+
+  .pi-table th:nth-child(1), .pi-table td:nth-child(1) { width: 7%; }
+  .pi-table th:nth-child(2), .pi-table td:nth-child(2) { width: 5%; }
+  .pi-table th:nth-child(3), .pi-table td:nth-child(3) { width: 17%; }
+  .pi-table th:nth-child(4), .pi-table td:nth-child(4) { width: 10%; }
+  .pi-table th:nth-child(5), .pi-table td:nth-child(5) { width: 6%; }
+  .pi-table th:nth-child(6), .pi-table td:nth-child(6) { width: 7%; }
+  .pi-table th:nth-child(7), .pi-table td:nth-child(7) { width: 16%; }
+  .pi-table th:nth-child(8), .pi-table td:nth-child(8) { width: 22%; }
+  .pi-table th:nth-child(9), .pi-table td:nth-child(9) { width: 6%; }
+  .pi-table th:nth-child(10), .pi-table td:nth-child(10) { width: 4%; }
+
+  .pi-actions a,
+  .pi-actions button {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: .72rem !important;
+  }
+
+  .pi-status .badge {
+    font-size: .58rem !important;
+    padding: .12rem .28rem !important;
+  }
+
+  .pi-code,
+  .pi-origin {
+    display: none !important;
+  }
+
+  </style>
+
+<div class="pi-page">
+
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1">Planificación de personal</h1>
+<div class="mb-3">
+<a href="/app/planificacion-obra/planning/" class="btn btn-outline-primary btn-sm">
+  Planning de Obra
+</a>
+</div>
+
+      <p class="text-muted mb-0">
+        Distribución operativa del personal disponible en obra.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      
+      <a href="{% url 'planificacion_obra:asignaciones_calendario' %}" class="btn btn-outline-primary">
+        Calendario
+      </a>
+
+      <a href="{% url 'planificacion_obra:asignacion_create' %}" class="btn btn-primary">
+        + Nueva asignación
+      </a>
+
+      <a href="{% url 'planificacion_obra:index' %}" class="btn btn-outline-secondary">
+        ← Volver al panel
+      </a>
+    </div>
+  </div>
+
+  <div class="pi-toolbar mb-4">
+    <form method="get" class="row g-3 align-items-end pi-filters">
+      <div class="col-md-2">
+        <label class="form-label">Fecha</label>
+        <input type="date" name="fecha" value="{{ request.GET.fecha }}" class="form-control">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Obra</label>
+        <select name="obra" class="form-select">
+          <option value="">Todas</option>
+          {% for obra in obras %}
+            <option value="{{ obra.pk }}" {% if request.GET.obra == obra.pk|stringformat:"s" %}selected{% endif %}>{{ obra }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Empleado</label>
+        <select name="empleado" class="form-select">
+          <option value="">Todos</option>
+          {% for empleado in empleados %}
+            <option value="{{ empleado.pk }}" {% if request.GET.empleado == empleado.pk|stringformat:"s" %}selected{% endif %}>{{ empleado }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Estado</label>
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          {% for value,label in estados %}
+            <option value="{{ value }}" {% if request.GET.estado == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">🔍 Filtrar</button>
+        <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="pi-kpi">
+        <div class="label">Asignaciones filtradas</div>
+        <div class="value">{{ asignaciones_count|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="pi-kpi">
+        <div class="label">Personal planificable visible</div>
+        <div class="value">{{ empleados|length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pi-card">
+    <div class="d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+      <div>
+        <h2 class="h6 mb-1">Asignaciones de personal</h2>
+        <div class="pi-muted small">Máximo 500 registros.</div>
+      </div>
+      <span class="badge text-bg-light">{{ total_mostradas }} de {{ total_asignaciones }} registros</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="pi-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Empleado</th>
+            <th>Obra</th>
+            <th>Vivienda</th>
+            <th>Planta</th>
+            <th>Capítulo</th>
+            <th>Partida</th>
+            <th>Estado</th>
+<th class="pi-actions">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for item in asignaciones %}
+            <tr class="{% if item.estado == 'REALIZADO' %}table-success{% endif %}">
+              <td>{{ item.fecha_inicio|date:"d/m/Y" }}</td>
+
+              <td>
+                {% if item.hora_inicio %}
+                  {{ item.hora_inicio|time:"H:i" }} - {{ item.hora_fin|time:"H:i" }}
+                {% else %}
+                  {% if item.horas %}{{ item.horas|floatformat:1 }} h{% else %}-{% endif %}
+                {% endif %}
+              </td>
+
+              <td title="{{ item.empleado }}">
+                <span class="pi-cell-truncate pi-employee">{{ item.empleado }}</span>
+              </td>
+              <td title="{{ item.obra }}">
+                <span class="pi-cell-truncate pi-obra">{{ item.obra }}</span>
+              </td>
+              <td>{{ item.vivienda }}</td>
+              <td>{{ item.planta }}</td>
+              <td title="{{ item.capitulo_title|default:item.capitulo }}">
+                <span class="pi-cell-truncate pi-capitulo">{{ item.capitulo }}</span>
+                {% if item.capitulo_codigo %}
+                  <span class="pi-code ms-1">{{ item.capitulo_codigo }}</span>
+                {% endif %}
+              </td>
+              <td title="{{ item.partida_title|default:item.partida }}">
+                <span class="pi-cell-truncate pi-partida">{{ item.partida }}</span>
+                {% if item.partida_codigo %}
+                  <span class="pi-code ms-1">{{ item.partida_codigo }}</span>
+                {% endif %}
+              </td>
+
+              <td class="pi-status text-nowrap" title="{{ item.origen_label }}">
+                {% if item.estado == "REALIZADO" %}
+                  <span class="badge text-bg-success">{{ item.estado_label }}</span>
+                {% else %}
+                  <span class="badge text-bg-primary">{{ item.estado_label }}</span>
+                {% endif %}
+                <span class="pi-origin text-truncate ms-1">{% if item.source_type == "historico" %}Histórico{% else %}Portal{% endif %}</span>
+              </td>
+
+              <td class="text-nowrap">
+                {% if item.editable %}
+                  <a href="{% url 'planificacion_obra:asignacion_detail' item.pk %}" title="Abrir">👁</a>
+                  <a href="{% url 'planificacion_obra:asignacion_update' item.pk %}" title="Editar">✎</a>
+                  <a href="{% url 'planificacion_obra:asignacion_delete' item.pk %}" title="Eliminar">🗑</a>
+                {% else %}
+                  <a href="{% url 'planificacion_obra:realizado_detail' item.pk %}?next={{ request.get_full_path|urlencode }}"
+                     class="text-decoration-none"
+                     title="Ver realizado">
+                    👁
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" class="text-muted text-center py-4">
+                No hay asignaciones para los filtros seleccionados.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

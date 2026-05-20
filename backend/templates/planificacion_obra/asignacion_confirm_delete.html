@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar asignación{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 760px;">
+  <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary btn-sm mb-3">
+    ← Volver a planificación de personal
+  </a>
+
+  <div class="card shadow-sm border-0" style="border-radius: 14px;">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-3">Eliminar asignación</h1>
+
+      <p>¿Seguro que quieres eliminar esta asignación?</p>
+
+      <div class="alert alert-warning">
+        {{ asignacion.fecha_inicio|date:"d/m/Y" }} · {{ asignacion.empleado }} · {{ asignacion.pi_display_vivienda_corta }}
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

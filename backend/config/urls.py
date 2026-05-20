@@ -20,12 +20,16 @@ urlpatterns = [
     # Portal (Mi jornada) bajo /app/
     path("app/", include(("portal.urls", "portal"), namespace="portal")),
 
+    # Planificación de Obra
+    path("app/planificacion-obra/", include(("planificacion_obra.urls", "planificacion_obra"), namespace="planificacion_obra")),
+
     # Tareas y Agenda
     path("app/tareas/", include(("tareas.urls", "tareas"), namespace="tareas")),
     path("app/agenda/", include(("agenda.urls", "agenda"), namespace="agenda")),
 
     # FICHAJES / MI JORNADA
     path("app/fichajes/", include(("fichajes.urls", "fichajes"), namespace="fichajes")),
+    path("app/rrhh/", include(("rrhh.urls", "rrhh"), namespace="rrhh")),
     
     # --- CONSTRUCTORA (usa tu app core)
     path("manual/", include(("apps.core.ui_urls", "core_ui"), namespace="construccion")),

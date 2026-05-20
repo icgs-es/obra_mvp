@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load planning_format %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1">Tarea en Planning</h1>
+      <p class="text-muted mb-0">
+        #{{ tarea.id }} · {{ snapshot.obra }} · Viv. {{ snapshot.vivienda }} · {{ snapshot.planta }} · {{ snapshot.capitulo }} · {{ snapshot.partida }}
+      </p>
+    </div>
+    <div>
+      <a href="{{ next_url }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+    </div>
+  </div>
+
+  {% if snapshot.warnings %}
+    <div class="alert alert-warning">
+      <strong>Avisos detectados:</strong>
+      <ul class="mb-0 mt-2">
+        {% for w in snapshot.warnings %}
+          <li>
+            <strong>{{ w.code }}</strong> — {{ w.message }}
+            <span class="text-muted">
+              Legacy: {{ w.legacy }} · Recalculado: {{ w.recalculado }} · Dif.: {{ w.diferencia }}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          Identificación
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5">Obra</dt>
+            <dd class="col-7">{{ snapshot.obra }}</dd>
+
+            <dt class="col-5">Vivienda</dt>
+            <dd class="col-7">{{ snapshot.vivienda }}</dd>
+
+            <dt class="col-5">Planta</dt>
+            <dd class="col-7">{{ snapshot.planta }}</dd>
+
+            <dt class="col-5">Capítulo</dt>
+            <dd class="col-7">{{ snapshot.capitulo }}</dd>
+
+            <dt class="col-5">Partida</dt>
+            <dd class="col-7">{{ snapshot.partida }}</dd>
+
+            <dt class="col-5">Unidad</dt>
+            <dd class="col-7">{{ snapshot.unidad }}</dd>
+
+            <dt class="col-5">Cantidad</dt>
+            <dd class="col-7">{{ snapshot.cantidad_tarea }}</dd>
+
+            <dt class="col-5">Estado</dt>
+            <dd class="col-7">
+              <span class="badge bg-light text-dark border">{{ snapshot.estado_calculado }}</span>
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          Cálculo portal
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-6">Coste previsto</dt>
+            <dd class="col-6 text-end">{{ snapshot.coste_previsto|money_es }}</dd>
+
+            <dt class="col-6">Coste real</dt>
+            <dd class="col-6 text-end">{{ snapshot.coste_real|money_es }}</dd>
+
+            <dt class="col-6">Desvío coste</dt>
+            <dd class="col-6 text-end">
+              {{ snapshot.desviacion_coste|money_es }}
+              {% if snapshot.desviacion_coste_pct %}
+                <span class="text-muted small">({{ snapshot.desviacion_coste_pct }}%)</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-6">Horas previstas</dt>
+            <dd class="col-6 text-end">{{ snapshot.horas_mo_previstas|floatformat:2 }}</dd>
+
+            <dt class="col-6">Horas reales MO</dt>
+            <dd class="col-6 text-end">{{ snapshot.horas_mo_reales|floatformat:2 }}</dd>
+
+            <dt class="col-6">Desvío horas</dt>
+            <dd class="col-6 text-end">
+              {{ snapshot.desviacion_horas_mo|floatformat:2 }}
+              {% if snapshot.desviacion_horas_mo_pct %}
+                <span class="text-muted small">({{ snapshot.desviacion_horas_mo_pct }}%)</span>
+              {% endif %}
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          Legacy / importado
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-6">Importe previsto</dt>
+            <dd class="col-6 text-end">{{ snapshot.legacy_coste_previsto|money_es }}</dd>
+
+            <dt class="col-6">Importe real</dt>
+            <dd class="col-6 text-end">{{ snapshot.legacy_coste_real|money_es }}</dd>
+
+            <dt class="col-6">Horas previstas</dt>
+            <dd class="col-6 text-end">{{ snapshot.legacy_horas_previstas|floatformat:2 }}</dd>
+
+            <dt class="col-6">Horas reales</dt>
+            <dd class="col-6 text-end">{{ snapshot.legacy_horas_reales|floatformat:2 }}</dd>
+
+            <dt class="col-6">Inicio estimado</dt>
+              <dd class="col-6 text-end">
+                {% if tarea.inicio_tarea %}{{ tarea.inicio_tarea|date:"d/m/Y" }}{% else %}-{% endif %}
+              </dd>
+
+              <dt class="col-6">Fin estimado</dt>
+              <dd class="col-6 text-end">
+                {% if tarea.fin_tarea %}{{ tarea.fin_tarea|date:"d/m/Y" }}{% else %}-{% endif %}
+              </dd>
+
+              <dt class="col-6">Inicio real</dt>
+              <dd class="col-6 text-end">
+                {% if snapshot.inicio_real %}{{ snapshot.inicio_real|date:"d/m/Y" }}{% else %}-{% endif %}
+              </dd>
+
+              <dt class="col-6">Fin real</dt>
+              <dd class="col-6 text-end">
+                {% if snapshot.fin_real %}{{ snapshot.fin_real|date:"d/m/Y" }}{% else %}-{% endif %}
+              </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row g-3">
+
+    <div class="col-xl-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between">
+          <span>Recursos previstos</span>
+          <span class="text-muted">{{ snapshot.n_previstos }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Recurso</th>
+                <th>Tipo</th>
+                <th>Ud.</th>
+                <th class="text-end">Cant.</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Coste</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recursos_previstos %}
+                <tr>
+                  <td>{{ r.recurso.nombre|default:"-" }}</td>
+                  <td>{{ r.recurso.tipo|default:"-" }}</td>
+                  <td>{{ r.unidad|default:"-" }}</td>
+                  <td class="text-end">{{ r.cantidad|default:"0"|floatformat:2 }}</td>
+                  <td class="text-end">{{ r.precio_unidad|default:"0"|floatformat:4 }}</td>
+                  <td class="text-end">{{ r.costo_recurso|default:"0"|money_es }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-3">Sin recursos previstos.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between">
+          <span>Recursos reales</span>
+          <span class="text-muted">{{ snapshot.n_reales }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Empleado/Recurso</th>
+                <th>Ud.</th>
+                <th class="text-end">Cant.</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Coste</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recursos_reales %}
+                <tr>
+                  <td>{{ r.inicio_recurso_real|default:"-" }}</td>
+                  <td>{{ r.legacy_tipo_recurso|default:"-" }}</td>
+                  <td>
+                    {% if r.empleado %}
+                      {{ r.empleado }}
+                    {% elif r.recurso %}
+                      {{ r.recurso.nombre }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{{ r.unidad|default:"-" }}</td>
+                  <td class="text-end">{{ r.cantidad|default:"0"|floatformat:2 }}</td>
+                  <td class="text-end">{{ r.precio_unidad|default:"0"|floatformat:4 }}</td>
+                  <td class="text-end">{{ r.costo_recurso_real|default:"0"|money_es }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-3">Sin recursos reales.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

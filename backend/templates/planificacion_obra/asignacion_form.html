@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}{% if modo_ajuste_realizado %}Ajustar fecha real{% elif asignacion %}Editar asignación{% else %}Nueva asignación de personal{% endif %}{% endblock %}
+
+{% block content %}
+
+<style>
+.assignment-page {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.assignment-card {
+  border-radius: 14px;
+}
+
+.assignment-form select,
+.assignment-form input,
+.assignment-form textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  background-color: #fff;
+}
+
+.assignment-form textarea {
+  min-height: 88px;
+}
+
+.assignment-form label {
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.assignment-form .form-text {
+  font-size: 0.84rem;
+  color: #6b7280;
+}
+
+.assignment-form .section-title {
+  font-size: 0.78rem;
+  letter-spacing: .04em;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.assignment-form .row {
+  align-items: start;
+}
+</style>
+
+<div class="container-fluid py-4 assignment-page">
+
+  <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary btn-sm mb-3">
+    ← Volver a planificación de personal
+  </a>
+
+  <div class="card shadow-sm border-0 assignment-card">
+    <div class="card-body p-4">
+
+      <h1 class="h3 mb-1">
+        {% if modo_ajuste_realizado %}
+          Ajustar fecha real de asignación
+        {% elif asignacion %}
+          Editar asignación de personal
+        {% else %}
+          Nueva asignación de personal
+        {% endif %}
+      </h1>
+      <p class="text-muted mb-4">
+        {% if modo_ajuste_realizado %}
+          Esta asignación es futura. Ajusta solo la fecha y horario reales antes de marcarla como realizada.
+        {% else %}
+          Distribuye personal disponible sobre una obra, unidad, tarea o partida.
+        {% endif %}
+      </p>
+
+      <form method="post" novalidate class="assignment-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        {% if modo_ajuste_realizado %}
+          <input type="hidden" name="modo" value="ajustar_realizado">
+
+          <div class="alert alert-warning">
+            <strong>No se puede realizar una asignación futura.</strong>
+            Corrige la fecha real de ejecución. Si la vivienda, capítulo o partida no corresponden, elimina esta asignación.
+          </div>
+
+          <h2 class="section-title mt-3 mb-3">Asignación actual</h2>
+          <table class="table table-sm mb-4">
+            <tr><th>Empleado</th><td>{{ asignacion.empleado }}</td></tr>
+            <tr><th>Obra</th><td>{{ asignacion.pi_display_obra }}</td></tr>
+            <tr><th>Vivienda</th><td>{{ asignacion.pi_display_vivienda_corta }}</td></tr>
+            <tr><th>Planta</th><td>{{ asignacion.pi_display_planta }}</td></tr>
+            <tr><th>Capítulo</th><td>{{ asignacion.pi_display_capitulo }}</td></tr>
+            <tr><th>Partida</th><td>{{ asignacion.pi_display_partida }}</td></tr>
+            <tr><th>Estado</th><td>{{ asignacion.get_estado_display }}</td></tr>
+          </table>
+        {% else %}
+
+        <h2 class="section-title mt-3 mb-3">Personal y obra</h2>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.empleado.id_for_label }}">Empleado</label>
+            {{ form.empleado }}
+            {{ form.empleado.errors }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.obra.id_for_label }}">Obra</label>
+            {{ form.obra }}
+            {{ form.obra.errors }}
+          </div>
+        </div>
+
+        <h2 class="section-title mt-3 mb-3">Destino de la asignación</h2>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.fase.id_for_label }}">Edificio / Fase</label>
+            {{ form.fase }}
+            {{ form.fase.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.vivienda.id_for_label }}">Vivienda</label>
+            {{ form.vivienda }}
+            {{ form.vivienda.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.planta_trabajo.id_for_label }}">Planta</label>
+            {{ form.planta_trabajo }}
+            {{ form.planta_trabajo.errors }}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <button type="button" id="btn-cargar-estructura" class="btn btn-outline-primary btn-sm">
+            ⟳ Cargar estructura
+          </button>
+          <span class="text-muted small ms-2">
+            Usa este botón después de cambiar obra, edificio/fase, vivienda o planta.
+          </span>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.capitulo.id_for_label }}">Capítulo</label>
+            {{ form.capitulo }}
+            {{ form.capitulo.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.partida.id_for_label }}">Partida</label>
+            {{ form.partida }}
+            {{ form.partida.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.tarea_obra.id_for_label }}">Tarea existente</label>
+            {{ form.tarea_obra }}
+            {{ form.tarea_obra.errors }}
+            <div class="form-text">
+              Opcional. Si no eliges tarea y no existe una compatible, se creará una tarea operativa mínima.
+            </div>
+          </div>
+        </div>
+
+        <div style="display:none;">
+          {{ form.observaciones }}
+          {{ form.unidad_obra }}
+        </div>
+
+        {% endif %}
+
+        <h2 class="section-title mt-4 mb-3">Fechas y horario</h2>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.fecha_inicio.id_for_label }}">Fecha inicio</label>
+            {% if modo_ajuste_realizado %}
+              <input type="date" name="fecha_inicio" id="id_fecha_inicio" value="{{ ajuste_fecha_inicio_value }}">
+            {% else %}
+              {{ form.fecha_inicio }}
+              {{ form.fecha_inicio.errors }}
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.hora_inicio.id_for_label }}">Hora inicio</label>
+            {% if modo_ajuste_realizado %}
+              <input type="time" name="hora_inicio" id="id_hora_inicio" value="{{ ajuste_hora_inicio_value }}">
+            {% else %}
+              {{ form.hora_inicio }}
+              {{ form.hora_inicio.errors }}
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.fecha_fin.id_for_label }}">Fecha fin</label>
+            {% if modo_ajuste_realizado %}
+              <input type="date" name="fecha_fin" id="id_fecha_fin" value="{{ ajuste_fecha_fin_value }}">
+            {% else %}
+              {{ form.fecha_fin }}
+              {{ form.fecha_fin.errors }}
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.hora_fin.id_for_label }}">Hora fin</label>
+            {% if modo_ajuste_realizado %}
+              <input type="time" name="hora_fin" id="id_hora_fin" value="{{ ajuste_hora_fin_value }}">
+            {% else %}
+              {{ form.hora_fin }}
+              {{ form.hora_fin.errors }}
+            {% endif %}
+          </div>
+        </div>
+
+        {% if not modo_ajuste_realizado %}
+        <h2 class="section-title mt-4 mb-3">Estado y notas</h2>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.estado.id_for_label }}">Estado</label>
+            {{ form.estado }}
+            {{ form.estado.errors }}
+          </div>
+
+          </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            {% if modo_ajuste_realizado %}✓ Guardar fecha real{% else %}✓ Guardar asignación{% endif %}
+          </button>
+
+          {% if modo_ajuste_realizado %}
+            <a href="{% url 'planificacion_obra:asignacion_delete' asignacion.pk %}" class="btn btn-outline-danger">
+              🗑 Eliminar asignación
+            </a>
+            <a href="{% url 'planificacion_obra:asignacion_detail' asignacion.pk %}" class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+          {% endif %}
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const endpointUrl = "/app/planificacion-obra/asignaciones/opciones/";
+
+  const obra = document.getElementById("id_obra");
+  const fase = document.getElementById("id_fase");
+  const vivienda = document.getElementById("id_vivienda");
+  const planta = document.getElementById("id_planta_trabajo");
+  const capitulo = document.getElementById("id_capitulo");
+  const partida = document.getElementById("id_partida");
+  const tarea = document.getElementById("id_tarea_obra");
+  const unidadObra = document.getElementById("id_unidad_obra");
+  const btnCargar = document.getElementById("btn-cargar-estructura");
+
+  if (!obra) return;
+
+  function clearSelect(select) {
+    if (!select) return;
+    select.innerHTML = "";
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "---------";
+    select.appendChild(option);
+  }
+
+  function populateSelect(select, items) {
+    if (!select) return;
+
+    const previousValue = select.value || "";
+
+    clearSelect(select);
+
+    let foundPrevious = false;
+
+    (items || []).forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.text;
+
+      if (String(item.id) === String(previousValue)) {
+        option.selected = true;
+        foundPrevious = true;
+      }
+
+      select.appendChild(option);
+    });
+
+    if (previousValue && !foundPrevious) {
+      select.value = "";
+    }
+  }
+
+  function syncUnidadObra() {
+    if (unidadObra && vivienda) {
+      unidadObra.value = vivienda.value || "";
+    }
+  }
+
+  function buildParams(level) {
+    const params = new URLSearchParams();
+
+    if (obra.value) params.set("obra", obra.value);
+    if (level >= 2 && fase && fase.value) params.set("fase", fase.value);
+
+    if (level >= 3 && vivienda && vivienda.value) {
+      params.set("vivienda", vivienda.value);
+      params.set("unidad_obra", vivienda.value);
+    }
+
+    if (level >= 4 && planta && planta.value) params.set("planta_trabajo", planta.value);
+    if (level >= 5 && capitulo && capitulo.value) params.set("capitulo", capitulo.value);
+    if (level >= 6 && partida && partida.value) params.set("partida", partida.value);
+
+    return params;
+  }
+
+  async function loadOptions(level) {
+    if (!obra.value) {
+      populateSelect(fase, []);
+      populateSelect(vivienda, []);
+      populateSelect(planta, []);
+      populateSelect(capitulo, []);
+      populateSelect(partida, []);
+      populateSelect(tarea, []);
+      syncUnidadObra();
+      return;
+    }
+
+    const response = await fetch(endpointUrl + "?" + buildParams(level).toString(), {
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+
+    if (!response.ok) {
+      console.error("Error cargando estructura:", response.status);
+      return;
+    }
+
+    const data = await response.json();
+
+    if (level === 1) {
+      populateSelect(fase, data.fases);
+      populateSelect(vivienda, []);
+      populateSelect(planta, []);
+      populateSelect(capitulo, []);
+      populateSelect(partida, []);
+      populateSelect(tarea, []);
+    }
+
+    if (level === 2) {
+      populateSelect(vivienda, data.viviendas);
+      populateSelect(planta, []);
+      populateSelect(capitulo, []);
+      populateSelect(partida, []);
+      populateSelect(tarea, []);
+    }
+
+    if (level === 3) {
+      populateSelect(planta, data.plantas_trabajo);
+      populateSelect(capitulo, []);
+      populateSelect(partida, []);
+      populateSelect(tarea, []);
+    }
+
+    if (level === 4) {
+      populateSelect(capitulo, data.capitulos);
+      populateSelect(partida, []);
+      populateSelect(tarea, data.tareas);
+    }
+
+    if (level === 5) {
+      populateSelect(partida, data.partidas);
+      populateSelect(tarea, data.tareas);
+    }
+
+    if (level === 6) {
+      populateSelect(tarea, data.tareas);
+    }
+
+    syncUnidadObra();
+  }
+
+  obra.addEventListener("change", function () {
+    loadOptions(1);
+  });
+
+  if (fase) {
+    fase.addEventListener("change", function () {
+      loadOptions(2);
+    });
+  }
+
+  if (vivienda) {
+    vivienda.addEventListener("change", function () {
+      syncUnidadObra();
+      loadOptions(3);
+    });
+  }
+
+  if (planta) {
+    planta.addEventListener("change", function () {
+      loadOptions(4);
+    });
+  }
+
+  if (capitulo) {
+    capitulo.addEventListener("change", function () {
+      loadOptions(5);
+    });
+  }
+
+  if (partida) {
+    partida.addEventListener("change", function () {
+      loadOptions(6);
+    });
+  }
+
+  if (btnCargar) {
+    btnCargar.addEventListener("click", function () {
+      if (partida && partida.value) {
+        loadOptions(6);
+      } else if (capitulo && capitulo.value) {
+        loadOptions(5);
+      } else if (planta && planta.value) {
+        loadOptions(4);
+      } else if (vivienda && vivienda.value) {
+        loadOptions(3);
+      } else if (fase && fase.value) {
+        loadOptions(2);
+      } else {
+        loadOptions(1);
+      }
+    });
+  }
+
+  // En edición, Django ya renderiza toda la jerarquía precargada.
+  // No ejecutamos carga automática inicial porque vacía los selects dependientes.
+  const isExistingAssignment = "{{ asignacion.pk|default:'' }}";
+
+  if (obra.value && !isExistingAssignment) {
+    loadOptions(1);
+  }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const fechaInicio = document.getElementById("id_fecha_inicio");
+  const fechaFin = document.getElementById("id_fecha_fin");
+
+  if (!fechaInicio || !fechaFin) return;
+
+  let lastFechaInicio = fechaInicio.value || "";
+
+  fechaInicio.addEventListener("change", function () {
+    const nuevaFecha = fechaInicio.value || "";
+
+    // Comportamiento operativo por defecto:
+    // una asignación sucede en el mismo día salvo que el usuario cambie manualmente fecha fin.
+    if (!fechaFin.value || fechaFin.value === lastFechaInicio) {
+      fechaFin.value = nuevaFecha;
+    }
+
+    lastFechaInicio = nuevaFecha;
+  });
+});
+</script>
+
+{% endblock %}

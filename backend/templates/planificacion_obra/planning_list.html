@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+{% load planning_format %}
+
+{% block content %}
+<style>
+  .planning-operativo {
+    font-size: 0.88rem;
+  }
+
+  .planning-operativo .table {
+    font-size: 0.78rem;
+  }
+
+  .planning-operativo .table th,
+  .planning-operativo .table td {
+    padding: 0.30rem 0.35rem;
+    line-height: 1.20;
+    vertical-align: middle;
+  }
+
+  .planning-operativo .card-header {
+    padding-top: 0.65rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .planning-operativo .badge {
+    font-size: 0.68rem;
+  }
+
+  .planning-operativo .form-label,
+  .planning-operativo .form-control,
+  .planning-operativo .form-select,
+  .planning-operativo .btn {
+    font-size: 0.82rem;
+  }
+
+  /* Planning detalle compacto usuario */
+  .planning-detail-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    font-size: .66rem !important;
+    line-height: 1.12;
+  }
+
+  .planning-detail-table th,
+  .planning-detail-table td {
+    padding: 3px 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+  }
+
+  .planning-detail-table th {
+    font-size: .62rem !important;
+    letter-spacing: .02em;
+  }
+
+  .planning-detail-table th:nth-child(1),  .planning-detail-table td:nth-child(1)  { width: 3.5%; }
+  .planning-detail-table th:nth-child(2),  .planning-detail-table td:nth-child(2)  { width: 5%; }
+  .planning-detail-table th:nth-child(3),  .planning-detail-table td:nth-child(3)  { width: 6%; }
+  .planning-detail-table th:nth-child(4),  .planning-detail-table td:nth-child(4)  { width: 8%; }
+  .planning-detail-table th:nth-child(5),  .planning-detail-table td:nth-child(5)  { width: 16%; }
+  .planning-detail-table th:nth-child(6),  .planning-detail-table td:nth-child(6)  { width: 5.5%; }
+  .planning-detail-table th:nth-child(7),  .planning-detail-table td:nth-child(7)  { width: 5.5%; }
+  .planning-detail-table th:nth-child(8),  .planning-detail-table td:nth-child(8)  { width: 5.5%; }
+  .planning-detail-table th:nth-child(9),  .planning-detail-table td:nth-child(9)  { width: 5.5%; }
+  .planning-detail-table th:nth-child(10), .planning-detail-table td:nth-child(10) { width: 3%; }
+  .planning-detail-table th:nth-child(11), .planning-detail-table td:nth-child(11) { width: 5%; }
+  .planning-detail-table th:nth-child(12), .planning-detail-table td:nth-child(12) { width: 6%; }
+  .planning-detail-table th:nth-child(13), .planning-detail-table td:nth-child(13) { width: 6%; }
+  .planning-detail-table th:nth-child(14), .planning-detail-table td:nth-child(14) { width: 7%; }
+  .planning-detail-table th:nth-child(15), .planning-detail-table td:nth-child(15) { width: 6%; }
+  .planning-detail-table th:nth-child(16), .planning-detail-table td:nth-child(16) { width: 3%; }
+
+  .planning-detail-table .badge {
+    font-size: .56rem !important;
+    padding: .10rem .25rem !important;
+  }
+
+
+    @media print {
+      html, body { width: 297mm !important; margin: 0 !important; padding: 0 !important; }
+      .planning-print-page { width: 285mm !important; max-width: 285mm !important; min-width: 285mm !important; margin: 0 auto !important; padding: 0 !important; }
+      main, .main, .content, .app-content, .page-content { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+      .card, .table-responsive, table { width: 100% !important; max-width: 100% !important; }
+      .planning-detail-table { width: 100% !important; table-layout: fixed !important; }
+      @page { size: 297mm 210mm; margin: 6mm; }
+      body { background: #fff !important; }
+      .no-print, form, .btn, nav, .navbar, .sidebar, .app-sidebar, .topbar { display: none !important; }
+      .container-fluid { padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important; } .table-responsive { overflow: visible !important; }
+      .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: auto !important; page-break-inside: auto !important; margin-bottom: 4px !important; }
+      .card-header { padding: 4px 8px !important; background: #fff !important; }
+      .card-body { padding: 6px !important; }
+      .table { font-size: 8px !important; }
+      .table th, .table td { padding: 2px 3px !important; }
+      .planning-detail-table { font-size: 7px !important; }
+      .planning-detail-table th, .planning-detail-table td { padding: 1.5px 2px !important; }
+      h1 { font-size: 16px !important; margin-bottom: 2px !important; }
+      p, .small, .text-secondary { font-size: 8px !important; }
+      a { color: #000 !important; text-decoration: none !important; }
+    }
+  </style>
+
+<div class="container-fluid py-3 planning-print-page">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1">Planning de Obra</h1>
+      <p class="text-muted mb-0">
+        Vista por estructura de obra, clasificación técnica, previsto, real, desviación y avisos.
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if selected_obra %}
+        <a href="{% url 'planificacion_obra:obra_detail' selected_obra.pk %}" class="btn btn-outline-secondary btn-sm">
+          Ficha de obra
+        </a>
+      {% endif %}
+      <a href="{% url 'planificacion_obra:obras_list' %}" class="btn btn-outline-secondary btn-sm">
+        Resumen de obras
+      </a>
+      <a href="/app/planificacion-obra/asignaciones/" class="btn btn-outline-secondary btn-sm">
+        Asignaciones
+      </a>
+    </div>
+  </div>
+
+  <form method="get" class="card shadow-sm border-0 mb-3">
+      {% if vista_gantt %}<input type="hidden" name="vista" value="gantt">{% endif %}
+    <div class="card-header bg-white">
+      <strong>Filtros del Planning</strong>
+      <div class="text-secondary small">
+        Estructura: Obra → Edificio/Fase → Vivienda → Planta. Clasificación: Capítulo → Partida.
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+
+        <div class="col-lg-3 col-md-6">
+          <label class="form-label small text-secondary">Obra</label>
+          <select name="obra" class="form-select form-select-sm" onchange="planningClearFields(this.form, ['fase', 'vivienda', 'planta', 'capitulo', 'partida'])">
+            <option value="">Selecciona una obra</option>
+            {% for obra in obras %}
+              <option value="{{ obra.id }}" {% if filtros.obra == obra.id|stringformat:"s" %}selected{% endif %}>
+                {{ obra }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+          <label class="form-label small text-secondary">Edificio / Fase</label>
+          <select name="fase" class="form-select form-select-sm" onchange="planningClearFields(this.form, ['vivienda', 'planta', 'capitulo', 'partida'])">
+            <option value="">Todas</option>
+            {% for fase in fases %}
+              <option value="{{ fase.legacy_cod_fase }}" {% if filtros.fase == fase.legacy_cod_fase|stringformat:"s" %}selected{% endif %}>
+                {{ fase.legacy_cod_fase }} · {{ fase.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-1 col-md-3">
+          <label class="form-label small text-secondary">Vivienda</label>
+          <select name="vivienda" class="form-select form-select-sm" onchange="planningClearFields(this.form, ['planta', 'capitulo', 'partida'])">
+            <option value="">
+              {% if filtros.fase %}Todas{% else %}Selecciona fase{% endif %}
+            </option>
+            {% for viv in viviendas %}
+              <option value="{{ viv }}" {% if filtros.vivienda == viv|stringformat:"s" %}selected{% endif %}>
+                {{ viv }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+          <label class="form-label small text-secondary">Planta</label>
+          <select name="planta" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            {% for pl in plantas %}
+              <option value="{{ pl }}" {% if filtros.planta == pl|stringformat:"s" %}selected{% endif %}>
+                {{ pl }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+          <label class="form-label small text-secondary">Capítulo</label>
+          <select name="capitulo" class="form-select form-select-sm" onchange="planningClearFields(this.form, ['partida'])">
+            <option value="">Todos</option>
+            {% for capitulo in capitulos %}
+              <option value="{{ capitulo.id }}" {% if filtros.capitulo == capitulo.id|stringformat:"s" %}selected{% endif %}>
+                {{ capitulo.codigo }} · {{ capitulo.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+          <label class="form-label small text-secondary">Partida</label>
+          <select name="partida" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            {% for partida in partidas %}
+              <option value="{{ partida.id }}" {% if filtros.partida == partida.id|stringformat:"s" %}selected{% endif %}>
+                {{ partida.codigo }} · {{ partida.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+          <label class="form-label small text-secondary">Agrupar por</label>
+          <select name="agrupacion" class="form-select form-select-sm">
+            <option value="detalle" {% if agrupacion == "detalle" %}selected{% endif %}>Detalle por tarea</option>
+            <option value="fase" {% if agrupacion == "fase" %}selected{% endif %}>Edificio / Fase</option>
+            <option value="vivienda" {% if agrupacion == "vivienda" %}selected{% endif %}>Vivienda</option>
+            <option value="capitulo" {% if agrupacion == "capitulo" %}selected{% endif %}>Capítulo</option>
+          </select>
+        </div>
+
+        <div class="col-lg-1 col-md-2">
+          <label class="form-label small text-secondary">Límite</label>
+          <select name="limit" class="form-select form-select-sm">
+            <option value="50" {% if limit == "50" %}selected{% endif %}>50</option>
+            <option value="100" {% if limit == "100" %}selected{% endif %}>100</option>
+            <option value="200" {% if limit == "200" %}selected{% endif %}>200</option>
+            <option value="500" {% if limit == "500" %}selected{% endif %}>500</option>
+            <option value="all" {% if limit == "all" %}selected{% endif %}>Todas</option>
+          </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="avisos" value="1" id="id_avisos" {% if solo_avisos %}checked{% endif %}>
+            <label class="form-check-label small" for="id_avisos">
+              Solo tareas con avisos
+            </label>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm">
+            Ver planning
+          </button>
+          <a href="{% url 'planificacion_obra:planning_list' %}" class="btn btn-outline-secondary btn-sm">
+            Limpiar
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </form>
+
+      {% if planning_limit_warning %}
+        <div class="alert alert-warning py-2 px-3 small mb-3">
+          {{ planning_limit_warning }}
+        </div>
+      {% endif %}
+
+  {% if not selected_obra %}
+    <div class="alert alert-info">
+      Selecciona una obra para cargar el Planning. No se cargan tareas por defecto para mantener la pantalla rápida.
+    </div>
+  {% else %}
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="small text-secondary">
+        Tareas filtradas: <strong>{{ total_filtrado }}</strong> · Mostradas: <strong>{{ total_mostrado }}</strong>
+        {% if agrupacion != "detalle" and agrupacion != "capitulo" %}
+          · Agrupación: <strong>{{ agrupacion }}</strong>
+        {% endif %}
+      </div>
+      <div class="small text-secondary">
+          {% if vista_vivienda %}{% if vista_gantt %}<a class="btn btn-outline-primary btn-sm me-2" href="?obra={{ filtros.obra }}&fase={{ filtros.fase }}&vivienda={{ filtros.vivienda }}&planta={{ filtros.planta }}&capitulo={{ filtros.capitulo }}&partida={{ filtros.partida }}&agrupacion=detalle&limit={{ limit }}">Detalle por tarea</a>{% else %}<a class="btn btn-primary btn-sm me-2" href="?obra={{ filtros.obra }}&fase={{ filtros.fase }}&vivienda={{ filtros.vivienda }}&planta={{ filtros.planta }}&capitulo={{ filtros.capitulo }}&partida={{ filtros.partida }}&agrupacion=detalle&limit={{ limit }}&vista=gantt">Vista Gantt</a>{% endif %}{% endif %}
+          {% if selected_obra %}<button type="button" class="btn btn-outline-secondary btn-sm me-2 no-print" onclick="window.print()">Imprimir informe</button>{% endif %}
+        Base cálculo: TareaObra + recursos previstos/reales recalculados
+      </div>
+    </div>
+
+      {% include "planificacion_obra/_resumen_vivienda.html" %}
+      {% if vista_gantt %}
+      {% include "planificacion_obra/_gantt_vivienda.html" %}
+      {% endif %}
+    {% if agrupacion != "detalle" %}
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Resumen agrupado</strong>
+            <div class="text-secondary small">Subtotal por {{ agrupacion }}.</div>
+          </div>
+          <span class="badge bg-primary">{{ grupos|length }} grupos</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0 small">
+            <thead>
+              <tr>
+                <th>Grupo</th>
+                <th class="text-end">Tareas</th>
+                <th class="text-end">Previsto</th>
+                <th class="text-end">Real</th>
+                <th class="text-end">Desvío</th>
+                    <th class="text-end">Avisos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for grupo in grupos %}
+                <tr>
+                  <td>
+                    <strong>{{ grupo.label }}</strong>
+                    <div class="text-secondary small">{{ grupo.tipo }}</div>
+                  </td>
+                  <td class="text-end">{{ grupo.tareas }}</td>
+                  <td class="text-end">{{ grupo.coste_previsto|money_es }}</td>
+                  <td class="text-end">{{ grupo.coste_real|money_es }}</td>
+                  <td class="text-end {% if grupo.desviacion > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ grupo.desviacion|money_abs_es }}
+                    {% if grupo.ejecucion_pct %}
+                      <span class="text-secondary">({{ grupo.ejecucion_pct }}%)</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if grupo.avisos %}
+                      <span class="badge bg-warning text-dark">{{ grupo.avisos }}</span>
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-secondary py-4">Sin grupos para mostrar.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if agrupacion == "capitulo" %}
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white">
+          <strong>Informe por capítulo</strong>
+          <div class="text-secondary small">Tareas agrupadas por capítulo, respetando el orden operativo de la vivienda.</div>
+        </div>
+
+        <div class="card-body p-0">
+          {% for grupo in grupos %}
+            <div class="border-bottom">
+              <div class="px-3 py-2 bg-light d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>CAPÍTULO {{ grupo.label }}</strong>
+                  <div class="text-secondary small">{{ grupo.tareas }} tareas</div>
+                </div>
+                <div class="text-end small">
+                  <span class="me-3">Previsto: <strong>{{ grupo.coste_previsto|money_es }}</strong></span>
+                  <span class="me-3">Real: <strong>{{ grupo.coste_real|money_es }}</strong></span>
+                  <span class="{% if grupo.desviacion > 0 %}text-danger{% else %}text-success{% endif %}">
+                    Desvío: <strong>{{ grupo.desviacion|money_abs_es }}</strong>
+                  </span>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr>
+                      <th>Orden</th>
+                      <th>Inicio</th>
+                      <th>Fin</th>
+                      <th>Viv.</th>
+                      <th>Planta</th>
+                      <th>Partida</th>
+                      <th>Ud.</th>
+                      <th class="text-end">Cant.</th>
+                      <th class="text-end">Previsto</th>
+                      <th class="text-end">Real</th>
+                      <th class="text-end">Desvío</th>
+                      <th>Estado</th>
+                      <th class="text-center">Avisos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in grupo.rows %}
+                      <tr>
+                        <td>
+                          <a href="/app/planificacion-obra/planning/tareas/{{ row.tarea_id }}/?next={{ request.get_full_path|urlencode }}" class="text-decoration-none">
+                            {{ row.legacy_orden|default:"—" }}
+                          </a>
+                        </td>
+                        <td>{% if row.inicio_tarea %}{{ row.inicio_tarea|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                        <td>{% if row.fin_tarea %}{{ row.fin_tarea|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                        <td>{{ row.vivienda }}</td>
+                        <td>{{ row.planta }}</td>
+                        <td>{{ row.partida_label }}</td>
+                        <td>{{ row.unidad }}</td>
+                        <td class="text-end">{{ row.cantidad_tarea|floatformat:2 }}</td>
+                        <td class="text-end">{{ row.coste_previsto|money_es }}</td>
+                        <td class="text-end">{{ row.coste_real|money_es }}</td>
+                        <td class="text-end {% if row.desviacion_coste > 0 %}text-danger{% elif row.desviacion_coste < 0 %}text-success{% endif %}">
+                          {{ row.desviacion_coste|money_abs_es }}
+                        </td>
+                        <td>
+                          <span class="badge bg-light text-dark border">{{ row.estado_calculado }}</span>
+                        </td>
+                        <td class="text-center">
+                          {% if row.warnings %}
+                            <span class="badge bg-warning text-dark" title="{{ row.warnings|length }} aviso(s)">⚠ {{ row.warnings|length }}</span>
+                          {% else %}
+                            <span class="text-success" title="Sin avisos">✓</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="13" class="text-center text-secondary py-4">Sin tareas en este capítulo.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% empty %}
+            <div class="p-4 text-center text-secondary">No hay capítulos para los filtros seleccionados.</div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+    <div class="card shadow-sm border-0 {% if vista_gantt %}d-none{% endif %}">
+      <div class="card-header bg-white">
+        <strong>Detalle por tarea</strong>
+        <div class="text-secondary small">Lectura compacta de tareas, fechas, importes y avisos.</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0 planning-detail-table">
+            <thead>
+              <tr>
+                <th>Orden</th>
+                <th>Vivienda</th>
+                <th>Planta</th>
+                <th>Capítulo</th>
+                <th>Partida</th>
+                <th>Fecha inicio</th>
+                <th>Fecha fin</th>
+                <th>Inicio real</th>
+                <th>Fin real</th>
+                <th>Ud.</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Previsto</th>
+                <th class="text-end">Real</th>
+                <th class="text-end">Desvío</th>
+                <th>Estado</th>
+                <th class="text-center">Avisos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  <td>
+                    <a href="/app/planificacion-obra/planning/tareas/{{ row.tarea_id }}/?next={{ request.get_full_path|urlencode }}" class="text-decoration-none" title="Abrir tarea">
+                      {{ row.legacy_orden|default:"—" }}
+                    </a>
+                  </td>
+                  <td title="{{ row.vivienda }}">{{ row.vivienda }}</td>
+                  <td title="{{ row.planta }}">{{ row.planta }}</td>
+                  <td class="planning-clean-code" title="{{ row.capitulo_label|default:row.capitulo }}">
+                    {{ row.capitulo_label|default:row.capitulo }}
+                  </td>
+                  <td class="planning-clean-code" title="{{ row.partida_label|default:row.partida }}">
+                    {{ row.partida_label|default:row.partida }}
+                  </td>
+                  <td>{% if row.inicio_tarea %}{{ row.inicio_tarea|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                  <td>{% if row.fin_tarea %}{{ row.fin_tarea|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                  <td>
+                    {% if row.inicio_real %}
+                      {{ row.inicio_real|date:"d/m/Y" }}
+                    {% elif row.fecha_inicio_real %}
+                      {{ row.fecha_inicio_real|date:"d/m/Y" }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if row.fin_real %}
+                      {{ row.fin_real|date:"d/m/Y" }}
+                    {% elif row.fecha_fin_real %}
+                      {{ row.fecha_fin_real|date:"d/m/Y" }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                  <td>{{ row.unidad }}</td>
+                  <td class="text-end">{{ row.cantidad_tarea|floatformat:2 }}</td>
+                  <td class="text-end">{{ row.coste_previsto|money_es }}</td>
+                  <td class="text-end">{{ row.coste_real|money_es }}</td>
+                  <td class="text-end {% if row.desviacion_coste > 0 %}text-danger{% elif row.desviacion_coste < 0 %}text-success{% endif %}">
+                    {{ row.desviacion_coste|money_abs_es }}
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border">{{ row.estado_calculado }}</span>
+                  </td>
+                  <td class="text-center">
+                    {% if row.warnings %}
+                      <span class="badge bg-warning text-dark" title="{{ row.warnings|length }} aviso(s)">⚠ {{ row.warnings|length }}</span>
+                    {% else %}
+                      <span class="text-success">✓</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="16" class="text-center text-secondary py-4">
+                    No hay tareas para los filtros seleccionados.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      </div>
+    </div>
+    {% endif %}
+
+  {% endif %}
+
+</div>
+
+<script>
+  function planningClearFields(form, fieldNames) {
+    fieldNames.forEach(function (name) {
+      if (form.elements[name]) {
+        form.elements[name].value = "";
+      }
+    });
+    form.submit();
+  }
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  function cleanPlanningCode(value) {
+    return (value || "")
+      .trim()
+      .replace(/^C?\d{1,3}(?:\.\d{1,3})?\s*[-–·]\s*/i, "")
+      .trim();
+  }
+
+  document.querySelectorAll(".planning-clean-code").forEach(function (cell) {
+    const original = cell.textContent.trim();
+    const cleaned = cleanPlanningCode(original);
+    if (original && !cell.getAttribute("title")) {
+      cell.setAttribute("title", original);
+    }
+    if (cleaned) {
+      cell.textContent = cleaned;
+    }
+  });
+});
+</script>
+
+{% endblock %}

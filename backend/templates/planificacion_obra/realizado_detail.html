@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de realizado{% endblock %}
+
+{% block content %}
+<style>
+.realizado-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.realizado-card {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+}
+
+.realizado-card__header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.realizado-card__body {
+  padding: 24px;
+}
+
+.realizado-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: .78rem;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.realizado-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.realizado-kpi {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+}
+
+.realizado-kpi span {
+  display: block;
+  color: #64748b;
+  font-size: .78rem;
+  margin-bottom: 4px;
+}
+
+.realizado-kpi strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.realizado-section-title {
+  font-size: .78rem;
+  letter-spacing: .04em;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin: 18px 0 10px;
+}
+
+.realizado-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.realizado-table th,
+.realizado-table td {
+  border-bottom: 1px solid #edf2f7;
+  padding: 10px 8px;
+  vertical-align: top;
+}
+
+.realizado-table th {
+  width: 210px;
+  color: #475569;
+  font-weight: 700;
+}
+
+.realizado-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+</style>
+
+<div class="realizado-page">
+  <div class="mb-3 realizado-actions">
+    <a href="{{ request.GET.next|default:'/app/planificacion-obra/asignaciones/' }}" class="btn btn-outline-secondary btn-sm">
+      ← Volver
+    </a>
+    <a href="/app/planificacion-obra/asignaciones/" class="btn btn-outline-primary btn-sm">
+      Listado
+    </a>
+
+<a href="/app/planificacion-obra/planning/" class="btn btn-outline-primary btn-sm">
+  Planning de Obra
+</a>
+  </div>
+
+  <div class="realizado-card">
+    <div class="realizado-card__header">
+      <div>
+        <h1 class="h3 mb-1">Detalle de realizado</h1>
+        <p class="text-muted mb-0">
+          Parte de trabajo realizado por empleado en obra.
+        </p>
+      </div>
+      <span class="realizado-badge">Realizado</span>
+    </div>
+
+    <div class="realizado-card__body">
+      <div class="realizado-grid">
+        <div class="realizado-kpi">
+          <span>Fecha</span>
+          <strong>{{ fecha|date:"d/m/Y" }}</strong>
+        </div>
+        <div class="realizado-kpi">
+          <span>Horas</span>
+          <strong>{{ horas_display }}</strong>
+        </div>
+        <div class="realizado-kpi">
+          <span>Precio hora</span>
+          <strong>{{ precio_hora_display }} €</strong>
+        </div>
+        <div class="realizado-kpi">
+          <span>Importe</span>
+          <strong>{{ importe_display }} €</strong>
+        </div>
+      </div>
+
+      <div class="realizado-section-title">Empleado</div>
+      <table class="realizado-table">
+        <tr>
+          <th>Empleado</th>
+          <td>{{ empleado }}</td>
+        </tr>
+        <tr>
+          <th>Tipo de recurso</th>
+          <td>{{ realizado.legacy_tipo_recurso }}</td>
+        </tr>
+      </table>
+
+      <div class="realizado-section-title">Destino de trabajo</div>
+      <table class="realizado-table">
+        <tr>
+          <th>Obra</th>
+          <td>{{ obra }}</td>
+        </tr>
+        <tr>
+          <th>Edificio / Fase</th>
+          <td>{{ edificio|default:"-" }}</td>
+        </tr>
+        <tr>
+          <th>Vivienda</th>
+          <td>{{ vivienda }}</td>
+        </tr>
+        <tr>
+          <th>Planta</th>
+          <td>{{ planta }}</td>
+        </tr>
+        <tr>
+          <th>Capítulo</th>
+          <td>{{ capitulo }}</td>
+        </tr>
+        <tr>
+          <th>Partida</th>
+          <td>{{ partida }}</td>
+        </tr>
+      </table>
+
+      <div class="realizado-section-title">Control económico</div>
+      <table class="realizado-table">
+        <tr>
+          <th>Unidad</th>
+          <td>{{ realizado.unidad }}</td>
+        </tr>
+        <tr>
+          <th>Cantidad / horas</th>
+          <td>{{ horas_display }}</td>
+        </tr>
+        <tr>
+          <th>Precio unidad</th>
+          <td>{{ precio_hora_display }} €</td>
+        </tr>
+        <tr>
+          <th>Importe calculado</th>
+          <td>{{ importe_display }} €</td>
+        </tr>
+        <tr>
+          <th>Importe registrado</th>
+          <td>{{ importe_registrado_display }} €</td>
+        </tr>
+      </table>
+
+      {% if observaciones %}
+        <div class="realizado-section-title">Observaciones</div>
+        <div class="alert alert-light border">
+          {{ observaciones }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

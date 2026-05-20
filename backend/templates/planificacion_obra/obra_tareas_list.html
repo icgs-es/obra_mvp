@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Tareas · {{ obra.nombre }}{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex gap-2">
+  <a href="{% url 'planificacion_obra:obra_detail' obra.pk %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver a ficha de obra
+  </a>
+  <a href="{% url 'planificacion_obra:obras_list' %}" class="btn btn-sm btn-outline-secondary">
+    Obras
+  </a>
+</div>
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1 class="h3 mb-1">Tareas · {{ obra.nombre }}</h1>
+    <p class="text-secondary mb-0">
+      {{ obra.team.name }} · Código legacy {{ obra.legacy_cod_obra }}
+    </p>
+  </div>
+  <span class="badge bg-primary fs-6">{{ total_filtrado }} tareas</span>
+</div>
+
+<form method="get" class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Buscar</label>
+        <input type="text" name="q" value="{{ filtros.q }}" class="form-control" placeholder="Unidad, vivienda, partida...">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Fase</label>
+        <select name="fase" class="form-select">
+          <option value="">Todas</option>
+          {% for fase in fases %}
+            <option value="{{ fase.legacy_cod_fase }}" {% if filtros.fase == fase.legacy_cod_fase|stringformat:"s" %}selected{% endif %}>
+              {{ fase.legacy_cod_fase }} · {{ fase.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Capítulo</label>
+        <select name="capitulo" class="form-select">
+          <option value="">Todos</option>
+          {% for capitulo in capitulos %}
+            <option value="{{ capitulo.id }}" {% if filtros.capitulo == capitulo.id|stringformat:"s" %}selected{% endif %}>
+              {{ capitulo.codigo }} · {{ capitulo.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Partida</label>
+        <select name="partida" class="form-select">
+          <option value="">Todas</option>
+          {% for partida in partidas %}
+            <option value="{{ partida.id }}" {% if filtros.partida == partida.id|stringformat:"s" %}selected{% endif %}>
+              {{ partida.codigo }} · {{ partida.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-1">
+        <label class="form-label">Incid.</label>
+        <select name="incidencias" class="form-select">
+          <option value="">Todas</option>
+          <option value="1" {% if filtros.incidencias == "1" %}selected{% endif %}>Sí</option>
+        </select>
+      </div>
+
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'planificacion_obra:obra_tareas_list' obra.pk %}" class="btn btn-outline-secondary">
+          Limpiar
+        </a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <strong>Tareas de obra</strong>
+      <div class="text-secondary small">
+        Se muestran como máximo {{ limite }} tareas para mantener la pantalla ágil.
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Unidad</th>
+          <th>Fase</th>
+          <th>Capítulo / Partida</th>
+          <th>Inicio plan</th>
+          <th>Fin plan</th>
+          <th>Inicio real</th>
+          <th>Fin real</th>
+          <th class="text-end">% comp.</th>
+          <th class="text-end">Previsto</th>
+          <th class="text-end">Real</th>
+          <th>Incid.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tarea in tareas %}
+          <tr>
+            <td>
+              {% if tarea.unidad_obra %}
+                <strong>{{ tarea.unidad_obra.edificio }} · {{ tarea.unidad_obra.vivienda }}</strong>
+                <div class="small text-secondary">{{ tarea.unidad_obra.nivel }} · {{ tarea.unidad_obra.tipo }}</div>
+              {% else %}
+                <strong>{{ tarea.legacy_cod_vivienda }}</strong>
+                <div class="small text-secondary">{{ tarea.legacy_planta }}</div>
+              {% endif %}
+            </td>
+            <td>{{ tarea.legacy_cod_fase }}</td>
+            <td>
+              {{ tarea.capitulo.nombre|default:tarea.legacy_capitulo }}
+              <div class="small text-secondary">
+                {{ tarea.partida.nombre|default:tarea.legacy_partida }}
+              </div>
+            </td>
+            <td>{{ tarea.inicio_tarea|default:"—" }}</td>
+            <td>{{ tarea.fin_tarea|default:"—" }}</td>
+            <td>{{ tarea.inicio_real|default:"—" }}</td>
+            <td>{{ tarea.fin_real|default:"—" }}</td>
+            <td class="text-end">{{ tarea.porcentaje_completado|default:"0" }} %</td>
+            <td class="text-end">{{ tarea.importe_tarea|default:"0"|floatformat:2 }} €</td>
+            <td class="text-end">{{ tarea.importe_tarea_real|default:"0"|floatformat:2 }} €</td>
+            <td>
+              {% if tarea.con_incidencias %}
+                <span class="badge bg-warning text-dark">Sí</span>
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-secondary py-4">
+              No hay tareas con estos filtros.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

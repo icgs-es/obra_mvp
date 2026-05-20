@@ -38,74 +38,83 @@
         <div id="navMain" class="collapse navbar-collapse">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">
-              <a class="nav-link" href="/app/">Inicio</a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link {% if request.resolver_match.url_name == 'mi_jornada' or request.resolver_match.url_name == 'mis_fichajes' %}active{% endif %}"
-                href="{% url 'fichajes:mi_jornada' %}">
-                Fichaje
+              <a class="nav-link" href="/app/">
+                <i class="bi bi-house"></i> Inicio
               </a>
             </li>
 
             <li class="nav-item">
-              <a class="nav-link" href="/app/tareas/">Tareas</a>
+              <a class="nav-link" href="/app/agenda/">
+                <i class="bi bi-calendar-event"></i> Agenda
+              </a>
             </li>
 
             <li class="nav-item">
-              <a class="nav-link" href="/app/agenda/">Agenda</a>
+              <a class="nav-link" href="/app/tareas/">
+                <i class="bi bi-check2-square"></i> Tareas
+              </a>
             </li>
-            {% if request.user.is_authenticated %}
-              {% if request.user.teams.all or request.user.teams_led.all %}
-                <li class="nav-item">
-                  <a class="nav-link {% if request.path|slice:':5' == '/crm/' %}active{% endif %}" href="/crm/leads/">
-                    <i class="bi bi-people me-1"></i> CRM
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navPersonal" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-people"></i> Personal
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navPersonal">
+                <li>
+                  <a class="dropdown-item" href="/app/rrhh/empleados/">
+                    <i class="bi bi-person-lines-fill me-1"></i> RRHH · Empleados
                   </a>
                 </li>
-              {% endif %}
-            {% endif %}
-            <!-- {% if request.user.is_authenticated and request.user.teams_led.all %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'fichajes:mi_jornada' %}">
+                    <i class="bi bi-clock-history me-1"></i> Fichaje
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="/app/fichajes/ausencias/">
+                    <i class="bi bi-calendar-x me-1"></i> Ausencias
+                  </a>
+                </li>
+              </ul>
+            </li>
 
-            {% endif %} -->
-            
             <li class="nav-item">
-              <a class="nav-link {% if request.path|slice:':9' == '/activos/' %}active{% endif %}"
-                href="{% url 'activos:list' %}">
-                <i class="bi bi-box-seam me-1"></i> Activos
+              <a class="nav-link" href="/crm/leads/">
+                <i class="bi bi-people me-1"></i> CRM
               </a>
             </li>
-            
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'activos:list' %}">
+                <i class="bi bi-box-seam"></i> Activos
+              </a>
+            </li>
+
             <li class="nav-item">
               <a class="nav-link" href="{% url 'archivos:explorador_raiz' %}">
-                Archivos
+                <i class="bi bi-folder2-open"></i> Archivos
               </a>
             </li>
 
-            {# Ausencias: dropdown único #}
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle"
-                href="#"
-                id="navbarAusencias"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false">
-                Ausencias
+              <a class="nav-link dropdown-toggle" href="#" id="navObra" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-building-gear"></i> Obra
               </a>
-              <ul class="dropdown-menu" aria-labelledby="navbarAusencias">
+              <ul class="dropdown-menu" aria-labelledby="navObra">
                 <li>
-                  <a class="dropdown-item" href="{% url 'fichajes:ausencias_list' %}">
-                    Mis ausencias
+                  
+          <li>
+            <a class="dropdown-item" href="{% url 'planificacion_obra:obras_list' %}">
+              <i class="bi bi-bar-chart-line me-2"></i> Resumen de obras
+            </a>
+          </li>
+<a class="dropdown-item" href="/app/planificacion-obra/">
+                    <i class="bi bi-kanban me-1"></i> Planificación
+                  </a>
+                  <a class="dropdown-item" href="/app/planificacion-obra/access-sync/">
+                    <i class="bi bi-arrow-repeat me-1"></i> Sincronización Access
                   </a>
                 </li>
-
-                {% if request.user.is_staff or request.user.is_superuser %}
-                  <li><hr class="dropdown-divider"></li>
-                  <li>
-                    <a class="dropdown-item" href="{% url 'fichajes:calendario_ausencias' %}">
-                      Calendario de ausencias
-                    </a>
-                  </li>
-                {% endif %}
               </ul>
             </li>
           </ul>

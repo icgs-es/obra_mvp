@@ -1,0 +1,48 @@
+{% load planning_format %}
+{% if vista_vivienda and resumen_vivienda %}
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <strong>Seguimiento de vivienda {{ filtros.vivienda }}</strong>
+      <div class="text-secondary small">Resumen previsto vs real de producción.</div>
+    </div>
+    <span class="badge bg-primary">{{ resumen_vivienda.total_tareas }} tareas</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 small align-middle">
+      <tbody>
+        <tr>
+          <th>Inicio previsto</th>
+          <td>{{ resumen_vivienda.inicio_previsto|date:"d/m/Y"|default:"—" }}</td>
+          <th>Fin previsto</th>
+          <td>{{ resumen_vivienda.fin_previsto|date:"d/m/Y"|default:"—" }}</td>
+          <th>Inicio real</th>
+          <td>{{ resumen_vivienda.inicio_real|date:"d/m/Y"|default:"—" }}</td>
+          <th>Fin real</th>
+          <td>{{ resumen_vivienda.fin_real|date:"d/m/Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+          <th>Previsto</th>
+          <td>{{ resumen_vivienda.importe_previsto|money_es }}</td>
+          <th>Real</th>
+          <td>{{ resumen_vivienda.importe_real|money_es }}</td>
+          <th>Desvío</th>
+          <td><strong>{{ resumen_vivienda.desvio|money_abs_es }}</strong></td>
+          <th>Avance</th>
+          <td>{{ resumen_vivienda.avance_tareas_pct|default:"—" }}%</td>
+        </tr>
+        <tr>
+          <th>Tareas con real</th>
+          <td>{{ resumen_vivienda.tareas_con_real }} / {{ resumen_vivienda.total_tareas }}</td>
+          <th>Tareas con avisos</th>
+          <td>{{ resumen_vivienda.tareas_con_avisos }}</td>
+          <th>Ejecución coste</th>
+          <td>{{ resumen_vivienda.avance_coste_pct|default:"—" }}%</td>
+          <td colspan="2"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+
+{% block title %}Gantt de planificación
+<script id="pi-gantt-group-buttons-script">
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("pi-gantt-filter-form");
+  if (!form) return;
+
+  const agrupacion = form.querySelector('select[name="agrupacion"]');
+  if (!agrupacion) return;
+
+  document.querySelectorAll("[data-gantt-group]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      agrupacion.value = btn.getAttribute("data-gantt-group") || "asignacion";
+      form.submit();
+    });
+  });
+});
+</script>
+
+
+<script id="pi-gantt-dependent-filters-script">
+document.addEventListener("DOMContentLoaded", function () {
+  const obra = document.getElementById("gantt-filter-obra");
+  const edificio = document.getElementById("gantt-filter-edificio");
+  const vivienda = document.getElementById("gantt-filter-vivienda");
+  const planta = document.getElementById("gantt-filter-planta");
+  const capitulo = document.getElementById("gantt-filter-capitulo");
+  const partida = document.getElementById("gantt-filter-partida");
+
+  if (!obra || !edificio || !vivienda || !planta || !capitulo || !partida) return;
+
+  function updateSelect(select, items, defaultText, keepValue) {
+    const previous = keepValue ? select.value : "";
+    select.innerHTML = "";
+
+    const optDefault = document.createElement("option");
+    optDefault.value = "";
+    optDefault.textContent = defaultText;
+    select.appendChild(optDefault);
+
+    let found = false;
+
+    (items || []).forEach(function (item) {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.text;
+
+      if (String(item.id) === String(previous)) {
+        opt.selected = true;
+        found = true;
+      }
+
+      select.appendChild(opt);
+    });
+
+    if (previous && !found) {
+      select.value = "";
+    }
+  }
+
+  async function loadDependentFilters(changed) {
+    const params = new URLSearchParams();
+
+    if (obra.value) params.set("obra", obra.value);
+
+    if (changed !== "obra" && edificio.value) {
+      params.set("edificio", edificio.value);
+    }
+
+    if (!["obra", "edificio"].includes(changed) && vivienda.value) {
+      params.set("vivienda", vivienda.value);
+    }
+
+    if (!["obra", "edificio", "vivienda"].includes(changed) && planta.value) {
+      params.set("planta", planta.value);
+    }
+
+    if (changed !== "capitulo" && capitulo.value) {
+      params.set("capitulo", capitulo.value);
+    }
+
+    const resp = await fetch("/app/planificacion-obra/asignaciones/calendario/filtros/?" + params.toString(), {
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+
+    if (!resp.ok) return;
+
+    const data = await resp.json();
+
+    updateSelect(edificio, data.edificios, "Todos", changed !== "obra");
+    updateSelect(vivienda, data.viviendas, "Todas", !["obra", "edificio"].includes(changed));
+    updateSelect(planta, data.plantas, "Todas", !["obra", "edificio", "vivienda"].includes(changed));
+    updateSelect(capitulo, data.capitulos, "Todos", true);
+    updateSelect(partida, data.partidas, "Todas", changed !== "capitulo");
+  }
+
+  obra.addEventListener("change", function () {
+    edificio.value = "";
+    vivienda.value = "";
+    planta.value = "";
+    capitulo.value = "";
+    partida.value = "";
+    loadDependentFilters("obra");
+  });
+
+  edificio.addEventListener("change", function () {
+    vivienda.value = "";
+    planta.value = "";
+    partida.value = "";
+    loadDependentFilters("edificio");
+  });
+
+  vivienda.addEventListener("change", function () {
+    planta.value = "";
+    partida.value = "";
+    loadDependentFilters("vivienda");
+  });
+
+  planta.addEventListener("change", function () {
+    partida.value = "";
+    loadDependentFilters("planta");
+  });
+
+  capitulo.addEventListener("change", function () {
+    partida.value = "";
+    loadDependentFilters("capitulo");
+  });
+
+  // Si la página ya viene filtrada por obra/edificio/vivienda,
+  // ajustamos las opciones al cargar sin enviar el formulario.
+  if (obra.value || edificio.value || vivienda.value || planta.value || capitulo.value) {
+    loadDependentFilters("initial");
+  }
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+<style>
+.pi-gantt-page {
+  padding: 24px 28px;
+}
+
+.pi-gantt-header,
+.pi-gantt-filters,
+.pi-gantt-card {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+}
+
+.pi-gantt-header {
+  padding: 18px 20px;
+}
+
+.pi-gantt-filters {
+  padding: 16px;
+}
+
+.pi-gantt-card {
+  padding: 0;
+  overflow: auto;
+}
+
+.pi-gantt-filters select,
+.pi-gantt-filters input {
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: .9rem;
+}
+
+.pi-gantt-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1280px;
+  width: 100%;
+  font-size: .78rem;
+}
+
+.pi-gantt-table th,
+.pi-gantt-table td {
+  border-right: 1px solid #d7dde5;
+  border-bottom: 1px solid #d7dde5;
+  padding: 5px 6px;
+  vertical-align: middle;
+}
+
+.pi-gantt-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 4;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+}
+
+.pi-gantt-left {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #fff;
+  box-shadow: 4px 0 8px rgba(15, 23, 42, .06);
+}
+
+.pi-gantt-left--head {
+  z-index: 5 !important;
+  background: #f8fafc !important;
+}
+
+.pi-gantt-day {
+  width: 42px;
+  min-width: 42px;
+  text-align: center;
+}
+
+.pi-gantt-day--weekend {
+  background: #f1f5f9 !important;
+}
+
+.pi-gantt-cell {
+  height: 30px;
+  min-width: 42px;
+  background: #fff;
+}
+
+.pi-gantt-cell--weekend {
+  background: #f8fafc;
+}
+
+.pi-gantt-bar {
+  height: 20px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 800;
+  line-height: 20px;
+  padding: 0 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, .14);
+}
+
+.pi-gantt-bar--pendiente { background: #2563eb; }
+.pi-gantt-bar--proceso { background: #f59e0b; color: #111827; }
+.pi-gantt-bar--completada { background: #16a34a; }
+.pi-gantt-bar--bloqueada { background: #dc2626; }
+.pi-gantt-bar--cancelada { background: #6b7280; }
+
+.pi-gantt-meta {
+  line-height: 1.25;
+}
+
+.pi-gantt-meta strong {
+  display: block;
+  font-size: .78rem;
+}
+
+.pi-gantt-meta span {
+  display: block;
+  color: #64748b;
+  font-size: .72rem;
+}
+
+.pi-gantt-empty {
+  padding: 28px;
+  color: #64748b;
+}
+
+.pi-gantt-group-row td {
+  background: #dbeafe !important;
+  border-top: 2px solid #93c5fd;
+  border-bottom: 2px solid #93c5fd;
+  padding: 8px 10px !important;
+}
+
+.pi-gantt-group-label {
+  font-weight: 900;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: .82rem;
+}
+
+.pi-gantt-group-label small {
+  color: #475569;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 8px;
+}
+
+.pi-gantt-group-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.pi-gantt-group-tools .btn {
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: .82rem;
+}
+
+.pi-gantt-group-current {
+  color: #475569;
+  font-size: .84rem;
+  margin-left: 6px;
+}
+
+@media print {
+  nav,
+  .pi-gantt-filters,
+  .pi-gantt-actions {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .pi-gantt-page {
+    padding: 0;
+  }
+
+  .pi-gantt-card {
+    border: 0;
+    overflow: visible;
+  }
+
+  .pi-gantt-table {
+    font-size: .62rem;
+    min-width: 100%;
+  }
+
+  .pi-gantt-day {
+    width: 28px;
+    min-width: 28px;
+  }
+}
+
+.pi-gantt-group-cell {
+  background: #dbeafe !important;
+}
+
+.pi-gantt-group-row .pi-gantt-left {
+  background: #bfdbfe !important;
+}
+
+.pi-gantt-group-line {
+  height: 4px;
+  border-radius: 999px;
+  background: #2563eb;
+  opacity: .45;
+}
+
+
+/* === GANTT VISUAL CLARO === */
+.pi-gantt-table {
+  table-layout: fixed;
+}
+
+.pi-gantt-left {
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+.pi-gantt-day,
+.pi-gantt-cell {
+  width: 58px !important;
+  min-width: 58px !important;
+  max-width: 58px !important;
+}
+
+.pi-gantt-meta {
+  max-width: 285px;
+  overflow: hidden;
+}
+
+.pi-gantt-meta strong,
+.pi-gantt-meta span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pi-gantt-group-row td {
+  background: #eff6ff !important;
+  color: #1e3a8a !important;
+  border-top: 1px solid #bfdbfe !important;
+  border-bottom: 1px solid #bfdbfe !important;
+  border-left: 4px solid #2563eb !important;
+  padding: 6px 10px !important;
+}
+
+.pi-gantt-group-label {
+  color: #1e3a8a !important;
+  font-weight: 800;
+  letter-spacing: .01em;
+  text-transform: none;
+  font-size: .90rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pi-gantt-group-label small {
+  color: #64748b !important;
+  font-weight: 600;
+  font-size: .78rem;
+}
+
+.pi-gantt-cell--active {
+  padding: 3px !important;
+}
+
+.pi-gantt-cell--active.pi-gantt-cell--pendiente { background: #dbeafe !important; }
+.pi-gantt-cell--active.pi-gantt-cell--proceso { background: #fef3c7 !important; }
+.pi-gantt-cell--active.pi-gantt-cell--completada { background: #dcfce7 !important; }
+.pi-gantt-cell--active.pi-gantt-cell--bloqueada { background: #fee2e2 !important; }
+.pi-gantt-cell--active.pi-gantt-cell--cancelada { background: #e5e7eb !important; }
+
+.pi-gantt-cell--active .pi-gantt-bar {
+  width: 100%;
+  height: 24px;
+  line-height: 24px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: .68rem;
+}
+
+
+/* === TIPOGRAFIA SOBRIA GANTT === */
+.pi-gantt-page,
+.pi-gantt-table,
+.pi-gantt-filters,
+.pi-gantt-header {
+  font-family: Candara, "Segoe UI", Aptos, Calibri, Arial, sans-serif;
+}
+
+.pi-gantt-table {
+  font-size: .76rem;
+  letter-spacing: .01em;
+}
+
+.pi-gantt-table thead th {
+  font-weight: 600 !important;
+  color: #0f172a;
+}
+
+.pi-gantt-meta strong {
+  font-weight: 600 !important;
+  letter-spacing: .01em;
+  color: #1f2937;
+}
+
+.pi-gantt-meta span {
+  font-weight: 400 !important;
+  color: #64748b;
+}
+
+.pi-gantt-group-label {
+  font-weight: 600 !important;
+  letter-spacing: .01em !important;
+  text-transform: none !important;
+}
+
+.pi-gantt-group-label small {
+  font-weight: 400 !important;
+}
+
+.pi-gantt-bar {
+  font-family: Candara, "Segoe UI", Aptos, Calibri, Arial, sans-serif;
+  font-weight: 500 !important;
+  font-size: .66rem !important;
+  letter-spacing: 0 !important;
+  padding: 0 4px !important;
+  white-space: nowrap;
+}
+
+.pi-gantt-cell--active .pi-gantt-bar {
+  height: 22px !important;
+  line-height: 22px !important;
+  border-radius: 5px !important;
+}
+
+
+/* === HORARIO COMPACTO GANTT === */
+.pi-gantt-bar {
+  font-family: "Segoe UI", Aptos, Calibri, Arial, sans-serif !important;
+  font-size: .62rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -.01em !important;
+  padding: 0 3px !important;
+}
+
+.pi-gantt-cell--active .pi-gantt-bar {
+  height: 21px !important;
+  line-height: 21px !important;
+  min-width: 44px;
+}
+
+</style>
+
+<div class="pi-gantt-page">
+
+  <div class="pi-gantt-header mb-3 d-flex justify-content-between align-items-start">
+    <div>
+      <h1 class="h3 mb-1">Gantt de planificación</h1>
+      <p class="text-muted mb-0">
+        Vista por periodo para entender qué está planificado por vivienda, partida y empleado.
+      </p>
+    </div>
+
+    <div class="pi-gantt-actions d-flex gap-2">
+      <a href="{% url 'planificacion_obra:asignaciones_informe' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-success btn-sm">
+        Informe
+      </a>
+      <a href="{% url 'planificacion_obra:asignaciones_calendario' %}" class="btn btn-outline-primary btn-sm">
+        Calendario
+      </a>
+      <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary btn-sm">
+        Listado
+      </a>
+      <button type="button" onclick="window.print()" class="btn btn-dark btn-sm">
+        Imprimir
+      </button>
+    </div>
+  </div>
+
+  <form id="pi-gantt-filter-form" method="get" class="pi-gantt-filters mb-3">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Desde</label>
+        <input type="date" name="desde" value="{{ fecha_desde|date:'Y-m-d' }}" class="form-control">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Hasta</label>
+        <input type="date" name="hasta" value="{{ fecha_hasta|date:'Y-m-d' }}" class="form-control">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Obra</label>
+        <select id="gantt-filter-obra" name="obra" class="form-select">
+          <option value="">Todas</option>
+          {% for obra in obras %}
+            <option value="{{ obra.pk }}" {% if filters.obra == obra.pk|stringformat:"s" %}selected{% endif %}>{{ obra }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Edificio / Fase</label>
+        <select id="gantt-filter-edificio" name="edificio" class="form-select">
+          <option value="">Todos</option>
+          {% for edificio in edificios %}
+            <option value="{{ edificio }}" {% if filters.edificio == edificio %}selected{% endif %}>{{ edificio }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Vivienda</label>
+        <select id="gantt-filter-vivienda" name="vivienda" class="form-select">
+          <option value="">Todas</option>
+          {% for vivienda in viviendas %}
+            <option value="{{ vivienda }}" {% if filters.vivienda == vivienda %}selected{% endif %}>Viv. {{ vivienda }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Planta</label>
+        <select id="gantt-filter-planta" name="planta" class="form-select">
+          <option value="">Todas</option>
+          {% for planta in plantas %}
+            <option value="{{ planta }}" {% if filters.planta == planta %}selected{% endif %}>{{ planta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Capítulo</label>
+        <select id="gantt-filter-capitulo" name="capitulo" class="form-select">
+          <option value="">Todos</option>
+          {% for capitulo in capitulos %}
+            <option value="{{ capitulo.pk }}" {% if filters.capitulo == capitulo.pk|stringformat:"s" %}selected{% endif %}>{{ capitulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Partida</label>
+        <select id="gantt-filter-partida" name="partida" class="form-select">
+          <option value="">Todas</option>
+          {% for partida in partidas %}
+            <option value="{{ partida.pk }}" {% if filters.partida == partida.pk|stringformat:"s" %}selected{% endif %}>{{ partida }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Empleado</label>
+        <select name="empleado" class="form-select">
+          <option value="">Todos</option>
+          {% for empleado in empleados %}
+            <option value="{{ empleado.pk }}" {% if filters.empleado == empleado.pk|stringformat:"s" %}selected{% endif %}>{{ empleado }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Estado</label>
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          {% for value,label in estados %}
+            <option value="{{ value }}" {% if filters.estado == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Agrupar por</label>
+        <select name="agrupacion" class="form-select">
+          <option value="asignacion" {% if filters.agrupacion == "asignacion" %}selected{% endif %}>Sin agrupar</option>
+          <option value="vivienda" {% if filters.agrupacion == "vivienda" %}selected{% endif %}>Vivienda</option>
+          <option value="empleado" {% if filters.agrupacion == "empleado" %}selected{% endif %}>Empleado</option>
+          <option value="capitulo" {% if filters.agrupacion == "capitulo" %}selected{% endif %}>Capítulo</option>
+          <option value="partida" {% if filters.agrupacion == "partida" %}selected{% endif %}>Partida</option>
+        </select>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary">
+          Filtrar
+        </button>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <a href="{% url 'planificacion_obra:asignaciones_gantt' %}" class="btn btn-outline-secondary">
+          Limpiar
+        </a>
+      </div>
+    </div>
+
+    <div class="pi-gantt-group-tools mt-3">
+      <span class="pi-gantt-group-current">Agrupación actual: <strong>{{ agrupacion_label }}</strong></span>
+      <button type="button" class="btn btn-outline-secondary" data-gantt-group="asignacion">Sin agrupar</button>
+      <button type="button" class="btn btn-outline-primary" data-gantt-group="vivienda">Por vivienda</button>
+      <button type="button" class="btn btn-outline-primary" data-gantt-group="empleado">Por empleado</button>
+      <button type="button" class="btn btn-outline-primary" data-gantt-group="capitulo">Por capítulo</button>
+      <button type="button" class="btn btn-outline-primary" data-gantt-group="partida">Por partida</button>
+    </div>
+  </form>
+
+  <div class="pi-gantt-card">
+    {% if rows %}
+      <table class="pi-gantt-table">
+        <thead>
+          <tr>
+            <th class="pi-gantt-left pi-gantt-left--head" style="width: 300px; min-width: 300px; max-width: 300px;">Asignación</th>
+            {% for d in days %}
+              <th class="pi-gantt-day {% if d.weekday >= 5 %}pi-gantt-day--weekend{% endif %}">
+                {{ d|date:"d/m" }}<br>
+                <small>{{ d|date:"D" }}</small>
+              </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% if row.is_group %}
+              <tr class="pi-gantt-group-row">
+                <td colspan="{{ days|length|add:'1' }}">
+                  <div class="pi-gantt-group-label">
+                    {{ row.group_label }}
+                    <small>Agrupado por {{ agrupacion_label }}</small>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+
+
+              <tr>
+                <td class="pi-gantt-left" style="width: 300px; min-width: 300px; max-width: 300px;">
+                  <div class="pi-gantt-meta">
+                    <strong>{{ row.vivienda }} · {{ row.planta }} · {{ row.empleado }}</strong>
+                    <span>{{ row.obra }} · {{ row.edificio }}</span>
+                    <span>{{ row.capitulo }}</span>
+                    <span>{{ row.partida }}</span>
+                    <span>Estado: {{ row.estado }}</span>
+                    <span>{{ row.source_label }}</span>
+                  </div>
+                </td>
+
+                {% for cell in row.cells %}
+                  <td class="pi-gantt-cell {% if cell.date.weekday >= 5 %}pi-gantt-cell--weekend{% endif %} {% if cell.active %}pi-gantt-cell--active pi-gantt-cell--{{ row.estado_class }}{% endif %}">
+                    {% if cell.active %}
+                      {% if row.detail_url %}
+                        <a href="{{ row.detail_url }}" style="text-decoration:none;">
+                          <div class="pi-gantt-bar pi-gantt-bar--{{ row.estado_class }}" title="{{ cell.full_label }} · {{ row.empleado }} · {{ row.vivienda }} · {{ row.planta }} · {{ row.partida }}">
+                            {% if cell.is_start %}{{ cell.label }}{% endif %}
+                          </div>
+                        </a>
+                      {% else %}
+                        <div class="pi-gantt-bar pi-gantt-bar--{{ row.estado_class }}" title="{{ cell.full_label }} · {{ row.empleado }} · {{ row.vivienda }} · {{ row.planta }} · {{ row.partida }}">
+                          {% if cell.is_start %}{{ cell.label }}{% endif %}
+                        </div>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="pi-gantt-empty">
+        No hay asignaciones para el periodo y filtros seleccionados.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

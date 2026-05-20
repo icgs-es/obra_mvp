@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Calendario de asignaciones{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+<style>
+.pi-calendar-page {
+  padding: 24px 28px;
+}
+
+.pi-calendar-header,
+.pi-calendar-card,
+.pi-calendar-filters {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+}
+
+.pi-calendar-header {
+  padding: 18px 20px;
+}
+
+.pi-calendar-filters {
+  padding: 16px;
+}
+
+.pi-calendar-card {
+  padding: 16px;
+}
+
+.pi-calendar-filters select {
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: .9rem;
+}
+
+#asignaciones-calendar {
+  font-size: .86rem;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.fc .fc-button {
+  border-radius: 8px !important;
+}
+
+.fc-event {
+  border: 0 !important;
+  border-radius: 8px !important;
+  padding: 2px 4px !important;
+  font-size: .75rem !important;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, .12);
+}
+
+.pi-event {
+  line-height: 1.15;
+  overflow: hidden;
+}
+
+.pi-event__time {
+  font-weight: 800;
+  font-size: .72rem;
+  opacity: .95;
+  white-space: nowrap;
+}
+
+.pi-event__employee {
+  font-weight: 700;
+  font-size: .72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pi-event__meta {
+  font-size: .70rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pi-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  margin-top: 12px;
+  font-size: .82rem;
+  color: #475569;
+}
+
+.pi-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pi-legend__dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  display: inline-block;
+}
+</style>
+
+<div class="pi-calendar-page">
+
+  <div class="pi-calendar-header mb-3 d-flex justify-content-between align-items-start">
+    <div>
+      <h1 class="h3 mb-1">Calendario de asignaciones</h1>
+      <p class="text-muted mb-0">
+        Vista visual para entender la distribución diaria y semanal del personal.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'planificacion_obra:asignacion_create' %}" class="btn btn-primary btn-sm">
+        + Nueva asignación
+      </a>
+      <a href="{% url 'planificacion_obra:asignaciones_gantt' %}" class="btn btn-outline-primary btn-sm">
+        Gantt
+      </a>
+      <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary btn-sm">
+        Ver listado
+      </a>
+    </div>
+  </div>
+
+  <div class="pi-calendar-filters mb-3">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Obra</label>
+        <select id="filter-obra" class="form-select">
+          <option value="">Todas</option>
+          {% for obra in obras %}
+            <option value="{{ obra.pk }}">{{ obra }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Edificio / Fase</label>
+        <select id="filter-edificio" class="form-select">
+          <option value="">Todos</option>
+          {% for edificio in edificios %}
+            <option value="{{ edificio }}">{{ edificio }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Vivienda</label>
+        <select id="filter-vivienda" class="form-select">
+          <option value="">Todas</option>
+          {% for vivienda in viviendas %}
+            <option value="{{ vivienda }}">Viv. {{ vivienda }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Planta</label>
+        <select id="filter-planta" class="form-select">
+          <option value="">Todas</option>
+          {% for planta in plantas %}
+            <option value="{{ planta }}">{{ planta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Estado</label>
+        <select id="filter-estado" class="form-select">
+          <option value="">Todos</option>
+          {% for value,label in estados %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Capítulo</label>
+        <select id="filter-capitulo" class="form-select">
+          <option value="">Todos</option>
+          {% for capitulo in capitulos %}
+            <option value="{{ capitulo.pk }}">{{ capitulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-5">
+        <label class="form-label">Partida</label>
+        <select id="filter-partida" class="form-select">
+          <option value="">Todas</option>
+          {% for partida in partidas %}
+            <option value="{{ partida.pk }}">{{ partida }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Empleado</label>
+        <select id="filter-empleado" class="form-select">
+          <option value="">Todos</option>
+          {% for empleado in empleados %}
+            <option value="{{ empleado.pk }}">{{ empleado }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-1">
+        <button id="btn-refresh-calendar" type="button" class="btn btn-outline-primary w-100">
+          ↻
+        </button>
+      </div>
+    </div>
+    <div class="pi-legend">
+      <span class="pi-legend__item"><span class="pi-legend__dot" style="background:#2563eb"></span>Pendiente</span>
+      <span class="pi-legend__item"><span class="pi-legend__dot" style="background:#f59e0b"></span>En proceso</span>
+      <span class="pi-legend__item"><span class="pi-legend__dot" style="background:#16a34a"></span>Completada</span>
+      <span class="pi-legend__item"><span class="pi-legend__dot" style="background:#dc2626"></span>Bloqueada</span>
+      <span class="pi-legend__item"><span class="pi-legend__dot" style="background:#6b7280"></span>Cancelada</span>
+    </div>
+  </div>
+
+  <div class="pi-calendar-card">
+    <div id="asignaciones-calendar"></div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const el = document.getElementById("asignaciones-calendar");
+  const obra = document.getElementById("filter-obra");
+  const edificio = document.getElementById("filter-edificio");
+  const vivienda = document.getElementById("filter-vivienda");
+  const planta = document.getElementById("filter-planta");
+  const capitulo = document.getElementById("filter-capitulo");
+  const partida = document.getElementById("filter-partida");
+  const empleado = document.getElementById("filter-empleado");
+  const estado = document.getElementById("filter-estado");
+  const btnRefresh = document.getElementById("btn-refresh-calendar");
+
+  if (!el) return;
+
+  function buildFeedUrl(info) {
+    const params = new URLSearchParams();
+
+    params.set("start", info.startStr);
+    params.set("end", info.endStr);
+
+    if (obra.value) params.set("obra", obra.value);
+    if (edificio.value) params.set("edificio", edificio.value);
+    if (vivienda.value) params.set("vivienda", vivienda.value);
+    if (planta.value) params.set("planta", planta.value);
+    if (capitulo.value) params.set("capitulo", capitulo.value);
+    if (partida.value) params.set("partida", partida.value);
+    if (empleado.value) params.set("empleado", empleado.value);
+    if (estado.value) params.set("estado", estado.value);
+
+    return "/app/planificacion-obra/asignaciones/calendario/feed/?" + params.toString();
+  }
+
+  const calendar = new FullCalendar.Calendar(el, {
+    initialView: "timeGridWeek",
+    locale: "es",
+    firstDay: 1,
+    height: "auto",
+    nowIndicator: true,
+    slotMinTime: "07:00:00",
+    slotMaxTime: "20:00:00",
+    allDaySlot: false,
+    navLinks: true,
+    eventTimeFormat: {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    },
+    headerToolbar: {
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+    },
+    buttonText: {
+      today: "Hoy",
+      month: "Mes",
+      week: "Semana",
+      day: "Día",
+      list: "Lista"
+    },
+    events: function(info, successCallback, failureCallback) {
+      fetch(buildFeedUrl(info), {
+        headers: {"X-Requested-With": "XMLHttpRequest"}
+      })
+      .then(resp => {
+        if (!resp.ok) throw new Error("Error cargando asignaciones");
+        return resp.json();
+      })
+      .then(data => successCallback(data))
+      .catch(err => failureCallback(err));
+    },
+    eventClick: function(info) {
+      if (info.event.url) {
+        info.jsEvent.preventDefault();
+        window.location.href = info.event.url;
+      }
+    },
+    eventContent: function(arg) {
+      const p = arg.event.extendedProps || {};
+      const timeText = arg.timeText || "";
+      const empleado = p.empleado || "";
+      const meta = [p.vivienda, p.planta].filter(Boolean).join(" · ");
+
+      return {
+        html: `
+          <div class="pi-event">
+            <div class="pi-event__time">${timeText}</div>
+            <div class="pi-event__employee">${empleado}</div>
+            <div class="pi-event__meta">${meta}</div>
+          </div>
+        `
+      };
+    },
+    eventDidMount: function(info) {
+      const p = info.event.extendedProps || {};
+      info.el.title = [
+        p.obra,
+        p.vivienda,
+        p.planta,
+        p.capitulo,
+        p.partida,
+        p.estado
+      ].filter(Boolean).join(" · ");
+    }
+  });
+
+  calendar.render();
+
+  function updateSelect(select, items, keepValue) {
+    const previous = keepValue ? select.value : "";
+    select.innerHTML = "";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+
+    if (select === edificio) defaultOption.textContent = "Todos";
+    else if (select === vivienda) defaultOption.textContent = "Todas";
+    else if (select === planta) defaultOption.textContent = "Todas";
+    else if (select === capitulo) defaultOption.textContent = "Todos";
+    else if (select === partida) defaultOption.textContent = "Todas";
+    else defaultOption.textContent = "Todos";
+
+    select.appendChild(defaultOption);
+
+    let foundPrevious = false;
+
+    (items || []).forEach(function(item) {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.text;
+
+      if (String(item.id) === String(previous)) {
+        opt.selected = true;
+        foundPrevious = true;
+      }
+
+      select.appendChild(opt);
+    });
+
+    if (previous && !foundPrevious) {
+      select.value = "";
+    }
+  }
+
+  async function loadDependentFilters(changed) {
+    const params = new URLSearchParams();
+
+    if (obra.value) params.set("obra", obra.value);
+
+    if (changed !== "obra") {
+      if (edificio.value) params.set("edificio", edificio.value);
+    }
+
+    if (!["obra", "edificio"].includes(changed)) {
+      if (vivienda.value) params.set("vivienda", vivienda.value);
+    }
+
+    if (!["obra", "edificio", "vivienda"].includes(changed)) {
+      if (planta.value) params.set("planta", planta.value);
+    }
+
+    if (capitulo.value && changed !== "capitulo_reset") {
+      params.set("capitulo", capitulo.value);
+    }
+
+    const resp = await fetch("/app/planificacion-obra/asignaciones/calendario/filtros/?" + params.toString(), {
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+
+    if (!resp.ok) return;
+
+    const data = await resp.json();
+
+    updateSelect(edificio, data.edificios, changed !== "obra");
+    updateSelect(vivienda, data.viviendas, !["obra", "edificio"].includes(changed));
+    updateSelect(planta, data.plantas, !["obra", "edificio", "vivienda"].includes(changed));
+    updateSelect(capitulo, data.capitulos, true);
+    updateSelect(partida, data.partidas, changed !== "capitulo");
+
+    calendar.refetchEvents();
+  }
+
+  obra.addEventListener("change", function () {
+    edificio.value = "";
+    vivienda.value = "";
+    planta.value = "";
+    capitulo.value = "";
+    partida.value = "";
+    loadDependentFilters("obra");
+  });
+
+  edificio.addEventListener("change", function () {
+    vivienda.value = "";
+    planta.value = "";
+    partida.value = "";
+    loadDependentFilters("edificio");
+  });
+
+  vivienda.addEventListener("change", function () {
+    planta.value = "";
+    partida.value = "";
+    loadDependentFilters("vivienda");
+  });
+
+  planta.addEventListener("change", function () {
+    partida.value = "";
+    loadDependentFilters("planta");
+  });
+
+  capitulo.addEventListener("change", function () {
+    partida.value = "";
+    loadDependentFilters("capitulo");
+  });
+
+  partida.addEventListener("change", function () {
+    calendar.refetchEvents();
+  });
+
+  empleado.addEventListener("change", function () {
+    calendar.refetchEvents();
+  });
+
+  estado.addEventListener("change", function () {
+    calendar.refetchEvents();
+  });
+
+  btnRefresh.addEventListener("click", function () {
+    loadDependentFilters("refresh");
+  });
+});
+</script>
+{% endblock %}

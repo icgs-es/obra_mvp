@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+
+{% block title %}Informe de planificación{% endblock %}
+
+{% block content %}
+<style>
+.pi-report-page {
+  padding: 24px 28px;
+  font-family: "Segoe UI", Aptos, Calibri, Arial, sans-serif;
+}
+
+.pi-report-header,
+.pi-report-filters,
+.pi-report-card,
+.pi-report-kpi {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+}
+
+.pi-report-header {
+  padding: 18px 20px;
+}
+
+.pi-report-filters {
+  padding: 16px;
+}
+
+.pi-report-filters select,
+.pi-report-filters input {
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: .9rem;
+}
+
+.pi-report-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.pi-report-kpi {
+  padding: 14px 16px;
+}
+
+.pi-report-kpi span {
+  display: block;
+  color: #64748b;
+  font-size: .82rem;
+}
+
+.pi-report-kpi strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.pi-report-card {
+  overflow: hidden;
+}
+
+.pi-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+}
+
+.pi-report-table th {
+  background: #f8fafc;
+  color: #0f172a;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 1px solid #d8dee4;
+  padding: 9px 10px;
+  white-space: nowrap;
+}
+
+.pi-report-table td {
+  border-bottom: 1px solid #edf2f7;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.pi-report-table tr:hover td {
+  background: #f8fafc;
+}
+
+.pi-report-muted {
+  color: #64748b;
+  font-size: .78rem;
+}
+
+.pi-report-main {
+  font-weight: 600;
+  color: #111827;
+}
+
+.pi-report-empty {
+  padding: 26px;
+  color: #64748b;
+}
+
+@media print {
+  nav,
+  .pi-report-filters,
+  .pi-report-actions {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .pi-report-page {
+    padding: 0;
+  }
+
+  .pi-report-header,
+  .pi-report-card,
+  .pi-report-kpi {
+    border-radius: 0;
+    border-color: #cbd5e1;
+  }
+
+  .pi-report-table {
+    font-size: .68rem;
+  }
+}
+
+/* === IMPRESION PROFESIONAL INFORME PLANIFICACION === */
+.pi-print-header,
+.pi-print-footer {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+
+  html,
+  body {
+    width: auto !important;
+    height: auto !important;
+    background: #fff !important;
+    color: #111827 !important;
+    font-family: "Segoe UI", Aptos, Calibri, Arial, sans-serif !important;
+    font-size: 10px !important;
+  }
+
+  nav,
+  header,
+  .navbar,
+  .pi-report-actions,
+  .pi-report-filters {
+    display: none !important;
+  }
+
+  .pi-report-page {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .pi-report-header {
+    display: none !important;
+  }
+
+  .pi-print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+
+  .pi-print-brand {
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+
+  .pi-print-header h1 {
+    font-size: 18px;
+    line-height: 1.1;
+    margin: 0 0 3px 0;
+    color: #0f172a;
+  }
+
+  .pi-print-header p {
+    margin: 0;
+    color: #475569;
+    font-size: 11px;
+  }
+
+  .pi-print-meta {
+    text-align: right;
+    font-size: 9px;
+    color: #475569;
+  }
+
+  .pi-print-meta strong,
+  .pi-print-meta span {
+    display: block;
+  }
+
+  .pi-report-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 9px !important;
+    break-inside: avoid;
+  }
+
+  .pi-report-kpi {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0 !important;
+    padding: 6px 8px !important;
+    background: #f8fafc !important;
+  }
+
+  .pi-report-kpi span {
+    font-size: 8px !important;
+    color: #64748b !important;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .pi-report-kpi strong {
+    font-size: 15px !important;
+    color: #0f172a !important;
+    line-height: 1.1;
+  }
+
+  .pi-report-card {
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  .pi-report-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8.5px !important;
+    table-layout: fixed;
+  }
+
+  .pi-report-table thead {
+    display: table-header-group;
+  }
+
+  .pi-report-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .pi-report-table th {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 5px 5px !important;
+    font-size: 8px !important;
+    font-weight: 700 !important;
+  }
+
+  .pi-report-table td {
+    border: 1px solid #dbe3ec !important;
+    padding: 5px 5px !important;
+    vertical-align: top !important;
+  }
+
+  .pi-report-table th:nth-child(1),
+  .pi-report-table td:nth-child(1) {
+    width: 8%;
+  }
+
+  .pi-report-table th:nth-child(2),
+  .pi-report-table td:nth-child(2) {
+    width: 8%;
+  }
+
+  .pi-report-table th:nth-child(3),
+  .pi-report-table td:nth-child(3) {
+    width: 17%;
+  }
+
+  .pi-report-table th:nth-child(4),
+  .pi-report-table td:nth-child(4) {
+    width: 18%;
+  }
+
+  .pi-report-table th:nth-child(5),
+  .pi-report-table td:nth-child(5) {
+    width: 31%;
+  }
+
+  .pi-report-table th:nth-child(6),
+  .pi-report-table td:nth-child(6) {
+    width: 10%;
+  }
+
+  .pi-report-table th:nth-child(7),
+  .pi-report-table td:nth-child(7) {
+    width: 8%;
+    text-align: right;
+  }
+
+  .pi-report-main {
+    font-weight: 600 !important;
+    color: #111827 !important;
+  }
+
+  .pi-report-muted {
+    font-size: 7.8px !important;
+    color: #475569 !important;
+    line-height: 1.25;
+  }
+
+  .pi-print-footer {
+    display: block !important;
+    margin-top: 8px;
+    padding-top: 5px;
+    border-top: 1px solid #cbd5e1;
+    color: #64748b;
+    font-size: 8px;
+    text-align: right;
+  }
+}
+
+</style>
+
+<div class="pi-report-page">
+
+  <div class="pi-print-header">
+    <div>
+      <div class="pi-print-brand">Intasa Platform</div>
+      <h1>Informe de planificación de obra</h1>
+      <p>Periodo {{ fecha_desde|date:"d/m/Y" }} — {{ fecha_hasta|date:"d/m/Y" }}</p>
+    </div>
+    <div class="pi-print-meta">
+      <strong>Generado</strong>
+      <span>{% now "d/m/Y H:i" %}</span>
+    </div>
+  </div>
+
+
+  <div class="pi-report-header mb-3 d-flex justify-content-between align-items-start">
+    <div>
+      <h1 class="h3 mb-1">Informe de planificación</h1>
+      <p class="text-muted mb-0">
+        Periodo {{ fecha_desde|date:"d/m/Y" }} — {{ fecha_hasta|date:"d/m/Y" }}
+      </p>
+    </div>
+
+    <div class="pi-report-actions d-flex gap-2">
+      <a href="{% url 'planificacion_obra:asignaciones_gantt' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn-outline-primary btn-sm">
+        Gantt
+      </a>
+      <a href="{% url 'planificacion_obra:asignaciones_calendario' %}" class="btn btn-outline-secondary btn-sm">
+        Calendario
+      </a>
+      <button type="button" onclick="window.print()" class="btn btn-dark btn-sm">
+        Imprimir
+      </button>
+    </div>
+  </div>
+
+  <form id="pi-report-filter-form" method="get" class="pi-report-filters mb-3">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Desde</label>
+        <input type="date" name="desde" value="{{ fecha_desde|date:'Y-m-d' }}" class="form-control">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Hasta</label>
+        <input type="date" name="hasta" value="{{ fecha_hasta|date:'Y-m-d' }}" class="form-control">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Obra</label>
+        <select id="report-filter-obra" name="obra" class="form-select">
+          <option value="">Todas</option>
+          {% for obra in obras %}
+            <option value="{{ obra.pk }}" {% if filters.obra == obra.pk|stringformat:"s" %}selected{% endif %}>{{ obra }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Edificio / Fase</label>
+        <select id="report-filter-edificio" name="edificio" class="form-select">
+          <option value="">Todos</option>
+          {% for edificio in edificios %}
+            <option value="{{ edificio }}" {% if filters.edificio == edificio %}selected{% endif %}>{{ edificio }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Vivienda</label>
+        <select id="report-filter-vivienda" name="vivienda" class="form-select">
+          <option value="">Todas</option>
+          {% for vivienda in viviendas %}
+            <option value="{{ vivienda }}" {% if filters.vivienda == vivienda %}selected{% endif %}>Viv. {{ vivienda }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Planta</label>
+        <select id="report-filter-planta" name="planta" class="form-select">
+          <option value="">Todas</option>
+          {% for planta in plantas %}
+            <option value="{{ planta }}" {% if filters.planta == planta %}selected{% endif %}>{{ planta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Capítulo</label>
+        <select id="report-filter-capitulo" name="capitulo" class="form-select">
+          <option value="">Todos</option>
+          {% for capitulo in capitulos %}
+            <option value="{{ capitulo.pk }}" {% if filters.capitulo == capitulo.pk|stringformat:"s" %}selected{% endif %}>{{ capitulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Partida</label>
+        <select id="report-filter-partida" name="partida" class="form-select">
+          <option value="">Todas</option>
+          {% for partida in partidas %}
+            <option value="{{ partida.pk }}" {% if filters.partida == partida.pk|stringformat:"s" %}selected{% endif %}>{{ partida }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Empleado</label>
+        <select name="empleado" class="form-select">
+          <option value="">Todos</option>
+          {% for empleado in empleados %}
+            <option value="{{ empleado.pk }}" {% if filters.empleado == empleado.pk|stringformat:"s" %}selected{% endif %}>{{ empleado }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Estado</label>
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          {% for value,label in estados %}
+            <option value="{{ value }}" {% if filters.estado == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <a href="{% url 'planificacion_obra:asignaciones_informe' %}" class="btn btn-outline-secondary">Limpiar</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="pi-report-kpis mb-3">
+    <div class="pi-report-kpi">
+      <span>Asignaciones</span>
+      <strong>{{ total_asignaciones }}</strong>
+    </div>
+    <div class="pi-report-kpi">
+      <span>Empleados</span>
+      <strong>{{ total_empleados }}</strong>
+    </div>
+    <div class="pi-report-kpi">
+      <span>Viviendas</span>
+      <strong>{{ total_viviendas }}</strong>
+    </div>
+    <div class="pi-report-kpi">
+      <span>Horas planificadas</span>
+      <strong>{{ total_horas }}</strong>
+    </div>
+  </div>
+
+  <div class="pi-report-card">
+    {% if rows %}
+      <table class="pi-report-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Empleado</th>
+            <th>Ubicación</th>
+            <th>Trabajo</th>
+            <th>Estado</th>
+            <th>Horas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>
+                <div class="pi-report-main">{{ row.fecha|date:"d/m/Y" }}</div>
+                {% if row.fecha_fin and row.fecha_fin != row.fecha %}
+                  <div class="pi-report-muted">hasta {{ row.fecha_fin|date:"d/m/Y" }}</div>
+                {% endif %}
+              </td>
+              <td>{{ row.horario }}</td>
+              <td>
+                <div class="pi-report-main">{{ row.empleado }}</div>
+              </td>
+              <td>
+                <div class="pi-report-main">{{ row.vivienda }} · {{ row.planta }}</div>
+                <div class="pi-report-muted">{{ row.obra }} · {{ row.edificio }}</div>
+              </td>
+              <td>
+                <div class="pi-report-main">{{ row.capitulo }}</div>
+                <div class="pi-report-muted">{{ row.partida }}</div>
+              </td>
+              <td>
+                <div class="pi-report-main">{{ row.estado }}</div>
+                <div class="pi-report-muted">{{ row.origen }}</div>
+              </td>
+              <td>
+                <div class="pi-report-main">{{ row.horas }}</div>
+                {% if row.coste %}
+                  <div class="pi-report-muted">{{ row.coste }} €</div>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="pi-report-empty">
+        No hay asignaciones para el periodo y filtros seleccionados.
+      </div>
+    {% endif %}
+  </div>
+  <div class="pi-print-footer">
+    Informe generado desde Intasa Platform · Planificación de obra
+  </div>
+</div>
+
+<script id="pi-report-dependent-filters-script">
+document.addEventListener("DOMContentLoaded", function () {
+  const obra = document.getElementById("report-filter-obra");
+  const edificio = document.getElementById("report-filter-edificio");
+  const vivienda = document.getElementById("report-filter-vivienda");
+  const planta = document.getElementById("report-filter-planta");
+  const capitulo = document.getElementById("report-filter-capitulo");
+  const partida = document.getElementById("report-filter-partida");
+
+  if (!obra || !edificio || !vivienda || !planta || !capitulo || !partida) return;
+
+  function updateSelect(select, items, defaultText, keepValue) {
+    const previous = keepValue ? select.value : "";
+    select.innerHTML = "";
+
+    const optDefault = document.createElement("option");
+    optDefault.value = "";
+    optDefault.textContent = defaultText;
+    select.appendChild(optDefault);
+
+    let found = false;
+
+    (items || []).forEach(function (item) {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.text;
+
+      if (String(item.id) === String(previous)) {
+        opt.selected = true;
+        found = true;
+      }
+
+      select.appendChild(opt);
+    });
+
+    if (previous && !found) {
+      select.value = "";
+    }
+  }
+
+  async function loadDependentFilters(changed) {
+    const params = new URLSearchParams();
+
+    if (obra.value) params.set("obra", obra.value);
+
+    if (changed !== "obra" && edificio.value) {
+      params.set("edificio", edificio.value);
+    }
+
+    if (!["obra", "edificio"].includes(changed) && vivienda.value) {
+      params.set("vivienda", vivienda.value);
+    }
+
+    if (!["obra", "edificio", "vivienda"].includes(changed) && planta.value) {
+      params.set("planta", planta.value);
+    }
+
+    if (changed !== "capitulo" && capitulo.value) {
+      params.set("capitulo", capitulo.value);
+    }
+
+    const resp = await fetch("/app/planificacion-obra/asignaciones/calendario/filtros/?" + params.toString(), {
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+
+    if (!resp.ok) return;
+
+    const data = await resp.json();
+
+    updateSelect(edificio, data.edificios, "Todos", changed !== "obra");
+    updateSelect(vivienda, data.viviendas, "Todas", !["obra", "edificio"].includes(changed));
+    updateSelect(planta, data.plantas, "Todas", !["obra", "edificio", "vivienda"].includes(changed));
+    updateSelect(capitulo, data.capitulos, "Todos", true);
+    updateSelect(partida, data.partidas, "Todas", changed !== "capitulo");
+  }
+
+  obra.addEventListener("change", function () {
+    edificio.value = "";
+    vivienda.value = "";
+    planta.value = "";
+    capitulo.value = "";
+    partida.value = "";
+    loadDependentFilters("obra");
+  });
+
+  edificio.addEventListener("change", function () {
+    vivienda.value = "";
+    planta.value = "";
+    partida.value = "";
+    loadDependentFilters("edificio");
+  });
+
+  vivienda.addEventListener("change", function () {
+    planta.value = "";
+    partida.value = "";
+    loadDependentFilters("vivienda");
+  });
+
+  planta.addEventListener("change", function () {
+    partida.value = "";
+    loadDependentFilters("planta");
+  });
+
+  capitulo.addEventListener("change", function () {
+    partida.value = "";
+    loadDependentFilters("capitulo");
+  });
+
+  if (obra.value || edificio.value || vivienda.value || planta.value || capitulo.value) {
+    loadDependentFilters("initial");
+  }
+});
+</script>
+{% endblock %}

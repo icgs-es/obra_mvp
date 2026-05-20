@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle asignación{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1100px;">
+  <a href="{{ back_url|default:"/app/planificacion-obra/asignaciones/" }}" class="btn btn-outline-secondary btn-sm mb-3">
+    ← Volver a planificación de personal
+  </a>
+
+  <div class="card shadow-sm border-0" style="border-radius: 14px;">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h1 class="h4 mb-1">Detalle de asignación</h1>
+          <p class="text-muted mb-0">{{ asignacion.fecha_inicio|date:"d/m/Y" }} · {{ asignacion.empleado }}</p>
+        </div>
+
+        <div class="d-flex gap-2">
+          {% if asignacion.estado != "REALIZADO" %}
+            {% if puede_marcar_realizado %}
+              <form method="post" action="{% url 'planificacion_obra:asignacion_realizar' asignacion.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-success btn-sm"
+                        onclick="return confirm('¿Marcar esta asignación como realizada y crear el recurso real?');">
+                  ✓ Marcar como realizado
+                </button>
+              </form>
+            {% else %}
+              <a href="{% url 'planificacion_obra:asignacion_update' asignacion.pk %}?ajustar_realizado=1"
+                 class="btn btn-warning btn-sm">
+                Ajustar fecha real
+              </a>
+            {% endif %}
+          {% endif %}
+          <a href="{% url 'planificacion_obra:asignacion_update' asignacion.pk %}" class="btn btn-primary btn-sm">✎ Editar</a>
+          <a href="{% url 'planificacion_obra:asignacion_delete' asignacion.pk %}" class="btn btn-outline-danger btn-sm">🗑 Eliminar</a>
+        </div>
+      </div>
+
+      <table class="table table-sm">
+        <tr><th>Empleado</th><td>{{ asignacion.empleado }}</td></tr>
+        <tr><th>Obra</th><td>{{ asignacion.pi_display_obra }}</td></tr>
+        <tr><th>Vivienda</th><td>{{ asignacion.pi_display_vivienda_corta }}</td></tr>
+        <tr><th>Planta</th><td>{{ asignacion.pi_display_planta }}</td></tr>
+        <tr><th>Capítulo</th><td>{{ asignacion.pi_display_capitulo }}</td></tr>
+        <tr><th>Partida</th><td>{{ asignacion.pi_display_partida }}</td></tr>
+        <tr><th>Horario</th><td>{{ asignacion.fecha_inicio|date:"d/m/Y" }} {{ asignacion.hora_inicio|time:"H:i" }} - {{ asignacion.hora_fin|time:"H:i" }}</td></tr>
+        <tr><th>Estado</th><td>{{ asignacion.get_estado_display }}</td></tr>
+        <tr><th>Observaciones</th><td>{{ asignacion.observaciones|default:"-" }}</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
