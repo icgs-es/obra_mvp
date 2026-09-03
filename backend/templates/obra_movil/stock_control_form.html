@@ -1,0 +1,94 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- OBRA_MOVIL_STOCK_CONTROL_FORM_V1 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi bi-clipboard-check"></i>
+    </span>
+    <div>
+      <h1 class="h3 mb-1">Control de stock</h1>
+      <p class="mb-0 opacity-75">Fijar stock real contado en obra.</p>
+    </div>
+  </div>
+</section>
+
+<form method="post" class="card border-0 shadow-sm rounded-4 obra-mobile-form" novalidate>
+  {% csrf_token %}
+  <div class="card-body">
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger rounded-4">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.almacen.id_for_label }}">{{ form.almacen.label }}</label>
+      {{ form.almacen }}
+      {% if form.almacen.errors %}<div class="text-danger small mt-1">{{ form.almacen.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.recurso.id_for_label }}">{{ form.recurso.label }}</label>
+      {{ form.recurso }}
+      {% if form.recurso.errors %}<div class="text-danger small mt-1">{{ form.recurso.errors }}</div>{% endif %}
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.stock_contado.id_for_label }}">{{ form.stock_contado.label }}</label>
+        {{ form.stock_contado }}
+        {% if form.stock_contado.errors %}<div class="text-danger small mt-1">{{ form.stock_contado.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.unidad.id_for_label }}">{{ form.unidad.label }}</label>
+        {{ form.unidad }}
+        {% if form.unidad.errors %}<div class="text-danger small mt-1">{{ form.unidad.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.fecha_movimiento.id_for_label }}">{{ form.fecha_movimiento.label }}</label>
+        {{ form.fecha_movimiento }}
+        {% if form.fecha_movimiento.errors %}<div class="text-danger small mt-1">{{ form.fecha_movimiento.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.hora_movimiento.id_for_label }}">{{ form.hora_movimiento.label }}</label>
+        {{ form.hora_movimiento }}
+        {% if form.hora_movimiento.errors %}<div class="text-danger small mt-1">{{ form.hora_movimiento.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.observaciones.id_for_label }}">{{ form.observaciones.label }}</label>
+      {{ form.observaciones }}
+      {% if form.observaciones.errors %}<div class="text-danger small mt-1">{{ form.observaciones.errors }}</div>{% endif %}
+    </div>
+
+    <div class="alert alert-warning rounded-4 small">
+      Esta acción crea un movimiento <strong>CONTROL_STOCK</strong> y fija el stock del recurso al valor contado.
+    </div>
+
+    <div class="d-grid gap-2">
+      <button class="btn btn-primary btn-lg rounded-4" type="submit">
+        <i class="bi bi-check2-circle me-1"></i> Guardar conteo
+      </button>
+      <a class="btn btn-light btn-lg rounded-4" href="{% url 'obra_movil:stock_home' %}">
+        Cancelar
+      </a>
+    </div>
+  </div>
+</form>
+
+<style>
+  /* OBRA_MOVIL_STOCK_CONTROL_STYLE_V1 */
+  .obra-mobile-form select,
+  .obra-mobile-form input,
+  .obra-mobile-form textarea {
+    border-radius: 1rem;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}
+Comparativa IA · {{ comparativa.titulo }}
+{% endblock %}
+
+{% block content %}
+
+{# COMPARATIVAS_EXECUTIVE_PRINT_V1_1 #}
+<style>
+  .print-only {
+    display: none;
+  }
+
+  .executive-report {
+    max-width: 1500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media print {
+
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+
+    html,
+    body {
+      background: #fff !important;
+      font-size: 9.5pt !important;
+    }
+
+    nav,
+    .navbar,
+    .sidebar,
+    .offcanvas,
+    footer {
+      display: none !important;
+    }
+
+    .executive-report {
+      max-width: none !important;
+      width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .executive-report .btn,
+    .executive-report form,
+    .screen-only {
+      display: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    .executive-report .card {
+      box-shadow: none !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      margin-bottom: 7px !important;
+    }
+
+    .executive-report .card-header {
+      padding: 5px 8px !important;
+      font-size: 10pt !important;
+    }
+
+    .executive-report .card-body {
+      padding: 7px 9px !important;
+    }
+
+    .executive-report .table {
+      font-size: 8.5pt !important;
+      margin-bottom: 0 !important;
+    }
+
+    .executive-report .table th,
+    .executive-report .table td {
+      padding: 4px 5px !important;
+      vertical-align: top !important;
+    }
+
+    .executive-report ul {
+      margin-bottom: 0 !important;
+      padding-left: 18px !important;
+    }
+
+    .executive-report li {
+      margin-bottom: 3px !important;
+    }
+
+    .executive-report .alert {
+      padding: 5px 8px !important;
+      margin-bottom: 7px !important;
+    }
+
+    .executive-report .row {
+      --bs-gutter-y: 7px;
+    }
+
+    .executive-report h1,
+    .executive-report h2 {
+      break-after: avoid;
+    }
+  }
+</style>
+
+<div class="container-fluid py-3 executive-report">
+
+  <div class="print-only mb-3">
+    <div class="small text-uppercase fw-semibold">
+      PORTAL INTASA
+    </div>
+
+    <div class="h4 mb-1">
+      Informe comparativo de presupuestos
+    </div>
+
+    <div class="fw-semibold">
+      {{ comparativa.titulo }}
+    </div>
+
+    {% if comparativa.referencia_nombre %}
+      <div class="small">
+        {{ comparativa.referencia_codigo }}
+        ·
+        {{ comparativa.referencia_nombre }}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3 screen-only">
+    <div>
+      <div class="text-muted small">
+        Comparativa ejecutiva con IA
+      </div>
+
+      <h1 class="h4 mb-1">
+        {{ comparativa.titulo }}
+      </h1>
+
+      <div class="text-muted">
+        {{ comparativa.team.name }}
+        {% if comparativa.referencia_nombre %}
+          · {{ comparativa.referencia_codigo }}
+          · {{ comparativa.referencia_nombre }}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'comparativas:detail' comparativa.uuid %}"
+         class="btn btn-outline-secondary btn-sm">
+        Volver al expediente
+      </a>
+
+      {% if report %}
+        <button type="button"
+                onclick="window.print()"
+                class="btn btn-outline-secondary btn-sm">
+          Imprimir / Guardar PDF
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+
+  <div class="alert alert-light border py-2 small">
+    <strong>Revisión humana obligatoria.</strong>
+    La IA ofrece una valoración orientativa.
+    No adjudica, no autoriza compras y no modifica
+    el expediente.
+  </div>
+
+
+  {% if ia_error %}
+    <div class="alert alert-danger">
+      {{ ia_error }}
+
+      {% if ia_error_code %}
+        <div class="small mt-1">
+          Diagnóstico: {{ ia_error_code }}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+
+  <div class="card mb-3">
+    <div class="card-header bg-white fw-semibold">
+      Resumen económico
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Oferta</th>
+            <th class="text-end">Base</th>
+            <th class="text-end">Impuestos</th>
+            <th class="text-end">Total</th>
+            <th class="text-center">Partidas</th>
+            {% if report %}
+              <th>Comparabilidad IA</th>
+            {% endif %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% if report %}
+            {% for row in report_rows %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    {{ row.nombre }}
+                  </div>
+
+                  <div class="small text-muted">
+                    V{{ row.version }}
+                    {% if row.referencia %}
+                      · {{ row.referencia }}
+                    {% endif %}
+                  </div>
+                </td>
+
+                <td class="text-end">
+                  {% if row.base != None %}
+                    {{ row.base|floatformat:2 }} €
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td class="text-end">
+                  {% if row.impuestos != None %}
+                    {{ row.impuestos|floatformat:2 }} €
+                  {% else %}
+                    <span class="text-muted">
+                      No informado
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td class="text-end fw-semibold">
+                  {% if row.total != None %}
+                    {{ row.total|floatformat:2 }} €
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td class="text-center">
+                  {{ row.partidas }}
+                </td>
+
+                <td style="min-width:260px;">
+                  {% if row.ia %}
+                    {% if row.ia.comparabilidad == "ALTA" %}
+                      <span class="badge bg-success">
+                        Alta
+                      </span>
+                    {% elif row.ia.comparabilidad == "MEDIA" %}
+                      <span class="badge bg-primary">
+                        Media
+                      </span>
+                    {% elif row.ia.comparabilidad == "BAJA" %}
+                      <span class="badge bg-warning text-dark">
+                        Baja
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary">
+                        No determinable
+                      </span>
+                    {% endif %}
+
+                    <div class="small mt-1">
+                      {{ row.ia.comentario }}
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+
+          {% else %}
+            {% for row in rows %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    {{ row.nombre }}
+                  </div>
+
+                  <div class="small text-muted">
+                    V{{ row.version }}
+                    {% if row.referencia %}
+                      · {{ row.referencia }}
+                    {% endif %}
+                  </div>
+                </td>
+
+                <td class="text-end">
+                  {% if row.base != None %}
+                    {{ row.base|floatformat:2 }} €
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td class="text-end">
+                  {% if row.impuestos != None %}
+                    {{ row.impuestos|floatformat:2 }} €
+                  {% else %}
+                    <span class="text-muted">
+                      No informado
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td class="text-end fw-semibold">
+                  {% if row.total != None %}
+                    {{ row.total|floatformat:2 }} €
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td class="text-center">
+                  {{ row.partidas }}
+                </td>
+              </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  {% if not report %}
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h5">
+          Generar análisis ejecutivo
+        </h2>
+
+        <p class="text-muted mb-3">
+          INTASA IA analizará las últimas versiones
+          disponibles de {{ rows|length }} ofertas y
+          {{ prepared.source_units_count }} partidas consolidadas.
+        </p>
+
+        {% if prepared.can_generate %}
+          <form method="post">
+            {% csrf_token %}
+
+            <button type="submit"
+                    class="btn btn-dark">
+              Generar comparativa con IA
+            </button>
+          </form>
+
+          <div class="small text-muted mt-2">
+            Se realizará una única llamada.
+            No se guardará ni modificará ningún dato
+            del expediente.
+          </div>
+
+        {% else %}
+          <div class="alert alert-warning mb-0">
+            {{ prepared.blocking_reason }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  {% else %}
+
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">
+        Visión general
+      </div>
+
+      <div class="card-body">
+        {{ report.resumen }}
+      </div>
+    </div>
+
+
+    <div class="row g-3 mb-3">
+
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header bg-white fw-semibold">
+            Diferencias clave
+          </div>
+
+          <div class="card-body">
+            <ul class="mb-0">
+              {% for item in report.diferencias_clave %}
+                <li class="mb-2">
+                  {{ item }}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header bg-white fw-semibold">
+            Riesgos y aclaraciones
+          </div>
+
+          <div class="card-body">
+            {% if report.riesgos_y_aclaraciones %}
+              <ul class="mb-0">
+                {% for item in report.riesgos_y_aclaraciones %}
+                  <li class="mb-2">
+                    {{ item }}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <span class="text-muted">
+                No se han identificado aclaraciones
+                adicionales.
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+
+    <div class="card border-dark mb-3">
+      <div class="card-header bg-white fw-semibold">
+        Conclusión ejecutiva
+      </div>
+
+      <div class="card-body">
+        {% if option_name %}
+          <div class="mb-2">
+            <span class="badge bg-dark">
+              Opción orientativa
+            </span>
+
+            <strong class="ms-1">
+              {{ option_name }}
+            </strong>
+          </div>
+        {% else %}
+          <div class="mb-2">
+            <span class="badge bg-secondary">
+              Sin opción única concluyente
+            </span>
+          </div>
+        {% endif %}
+
+        <div>
+          {{ report.recomendacion }}
+        </div>
+
+        <hr>
+
+        <div class="small text-muted">
+          Esta conclusión requiere revisión humana.
+          No constituye adjudicación automática,
+          aceptación de oferta ni orden de compra.
+        </div>
+      </div>
+    </div>
+
+
+    <div class="d-flex flex-wrap justify-content-between gap-2 screen-only">
+      <div class="small text-muted">
+        {% if ia_metadata.modelo %}
+          Modelo: {{ ia_metadata.modelo }}
+        {% endif %}
+
+        {% if ia_metadata.tokens_entrada %}
+          · Entrada:
+          {{ ia_metadata.tokens_entrada }} tokens
+        {% endif %}
+
+        {% if ia_metadata.tokens_salida %}
+          · Salida:
+          {{ ia_metadata.tokens_salida }} tokens
+        {% endif %}
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <button type="submit"
+                class="btn btn-outline-dark btn-sm">
+          Generar de nuevo
+        </button>
+      </form>
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

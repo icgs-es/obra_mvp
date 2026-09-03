@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ title }}</h1>
+      {# PROVEEDOR_FORM_GRUPO_UI_V1 #}
+        {% if modo_todas %}
+          <div class="text-muted small">Proveedor de grupo · Empresa de referencia interna: {{ team.name }}</div>
+        {% else %}
+          <div class="text-muted small">Empresa de referencia: {{ team.name }}</div>
+        {% endif %}
+    </div>
+    <a href="/app/gestion/proveedores/" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  <form action="{{ form_action|default:'' }}" data-marker="PROVEEDOR_FORM_ACTION_NO_DUPLICA_V4" data-marker="PROVEEDOR_FORM_ACTION_NO_DUPLICA_V3" data-marker="PROVEEDOR_FORM_ACTION_NO_DUPLICA_V1" method="post" class="card shadow-sm border-0">
+    {% csrf_token %}
+{# PROVEEDOR_EDIT_PK_HIDDEN_V3 #}
+{% if proveedor or object %}
+  <input type="hidden" name="_proveedor_edit_pk" value="{{ proveedor.id|default:object.id }}">
+{% endif %}
+
+    <div class="card-body">
+      <div class="row g-3">
+        {% for field in form %}
+          {% if field.field.widget.input_type == "checkbox" %}
+            <div class="col-md-3">
+              <div class="form-check mt-4">
+                {{ field }}
+                <label class="form-check-label">{{ field.label }}</label>
+              </div>
+            </div>
+          {% else %}
+            <div class="col-md-6">
+              <label class="form-label small text-muted">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}
+                <div class="text-danger small">{{ field.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+{# PROVEEDOR_FORM_ACCIONES_LIMPIAS_V4 #}
+<div class="border-top mt-4 pt-3 d-flex justify-content-between align-items-center">
+  <a href="/app/gestion/proveedores/" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+  <button type="submit" class="btn btn-primary btn-sm px-4" data-marker="PROVEEDOR_FORM_ACCIONES_LIMPIAS_V4">
+    {{ submit_label|default:"Guardar proveedor" }}
+  </button>
+</div>
+
+</form>
+</div>
+{% endblock %}

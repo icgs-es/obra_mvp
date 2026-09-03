@@ -1,3 +1,4 @@
+{% load l10n %}
 {% if vista_vivienda %}
 <style>
   .planning-gantt-vivienda {
@@ -32,7 +33,7 @@
   .planning-gantt-vivienda .gantt-prev {
     top: 5px;
     height: 6px;
-    background: #adb5bd;
+    background: #6c757d;
   }
   .planning-gantt-vivienda .gantt-real {
     bottom: 5px;
@@ -48,15 +49,24 @@
     text-align: right;
     white-space: nowrap;
   }
+  /* PLANIFICACION_GANTT_ESTADO_BADGE_FASE1B */
+  .planning-gantt-vivienda .gantt-status {
+    display: inline-block;
+    min-width: 64px;
+    text-align: center;
+    font-size: .58rem;
+    padding: .10rem .28rem;
+    border-radius: 999px;
+  }
 </style>
 
 <div class="card shadow-sm border-0 mb-3 planning-gantt-vivienda">
   <div class="card-header bg-white d-flex justify-content-between align-items-center">
     <div>
-      <strong>Gantt previsto vs real</strong>
+      <strong>Gantt previsto vs real{% if agrupacion == "capitulo" %} · por capítulos{% endif %}</strong>
       <div class="text-secondary small">Gris = previsto · Verde = real · Rojo = real fuera de plazo.</div>
     </div>
-    <span class="badge bg-secondary">{{ gantt_rows|length }} tareas</span>
+    <span class="badge bg-secondary">{{ gantt_rows|length }} {% if agrupacion == "capitulo" %}capítulos{% else %}tareas{% endif %}</span>
   </div>
 
   {% if gantt_inicio and gantt_fin %}
@@ -76,26 +86,48 @@
     {% for item in gantt_rows %}
       <div class="gantt-row">
         <div class="gantt-task" title="{{ item.partida_label }}">
-          <a href="/app/planificacion-obra/planning/tareas/{{ item.tarea_id }}/?next={{ request.get_full_path|urlencode }}" class="text-decoration-none">
-            {{ item.orden|default:"—" }}
-          </a>
+          {# PLANIFICACION_GANTT_CAPITULO_TEMPLATE_CONTEXT_SAFE_FASE1B4 #}
+          {% if item.tarea_id %}
+            <a href="/app/planificacion-obra/planning/tareas/{{ item.tarea_id }}/?next={{ request.get_full_path|urlencode }}" class="text-decoration-none">
+              {{ item.orden|default:"—" }}
+            </a>
+          {% else %}
+            <strong>{{ item.orden|default:"—" }}</strong>
+          {% endif %}
           <span class="text-secondary">·</span>
+          <span class="badge {{ item.estado_class }} gantt-status me-1">{{ item.estado_label }}</span>
           {{ item.partida_label }}
+          {% if item.meta_label %}
+            <span class="text-secondary ms-1">· {{ item.meta_label }}</span>
+          {% endif %}
           {% if item.warnings_count %}
             <span class="badge bg-warning text-dark ms-1">⚠ {{ item.warnings_count }}</span>
           {% endif %}
         </div>
 
         <div class="gantt-track">
-          {% if item.prev_bar %}
-            <div class="gantt-bar gantt-prev"
-                 style="left: {{ item.prev_bar.left }}%; width: {{ item.prev_bar.width }}%;"
+          {# PLANIFICACION_GANTT_CAPITULO_SEGMENTOS_TEMPLATE_V2 #}
+          {% if item.prev_segments %}
+            {% for seg in item.prev_segments %}
+              <div class="gantt-bar gantt-prev gantt-segment"
+                   style="left: {{ seg.left|unlocalize }}%; width: {{ seg.width|unlocalize }}%;"
+                   title="Previsto · tarea del capítulo"></div>
+            {% endfor %}
+          {% elif item.prev_bar %}
+            <div class="gantt-bar gantt-prev gantt-segment"
+                 style="left: {{ item.prev_bar.left|unlocalize }}%; width: {{ item.prev_bar.width|unlocalize }}%;"
                  title="Previsto"></div>
           {% endif %}
 
-          {% if item.real_bar %}
-            <div class="gantt-bar gantt-real {% if item.late %}gantt-late{% endif %}"
-                 style="left: {{ item.real_bar.left }}%; width: {{ item.real_bar.width }}%;"
+          {% if item.real_segments %}
+            {% for seg in item.real_segments %}
+              <div class="gantt-bar gantt-real gantt-segment {% if seg.late %}gantt-late{% endif %}"
+                   style="left: {{ seg.left|unlocalize }}%; width: {{ seg.width|unlocalize }}%;"
+                   title="Real · tarea del capítulo"></div>
+            {% endfor %}
+          {% elif item.real_bar %}
+            <div class="gantt-bar gantt-real gantt-segment {% if item.late %}gantt-late{% endif %}"
+                 style="left: {{ item.real_bar.left|unlocalize }}%; width: {{ item.real_bar.width|unlocalize }}%;"
                  title="Real"></div>
           {% endif %}
         </div>

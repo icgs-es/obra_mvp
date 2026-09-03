@@ -35,12 +35,20 @@ class Calendar(models.Model):
 
 
 class Event(models.Model):
-    class TaskStatus(models.TextChoices):
+    class LegacyTaskStatus(models.TextChoices):
         PENDIENTE = "PENDIENTE", "Pendiente"
         EN_PROCESO = "EN_PROCESO", "En proceso"
         BLOQUEADA = "BLOQUEADA", "Bloqueada"
         COMPLETADO = "COMPLETADO", "Completado"
         CANCELADO = "CANCELADO", "Cancelado"
+
+    class Status(models.TextChoices):
+        PROGRAMADO = "PROGRAMADO", "Programado"
+        COMPLETADO = "COMPLETADO", "Completado"
+        CANCELADO = "CANCELADO", "Cancelado"
+
+    # Contrato de lectura temporal para integraciones históricas.
+    TaskStatus = LegacyTaskStatus
 
     class Visibility(models.TextChoices):
         PRIVADA = "PRIVADA", "Privada"
@@ -63,10 +71,21 @@ class Event(models.Model):
     description = models.TextField("Descripción", blank=True, default="")
 
     status = models.CharField(
-        "Estado tarea",
+        "Estado del evento",
         max_length=20,
-        choices=TaskStatus.choices,
-        default=TaskStatus.PENDIENTE,
+        choices=Status.choices,
+        default=Status.PROGRAMADO,
+    )
+
+    seguimiento_atrasos_desde = models.DateTimeField(
+        "Seguimiento de atrasos desde",
+        null=True,
+        blank=True,
+        default=timezone.now,
+        editable=False,
+        help_text=(
+            "Nulo para eventos históricos excluidos del seguimiento de atrasos."
+        ),
     )
 
     location = models.CharField("Dónde", max_length=255, blank=True, default="")
@@ -105,6 +124,37 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def is_completed(self):
+        return self.status == self.Status.COMPLETADO
+
+    @property
+    def is_cancelled(self):
+        return self.status == self.Status.CANCELADO
+
+    def is_overdue_at(self, moment=None):
+        """Atraso timezone-aware sin penalizar históricos no seguidos."""
+        if (
+            self.seguimiento_atrasos_desde is None
+            or self.status != self.Status.PROGRAMADO
+        ):
+            return False
+
+        moment = moment or timezone.now()
+
+        if self.all_day:
+            end_value = self.end or self.start
+            if self.end and self.end > self.start:
+                # FullCalendar expresa el fin de todo el día como exclusivo.
+                end_value = self.end - timezone.timedelta(microseconds=1)
+            return timezone.localdate(end_value) < timezone.localdate(moment)
+
+        return (self.end or self.start) < moment
+
+    @property
+    def is_overdue(self):
+        return self.is_overdue_at()
 
 
 class Reminder(models.Model):

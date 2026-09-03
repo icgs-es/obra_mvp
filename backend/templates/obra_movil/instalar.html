@@ -1,0 +1,113 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- OBRA_MOVIL_UX0_INSTALAR_TEMPLATE_V1 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi bi-phone"></i>
+    </span>
+    <div>
+      <h1 class="h3 mb-1">Instalar Obra móvil</h1>
+      <p class="mb-0 opacity-75">Acceso directo para móvil o tablet.</p>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-2">URL directa</h2>
+    <div class="p-3 bg-light rounded-4 small text-break" id="obraMovilUrl">{{ obra_movil_url }}</div>
+
+    <div class="d-grid gap-2 mt-3">
+      <a class="btn btn-primary btn-lg rounded-4" href="{% url 'obra_movil:index' %}">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Abrir Obra móvil
+      </a>
+      <button class="btn btn-outline-primary btn-lg rounded-4" type="button" id="copyObraMovilUrl">
+        <i class="bi bi-clipboard me-1"></i> Copiar URL
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Android / Chrome</h2>
+    <ol class="mb-0 ps-3">
+      <li>Abre esta pantalla en Chrome.</li>
+      <li>Toca el menú de tres puntos.</li>
+      <li>Elige <strong>Añadir a pantalla de inicio</strong> o <strong>Instalar aplicación</strong>.</li>
+      <li>Confirma el nombre <strong>Obra móvil INTASA</strong>.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">iPhone / Safari</h2>
+    <ol class="mb-0 ps-3">
+      <li>Abre esta pantalla en Safari.</li>
+      <li>Toca el botón de compartir.</li>
+      <li>Elige <strong>Añadir a pantalla de inicio</strong>.</li>
+      <li>Confirma el acceso.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Acceso de usuarios de obra</h2>
+    <p class="mb-2">
+      El personal de obra entra con usuario y contraseña del portal.
+    </p>
+    <div class="p-3 bg-light rounded-4 small text-break">{{ login_url }}</div>
+    <p class="small text-muted mt-2 mb-0">
+      El usuario debe pertenecer a su empresa/equipo para ver solo sus datos.
+    </p>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Estado de instalación</h2>
+    <div id="standaloneStatus" class="alert alert-secondary rounded-4 mb-0 small">
+      Comprobando modo de apertura...
+    </div>
+  </div>
+</section>
+
+<div class="d-grid gap-2">
+  <a class="btn btn-light btn-lg rounded-4" href="{% url 'obra_movil:index' %}">
+    Volver a Obra móvil
+  </a>
+</div>
+
+<script>
+  // OBRA_MOVIL_UX0_INSTALL_JS_V1
+  (function () {
+    const status = document.getElementById("standaloneStatus");
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+
+    if (status) {
+      status.className = isStandalone
+        ? "alert alert-success rounded-4 mb-0 small"
+        : "alert alert-warning rounded-4 mb-0 small";
+      status.textContent = isStandalone
+        ? "Obra móvil está abierta como aplicación instalada."
+        : "Obra móvil está abierta en navegador. Puedes añadirla a la pantalla de inicio.";
+    }
+
+    const btn = document.getElementById("copyObraMovilUrl");
+    const box = document.getElementById("obraMovilUrl");
+    if (btn && box && navigator.clipboard) {
+      btn.addEventListener("click", function () {
+        navigator.clipboard.writeText(box.textContent.trim()).then(function () {
+          btn.textContent = "URL copiada";
+        });
+      });
+    }
+  })();
+</script>
+{% endblock %}

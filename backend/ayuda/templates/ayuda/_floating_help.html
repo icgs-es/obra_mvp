@@ -1,0 +1,1114 @@
+<div
+  id="intasa-help-panel"
+  class="intasa-help-panel"
+  data-search-url="{% url 'ayuda:buscar_api' %}"
+  data-article-url-template="{% url 'ayuda:articulo_api' '__ARTICLE__' %}"
+  data-center-url="{% url 'ayuda:centro' %}"
+  hidden
+>
+  <div class="intasa-help-header">
+    <div class="d-flex align-items-center gap-2 min-w-0">
+      <div class="intasa-help-header-icon">
+        <i class="bi bi-question-lg"></i>
+      </div>
+
+      <div class="min-w-0">
+        <div class="fw-semibold">
+          Ayuda INTASA
+        </div>
+
+        <div class="intasa-help-subtitle">
+          Respuestas rápidas dentro del Portal
+        </div>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      id="intasa-help-close"
+      class="btn btn-light btn-sm intasa-help-close"
+      aria-label="Cerrar ayuda"
+      title="Cerrar ayuda"
+    >
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <div class="intasa-help-body">
+    <div class="intasa-help-welcome">
+      <div class="fw-semibold mb-1">
+        ¿Qué duda tienes?
+      </div>
+
+      <div class="small text-muted">
+        Busca una operación, un estado o una función del Portal.
+      </div>
+    </div>
+
+    <form
+      id="intasa-help-search-form"
+      class="intasa-help-search"
+      autocomplete="off"
+    >
+      <i class="bi bi-search"></i>
+
+      <input
+        type="search"
+        id="intasa-help-query"
+        placeholder="Ej.: ¿Cómo autorizo un plan de pagos?"
+        aria-label="Buscar en la ayuda"
+      >
+
+      <button
+        type="submit"
+        class="btn btn-success btn-sm"
+      >
+        Buscar
+      </button>
+    </form>
+
+    <div class="intasa-help-quick">
+      {# INTASA_HELP_QUICK_CORE_V2 #}
+      <button type="button" data-help-query="factura">
+        Facturas
+      </button>
+
+      <button type="button" data-help-query="subir carpeta">
+        Subir carpeta
+      </button>
+
+      <button type="button" data-help-query="mi jornada">
+        Mi jornada
+      </button>
+
+      <button type="button" data-help-query="almacén">
+        Almacén
+      </button>
+    </div>
+
+    <div
+      id="intasa-help-status"
+      class="intasa-help-status"
+      aria-live="polite"
+    ></div>
+
+    <div
+      id="intasa-help-results"
+      class="intasa-help-results"
+    ></div>
+
+    {# INTASA_HELP_ARTICLE_PANEL_V1 #}
+    <article
+      id="intasa-help-article"
+      class="intasa-help-article"
+      hidden
+    >
+      <button
+        type="button"
+        id="intasa-help-article-back"
+        class="btn btn-link btn-sm px-0 mb-3"
+      >
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver a resultados
+      </button>
+
+      <div
+        id="intasa-help-article-path"
+        class="intasa-help-article-path"
+      ></div>
+
+      <h2
+        id="intasa-help-article-title"
+        class="intasa-help-article-title"
+      ></h2>
+
+      <div
+        id="intasa-help-article-summary"
+        class="intasa-help-article-summary"
+      ></div>
+
+      <div
+        id="intasa-help-article-body"
+        class="intasa-help-article-body"
+      ></div>
+    </article>
+  </div>
+
+  <div class="intasa-help-footer">
+    <a
+      id="intasa-help-center-link"
+      href="{% url 'ayuda:centro' %}"
+      class="btn btn-outline-success btn-sm w-100"
+    >
+      <i class="bi bi-journal-text me-1"></i>
+      Abrir centro completo
+    </a>
+  </div>
+</div>
+
+<button
+  type="button"
+  id="intasa-help-launcher"
+  class="intasa-help-launcher"
+  aria-label="Abrir ayuda INTASA"
+  aria-expanded="false"
+  title="Ayuda INTASA"
+>
+  <i class="bi bi-question-lg"></i>
+</button>
+
+<style>
+  .intasa-help-launcher {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 1080;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: #14532d;
+    color: #fff;
+    box-shadow:
+      0 0.65rem 1.8rem
+      rgba(20, 83, 45, 0.34);
+    font-size: 1.45rem;
+    transition:
+      transform 0.18s ease,
+      background 0.18s ease;
+  }
+
+  .intasa-help-launcher.with-mail {
+    bottom: 5.45rem;
+  }
+
+  .intasa-help-launcher:hover,
+  .intasa-help-launcher:focus {
+    background: #0f3d22;
+    color: #fff;
+    outline: 0;
+    transform: translateY(-2px);
+  }
+
+  .intasa-help-panel {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1100;
+    width: min(
+      430px,
+      calc(100vw - 2rem)
+    );
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #d9e4dc;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow:
+      0 1.25rem 3.5rem
+      rgba(15, 23, 42, 0.25);
+  }
+
+  .intasa-help-header {
+    min-height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 0.8rem;
+    color: #fff;
+    background:
+      linear-gradient(
+        135deg,
+        #14532d,
+        #1f7a45
+      );
+  }
+
+  .intasa-help-header-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border-radius: 0.7rem;
+    background: rgba(255, 255, 255, 0.16);
+    font-size: 1.15rem;
+  }
+
+  .intasa-help-subtitle {
+    overflow: hidden;
+    color: rgba(255,255,255,.76);
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .intasa-help-close {
+    width: 2.1rem;
+    height: 2.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 0;
+  }
+
+  .intasa-help-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f7faf8;
+  }
+
+  .intasa-help-welcome {
+    margin-bottom: 0.8rem;
+  }
+
+  .intasa-help-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem;
+    border: 1px solid #cedbd2;
+    border-radius: 0.8rem;
+    background: #fff;
+    box-shadow:
+      0 0.25rem 0.9rem
+      rgba(15, 23, 42, 0.05);
+  }
+
+  .intasa-help-search > i {
+    margin-left: 0.35rem;
+    color: #607568;
+  }
+
+  .intasa-help-search input {
+    min-width: 0;
+    flex: 1 1 auto;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: 0.9rem;
+  }
+
+  .intasa-help-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+  }
+
+  .intasa-help-quick button {
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #cbded0;
+    border-radius: 999px;
+    background: #fff;
+    color: #14532d;
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  .intasa-help-quick button:hover {
+    background: #eaf4ed;
+  }
+
+  .intasa-help-status {
+    min-height: 1.5rem;
+    margin-top: 0.9rem;
+    color: #6c757d;
+    font-size: 0.78rem;
+  }
+
+  .intasa-help-results {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .intasa-help-result {
+    display: block;
+    padding: 0.8rem;
+    border: 1px solid #dce6df;
+    border-radius: 0.8rem;
+    background: #fff;
+    color: inherit;
+    text-decoration: none;
+    box-shadow:
+      0 0.2rem 0.7rem
+      rgba(15, 23, 42, 0.04);
+  }
+
+  .intasa-help-result:hover {
+    border-color: #91b79c;
+    color: inherit;
+    transform: translateY(-1px);
+  }
+
+  .intasa-help-result-path {
+    margin-bottom: 0.25rem;
+    color: #43805a;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .intasa-help-result-title {
+    margin-bottom: 0.25rem;
+    color: #193d25;
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+
+  .intasa-help-result-text {
+    color: #69756d;
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
+  .intasa-help-footer {
+    flex: 0 0 auto;
+    padding: 0.7rem;
+    border-top: 1px solid #dde7e0;
+    background: #fff;
+  }
+
+  .intasa-help-body.is-reading
+  .intasa-help-welcome,
+  .intasa-help-body.is-reading
+  .intasa-help-search,
+  .intasa-help-body.is-reading
+  .intasa-help-quick,
+  .intasa-help-body.is-reading
+  .intasa-help-status,
+  .intasa-help-body.is-reading
+  .intasa-help-results {
+    display: none;
+  }
+
+  .intasa-help-article {
+    padding-bottom: 1rem;
+  }
+
+  .intasa-help-article-path {
+    margin-bottom: 0.4rem;
+    color: #43805a;
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+
+  .intasa-help-article-title {
+    margin-bottom: 0.6rem;
+    color: #173d24;
+    font-size: 1.25rem;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+
+  .intasa-help-article-summary {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dce7df;
+    color: #66746b;
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+
+  .intasa-help-article-body {
+    color: #27382d;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .intasa-help-article-body h2,
+  .intasa-help-article-body h3,
+  .intasa-help-article-body h4 {
+    margin-top: 1.35rem;
+    margin-bottom: 0.6rem;
+    color: #193d25;
+    font-weight: 750;
+  }
+
+  .intasa-help-article-body h2 {
+    font-size: 1.1rem;
+  }
+
+  .intasa-help-article-body h3 {
+    font-size: 1rem;
+  }
+
+  .intasa-help-article-body h4 {
+    font-size: 0.95rem;
+  }
+
+  .intasa-help-article-body ul,
+  .intasa-help-article-body ol {
+    padding-left: 1.25rem;
+  }
+
+  .intasa-help-article-body blockquote {
+    margin: 1rem 0;
+    padding: 0.75rem 0.85rem;
+    border-left: 4px solid #55a16d;
+    border-radius: 0.45rem;
+    background: #eaf5ed;
+    color: #31573d;
+  }
+
+  .intasa-help-article-body code {
+    padding: 0.12rem 0.3rem;
+    border-radius: 0.3rem;
+    background: #e8eeea;
+    color: #21452d;
+  }
+
+  @media (max-width: 767.98px) {
+    body.intasa-help-open {
+      overflow: hidden;
+    }
+
+    .intasa-help-launcher {
+      right: 0.85rem;
+      bottom: 0.85rem;
+    }
+
+    .intasa-help-launcher.with-mail {
+      bottom: 5.15rem;
+    }
+
+    .intasa-help-panel {
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .intasa-help-header {
+      min-height: 4.1rem;
+      padding-top:
+        max(
+          0.7rem,
+          env(safe-area-inset-top)
+        );
+    }
+
+    .intasa-help-body {
+      padding-right:
+        max(
+          1rem,
+          env(safe-area-inset-right)
+        );
+      padding-bottom: 1rem;
+      padding-left:
+        max(
+          1rem,
+          env(safe-area-inset-left)
+        );
+    }
+
+    .intasa-help-footer {
+      padding-bottom:
+        max(
+          0.7rem,
+          env(safe-area-inset-bottom)
+        );
+    }
+
+    .intasa-help-search {
+      align-items: stretch;
+    }
+
+    .intasa-help-search input {
+      font-size: 16px;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  const panel = document.getElementById(
+    "intasa-help-panel"
+  );
+
+  const launcher = document.getElementById(
+    "intasa-help-launcher"
+  );
+
+  const closeButton = document.getElementById(
+    "intasa-help-close"
+  );
+
+  const form = document.getElementById(
+    "intasa-help-search-form"
+  );
+
+  const input = document.getElementById(
+    "intasa-help-query"
+  );
+
+  const results = document.getElementById(
+    "intasa-help-results"
+  );
+
+  const status = document.getElementById(
+    "intasa-help-status"
+  );
+
+  const centerLink = document.getElementById(
+    "intasa-help-center-link"
+  );
+
+  const helpBody = panel.querySelector(
+    ".intasa-help-body"
+  );
+
+  const articleView = document.getElementById(
+    "intasa-help-article"
+  );
+
+  const articleBack = document.getElementById(
+    "intasa-help-article-back"
+  );
+
+  const articlePath = document.getElementById(
+    "intasa-help-article-path"
+  );
+
+  const articleTitle = document.getElementById(
+    "intasa-help-article-title"
+  );
+
+  const articleSummary = document.getElementById(
+    "intasa-help-article-summary"
+  );
+
+  const articleBody = document.getElementById(
+    "intasa-help-article-body"
+  );
+
+  if (
+    !panel
+    || !launcher
+    || !closeButton
+    || !form
+    || !input
+    || !results
+    || !status
+    || !helpBody
+    || !articleView
+    || !articleBack
+    || !articlePath
+    || !articleTitle
+    || !articleSummary
+    || !articleBody
+  ) {
+    return;
+  }
+
+  const mailLauncher = document.getElementById(
+    "intasa-correo-dock-launcher"
+  );
+
+  if (mailLauncher) {
+    launcher.classList.add(
+      "with-mail"
+    );
+  }
+
+  let controller = null;
+  let searchTimer = null;
+
+  function clearResults() {
+    results.replaceChildren();
+  }
+
+  function closeMailDock() {
+    const mailDock = document.getElementById(
+      "intasa-correo-dock"
+    );
+
+    const mailClose = document.getElementById(
+      "intasa-correo-dock-close"
+    );
+
+    if (
+      mailDock
+      && !mailDock.hidden
+      && mailClose
+    ) {
+      mailClose.click();
+    }
+  }
+
+  function closeHelp() {
+    panel.hidden = true;
+    launcher.hidden = false;
+
+    launcher.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+    document.body.classList.remove(
+      "intasa-help-open"
+    );
+
+    if (controller) {
+      controller.abort();
+    }
+
+    showSearchMode();
+  }
+
+  function openHelp() {
+    closeMailDock();
+
+    panel.hidden = false;
+    launcher.hidden = true;
+
+    launcher.setAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    document.body.classList.add(
+      "intasa-help-open"
+    );
+
+    showSearchMode();
+
+    centerLink.href = (
+      panel.dataset.centerUrl
+      + "?from="
+      + encodeURIComponent(
+          window.location.pathname
+        )
+    );
+
+    window.setTimeout(
+      function () {
+        input.focus();
+      },
+      80
+    );
+
+    search(
+      input.value.trim()
+    );
+  }
+
+  function createResult(item) {
+    const link = document.createElement(
+      "a"
+    );
+
+    link.className = (
+      "intasa-help-result"
+    );
+
+    link.href = item.url;
+    link.dataset.articleId = item.id;
+
+    link.addEventListener(
+      "click",
+      function (event) {
+        event.preventDefault();
+
+        openArticle(
+          item.id
+        );
+      }
+    );
+
+    const path = document.createElement(
+      "div"
+    );
+
+    path.className = (
+      "intasa-help-result-path"
+    );
+
+    path.textContent = (
+      item.modulo
+      + " · "
+      + item.submodulo
+    );
+
+    const title = document.createElement(
+      "div"
+    );
+
+    title.className = (
+      "intasa-help-result-title"
+    );
+
+    title.textContent = item.titulo;
+
+    const text = document.createElement(
+      "div"
+    );
+
+    text.className = (
+      "intasa-help-result-text"
+    );
+
+    text.textContent = (
+      item.fragmento
+      || item.resumen
+      || ""
+    );
+
+    link.append(
+      path,
+      title,
+      text
+    );
+
+    return link;
+  }
+
+  function showSearchMode() {
+    helpBody.classList.remove(
+      "is-reading"
+    );
+
+    articleView.hidden = true;
+    articlePath.textContent = "";
+    articleTitle.textContent = "";
+    articleSummary.textContent = "";
+    articleBody.replaceChildren();
+  }
+
+  async function openArticle(articleId) {
+    if (!articleId) {
+      return;
+    }
+
+    if (controller) {
+      controller.abort();
+    }
+
+    controller = new AbortController();
+
+    helpBody.classList.add(
+      "is-reading"
+    );
+
+    articleView.hidden = false;
+    articlePath.textContent = "Ayuda INTASA";
+    articleTitle.textContent = "Cargando…";
+    articleSummary.textContent = "";
+
+    articleBody.innerHTML = (
+      '<div class="text-muted small">'
+      + '<span class="spinner-border '
+      + 'spinner-border-sm me-2"></span>'
+      + 'Cargando explicación…'
+      + '</div>'
+    );
+
+    helpBody.scrollTop = 0;
+
+    const articleUrl = (
+      panel.dataset.articleUrlTemplate
+      .replace(
+        "__ARTICLE__",
+        encodeURIComponent(
+          articleId
+        )
+      )
+    );
+
+    try {
+      const response = await fetch(
+        articleUrl,
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": (
+              "XMLHttpRequest"
+            )
+          },
+          signal: controller.signal
+        }
+      );
+
+      const data = await response.json();
+
+      if (
+        !response.ok
+        || !data.ok
+        || !data.articulo
+      ) {
+        throw new Error(
+          data.error
+          || "No se pudo abrir el artículo."
+        );
+      }
+
+      const article = data.articulo;
+
+      articlePath.textContent = (
+        article.modulo
+        + " · "
+        + article.submodulo
+      );
+
+      articleTitle.textContent = (
+        article.titulo
+      );
+
+      articleSummary.textContent = (
+        article.resumen
+        || ""
+      );
+
+      /*
+       * El HTML procede exclusivamente del
+       * renderer seguro de ayuda.services.
+       */
+      articleBody.innerHTML = (
+        article.html
+        || ""
+      );
+
+      helpBody.scrollTop = 0;
+
+    } catch (error) {
+      if (
+        error.name
+        === "AbortError"
+      ) {
+        return;
+      }
+
+      articlePath.textContent = (
+        "Ayuda INTASA"
+      );
+
+      articleTitle.textContent = (
+        "No se pudo abrir la explicación"
+      );
+
+      articleSummary.textContent = "";
+
+      articleBody.innerHTML = (
+        '<div class="alert alert-light border">'
+        + 'Prueba a volver a los resultados '
+        + 'y abrir el artículo de nuevo.'
+        + '</div>'
+      );
+    }
+  }
+
+  async function search(query) {
+    showSearchMode();
+    if (controller) {
+      controller.abort();
+    }
+
+    controller = new AbortController();
+
+    status.textContent = (
+      query
+        ? "Buscando…"
+        : "Ayuda relacionada con esta pantalla"
+    );
+
+    clearResults();
+
+    const url = new URL(
+      panel.dataset.searchUrl,
+      window.location.origin
+    );
+
+    url.searchParams.set(
+      "q",
+      query
+    );
+
+    url.searchParams.set(
+      "context",
+      window.location.pathname
+    );
+
+    try {
+      const response = await fetch(
+        url.toString(),
+        {
+          method: "GET",
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": (
+              "XMLHttpRequest"
+            )
+          },
+          signal: controller.signal
+        }
+      );
+
+      const data = await response.json();
+
+      if (
+        !response.ok
+        || !data.ok
+      ) {
+        throw new Error(
+          "No se pudo consultar la ayuda."
+        );
+      }
+
+      if (!data.resultados.length) {
+        status.textContent = (
+          "No se encontró una explicación. "
+          + "Prueba con otras palabras."
+        );
+        return;
+      }
+
+      status.textContent = (
+        data.total === 1
+          ? "1 explicación encontrada"
+          : (
+              data.total
+              + " explicaciones encontradas"
+            )
+      );
+
+      data.resultados.forEach(
+        function (item) {
+          results.appendChild(
+            createResult(item)
+          );
+        }
+      );
+
+    } catch (error) {
+      if (
+        error.name
+        === "AbortError"
+      ) {
+        return;
+      }
+
+      status.textContent = (
+        "No se pudo consultar la ayuda."
+      );
+    }
+  }
+
+  articleBack.addEventListener(
+    "click",
+    function () {
+      showSearchMode();
+
+      window.setTimeout(
+        function () {
+          input.focus();
+        },
+        40
+      );
+    }
+  );
+
+  launcher.addEventListener(
+    "click",
+    openHelp
+  );
+
+  closeButton.addEventListener(
+    "click",
+    closeHelp
+  );
+
+  form.addEventListener(
+    "submit",
+    function (event) {
+      event.preventDefault();
+
+      search(
+        input.value.trim()
+      );
+    }
+  );
+
+  input.addEventListener(
+    "input",
+    function () {
+      window.clearTimeout(
+        searchTimer
+      );
+
+      searchTimer = window.setTimeout(
+        function () {
+          const query = input.value.trim();
+
+          if (
+            query.length === 0
+            || query.length >= 3
+          ) {
+            search(query);
+          }
+        },
+        280
+      );
+    }
+  );
+
+  document.querySelectorAll(
+    "[data-help-query]"
+  ).forEach(
+    function (button) {
+      button.addEventListener(
+        "click",
+        function () {
+          input.value = (
+            button.dataset.helpQuery
+            || ""
+          );
+
+          search(
+            input.value
+          );
+        }
+      );
+    }
+  );
+
+  document.addEventListener(
+    "keydown",
+    function (event) {
+      if (
+        event.key === "Escape"
+        && !panel.hidden
+      ) {
+        closeHelp();
+      }
+    }
+  );
+
+  if (mailLauncher) {
+    mailLauncher.addEventListener(
+      "click",
+      function () {
+        if (!panel.hidden) {
+          closeHelp();
+        }
+      }
+    );
+  }
+})();
+</script>

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Importar líneas OCR</h1>
+      <div class="text-muted small">
+        Albarán {{ albaran.cod_albaran }} · {{ albaran.proveedor }} · Nº proveedor {{ albaran.num_albaran_proveedor }}
+      </div>
+    </div>
+    <a href="{{ next_url|default:'/app/gestion/albaranes/' }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="alert alert-warning small">
+    Revisa las líneas antes de importar. El OCR puede confundir precio unitario, importe o cantidades.
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body small">
+      <strong>Adjunto:</strong> {{ adjunto.nombre_original }} ·
+      <strong>Origen texto:</strong> {{ origen_texto }} ·
+      <strong>Líneas detectadas:</strong> {{ lineas|length }} ·
+      <strong>Total calculado:</strong> {{ parsed.total_lineas|default:"0.00" }} €
+    </div>
+  </div>
+
+  {% if lineas %}
+    <form method="post">
+    <input type="hidden" name="next" value="{{ next_url|default:'/app/gestion/albaranes/' }}">
+      {% csrf_token %}
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Importar</th>
+                <th>Línea</th>
+                <th>Código detectado</th>
+                  <th>Código proveedor</th>
+                <th>Descripción</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Precio</th>
+                  <th class="text-end">Dto. %</th>
+                <th class="text-end">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lineas %}
+                <tr>
+                  <td><input type="checkbox" name="sel_{{ forloop.counter0 }}" checked></td>
+                  <td>{{ l.linea }}</td>
+                  <td style="min-width:150px;">
+                      <input type="text" name="codigo_detectado_original_{{ forloop.counter0 }}" value="{{ l.codigo_detectado }}" class="form-control form-control-sm" readonly>
+                      <div class="text-muted small">Leído del PDF</div>
+                    </td>
+                    <td style="min-width:150px;">
+                      <input type="text" name="codigo_proveedor_{{ forloop.counter0 }}" value="{{ l.codigo_detectado }}" class="form-control form-control-sm">
+                      <div class="text-muted small">Se guardará como alias proveedor</div>
+                    </td>
+                  <td style="min-width:320px;">
+                    <input type="text" name="descripcion_{{ forloop.counter0 }}" value="{{ l.descripcion }}" class="form-control form-control-sm">
+                    <div class="text-muted small">{{ l.raw_line }}</div>
+                  </td>
+                  <td>
+                    <input type="text" name="cantidad_{{ forloop.counter0 }}" value="{% firstof l.cantidad_input l.cantidad l.cantidad_detectada '0' %}" class="form-control form-control-sm text-end js-ocr-cantidad">
+                  </td>
+                  <td>
+                    <input type="text" name="precio_{{ forloop.counter0 }}" value="{% firstof l.precio_input l.precio l.precio_unitario l.pvp l.precio_detectado '0' %}" class="form-control form-control-sm text-end js-ocr-precio">
+                  </td>
+                <td>
+                  <input type="text" name="descuento_{{ forloop.counter0 }}" value="{% firstof l.descuento_input l.descuento l.dto l.descuento_detectado '0' %}" class="form-control form-control-sm text-end js-ocr-descuento">
+                </td>
+                  <td>
+                    <input type="text" name="importe_{{ forloop.counter0 }}" value="{% firstof l.importe_input l.importe l.importe_linea l.importe_calculado '0' %}" class="form-control form-control-sm text-end js-ocr-importe">
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">Total estimado: <span data-ocr-total-estimado>{{ parsed.total_lineas|default:"0.00" }} €</span></div>
+          <button type="submit" class="btn btn-success">Confirmar e importar líneas</button>
+        </div>
+      </div>
+    </form>
+  {% else %}
+    <div class="alert alert-info">
+      No se detectaron líneas con el patrón actual. Puedes crear líneas manualmente.
+    </div>
+  {% endif %}
+</div>
+
+  <script>
+    // OCR_ALBARAN_DESCUENTO_RECALCULO_FRONTEND_V1
+    // Recalcula importe por fila para cualquier plantilla OCR:
+    // importe = cantidad * precio * (1 - descuento/100)
+    (function () {
+      function parseEsNumber(value) {
+        if (value === null || value === undefined) return 0;
+        let raw = String(value).trim();
+        if (!raw) return 0;
+
+        raw = raw.replace(/\s/g, '').replace(/€/g, '');
+
+        if (raw.includes(',')) {
+          raw = raw.replace(/\./g, '').replace(',', '.');
+        }
+
+        raw = raw.replace(/[^0-9.\-]/g, '');
+        const n = parseFloat(raw);
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      function formatMoney(value) {
+        const n = Number.isFinite(value) ? value : 0;
+        return n.toFixed(2);
+      }
+
+      function recalcRow(row) {
+        const cantidadInput = row.querySelector('.js-ocr-cantidad');
+        const precioInput = row.querySelector('.js-ocr-precio');
+        const descuentoInput = row.querySelector('.js-ocr-descuento');
+        const importeInput = row.querySelector('.js-ocr-importe');
+
+        if (!cantidadInput || !precioInput || !descuentoInput || !importeInput) return;
+
+        const cantidad = parseEsNumber(cantidadInput.value);
+        const precio = parseEsNumber(precioInput.value);
+        let descuento = parseEsNumber(descuentoInput.value);
+
+        if (descuento < 0) descuento = 0;
+        if (descuento > 100) descuento = 100;
+
+        const importe = cantidad * precio * (1 - (descuento / 100));
+        importeInput.value = formatMoney(importe);
+      }
+
+      function recalcTotal() {
+        let total = 0;
+        document.querySelectorAll('.js-ocr-importe').forEach(function (input) {
+          total += parseEsNumber(input.value);
+        });
+
+        const totalNode = document.querySelector('[data-ocr-total-estimado]');
+        if (totalNode) {
+          totalNode.textContent = formatMoney(total) + ' €';
+        }
+      }
+
+      document.addEventListener('input', function (event) {
+        const target = event.target;
+        if (!target.matches('.js-ocr-cantidad, .js-ocr-precio, .js-ocr-descuento')) return;
+
+        const row = target.closest('tr');
+        if (!row) return;
+
+        recalcRow(row);
+        recalcTotal();
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('tbody tr').forEach(recalcRow);
+        recalcTotal();
+      });
+    })();
+  </script>
+
+{% endblock %}

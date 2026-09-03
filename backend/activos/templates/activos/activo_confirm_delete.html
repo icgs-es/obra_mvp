@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-4" style="max-width:400px;">
+  <h5>Eliminar activo</h5>
+  <form method="post">
+    {% csrf_token %}
+    <p>¿Seguro que deseas eliminar este activo?</p>
+    <div class="mb-2 text-break"><strong>{{ activo }}</strong></div>
+    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+    <a href="{% url 'activos:detail' activo.id %}" class="btn btn-secondary btn-sm">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

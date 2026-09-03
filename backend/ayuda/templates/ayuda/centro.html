@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Ayuda INTASA{% endblock %}
+
+{% block head %}
+<style>
+  .help-hero {
+    padding: 2rem;
+    border-radius: 1.2rem;
+    color: #fff;
+    background:
+      linear-gradient(
+        135deg,
+        #14532d,
+        #2b8250
+      );
+    box-shadow:
+      0 1rem 2.5rem
+      rgba(20, 83, 45, 0.18);
+  }
+
+  .help-search-main {
+    max-width: 760px;
+    padding: 0.5rem;
+    border-radius: 0.9rem;
+    background: #fff;
+  }
+
+  .help-search-main input {
+    border: 0;
+    box-shadow: none !important;
+  }
+
+  .help-module-card {
+    height: 100%;
+    border: 1px solid #e0e8e2;
+    border-radius: 1rem;
+    background: #fff;
+  }
+
+  .help-article-link {
+    display: block;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid #edf1ee;
+    color: #254b31;
+    text-decoration: none;
+  }
+
+  .help-article-link:last-child {
+    border-bottom: 0;
+  }
+
+  .help-article-link:hover {
+    color: #14532d;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-hero mb-4">
+  <div class="small text-uppercase opacity-75 fw-semibold mb-2">
+    Portal INTASA
+  </div>
+
+  <h1 class="h3 mb-2">
+    ¿En qué podemos ayudarte?
+  </h1>
+
+  <p class="mb-4 opacity-75">
+    Consulta procedimientos, estados y funciones del Portal.
+  </p>
+
+  <form method="get" class="help-search-main d-flex gap-2">
+    <input
+      type="search"
+      name="q"
+      value="{{ query }}"
+      class="form-control"
+      placeholder="Ej.: autorizar un plan de pagos"
+      autofocus
+    >
+
+    {% if context_path %}
+      <input
+        type="hidden"
+        name="from"
+        value="{{ context_path }}"
+      >
+    {% endif %}
+
+    <button class="btn btn-success">
+      <i class="bi bi-search me-1"></i>
+      Buscar
+    </button>
+  </form>
+</div>
+
+{% if query %}
+  <div class="mb-4">
+    <h2 class="h5 mb-3">
+      Resultados para “{{ query }}”
+    </h2>
+
+    {% if results %}
+      <div class="row g-3">
+        {% for result in results %}
+          <div class="col-12 col-lg-6">
+            <a
+              href="{{ result.url }}"
+              class="card border-0 shadow-sm text-decoration-none h-100"
+            >
+              <div class="card-body">
+                <div class="small text-success fw-semibold mb-1">
+                  {{ result.modulo }} · {{ result.submodulo }}
+                </div>
+
+                <div class="fw-semibold text-dark mb-2">
+                  {{ result.titulo }}
+                </div>
+
+                <div class="small text-muted">
+                  {{ result.fragmento }}
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light border">
+        No se encontró una explicación con esas palabras.
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+<h2 class="h5 mb-3">
+  Biblioteca de ayuda
+</h2>
+
+<div class="row g-3">
+  {% for module in modules %}
+    <div class="col-12 col-lg-6">
+      <div class="help-module-card p-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="rounded-circle bg-success-subtle text-success p-2">
+            <i class="bi bi-journal-bookmark"></i>
+          </div>
+
+          <h3 class="h5 mb-0">
+            {{ module.nombre }}
+          </h3>
+        </div>
+
+        {% for submodule in module.submodulos %}
+          <div class="small text-uppercase text-muted fw-semibold mt-3 mb-1">
+            {{ submodule.nombre }}
+          </div>
+
+          {% for article in submodule.articulos %}
+            <a
+              href="{% url 'ayuda:articulo' article.article_id %}"
+              class="help-article-link"
+            >
+              <div class="fw-semibold">
+                {{ article.title }}
+              </div>
+
+              {% if article.summary %}
+                <div class="small text-muted mt-1">
+                  {{ article.summary }}
+                </div>
+              {% endif %}
+            </a>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-light border">
+        Todavía no hay artículos disponibles para tus permisos.
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

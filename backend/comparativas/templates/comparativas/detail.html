@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}{{ comparativa.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <div class="text-muted small">
+        Comparativa de presupuestos
+      </div>
+
+      <h1 class="h4 mb-1">
+        {{ comparativa.titulo }}
+      </h1>
+
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        <span class="badge bg-primary">
+          {{ comparativa.team.name }}
+        </span>
+
+        <span class="badge bg-secondary">
+          {{ comparativa.get_estado_display }}
+        </span>
+
+        {% if comparativa.categoria %}
+          <span class="badge bg-light text-dark border">
+            {{ comparativa.categoria }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'comparativas:list' %}"
+         class="btn btn-outline-secondary btn-sm">
+        Comparativas
+      </a>
+
+            {# COMPARATIVAS_EDITAR_EXPEDIENTE_V1 #}
+      <a href="{% url 'comparativas:update' comparativa.uuid %}"
+         class="btn btn-outline-primary btn-sm">
+        Editar comparativa
+      </a>
+
+{# COMPARATIVAS_IMPORTACION_BASICA_PRESUPUESTO_V1 #}
+<a href="{% url 'comparativas:presupuesto_import' comparativa.uuid %}"
+   class="btn btn-outline-success btn-sm">
+  Importar presupuesto
+</a>
+
+{# COMPARATIVAS_V2D_EXECUTIVE_IA_V1 #}
+<a href="{% url 'comparativas:executive_ia' comparativa.uuid %}"
+   class="btn btn-outline-dark btn-sm">
+  Comparativa IA
+</a>
+
+<a href="{% url 'comparativas:ofertante_create' comparativa.uuid %}"
+         class="btn btn-primary btn-sm">
+        + Añadir ofertante
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header bg-white fw-semibold">
+          Alcance de la comparativa
+        </div>
+        <div class="card-body">
+          {% if comparativa.descripcion %}
+            {{ comparativa.descripcion|linebreaks }}
+          {% else %}
+            <span class="text-muted">
+              Sin alcance definido.
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header bg-white fw-semibold">
+          Proyecto / referencia
+        </div>
+        <div class="card-body">
+          {% if comparativa.referencia_nombre %}
+            <div class="fw-semibold">
+              {{ comparativa.referencia_codigo }}
+            </div>
+            <div>
+              {{ comparativa.referencia_nombre }}
+            </div>
+          {% else %}
+            <span class="text-muted">
+              Sin obra vinculada.
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h5 mb-0">Ofertantes y versiones</h2>
+
+    <span class="text-muted small">
+      El documento original se conserva sin alterar.
+    </span>
+  </div>
+
+  {% for ofertante in ofertantes %}
+    <div class="card mb-3">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <span class="fw-semibold">
+            {{ ofertante.nombre }}
+          </span>
+
+          {% if ofertante.tipo == "PROVEEDOR" %}
+            <span class="badge bg-success ms-2">
+              Proveedor
+            </span>
+          {% else %}
+            <span class="badge bg-warning text-dark ms-2">
+              Candidato
+            </span>
+          {% endif %}
+
+          {% if ofertante.nif %}
+            <span class="text-muted small ms-2">
+              {{ ofertante.nif }}
+            </span>
+          {% endif %}
+        </div>
+
+        <a href="{% url 'comparativas:oferta_create' ofertante.pk %}"
+           class="btn btn-outline-primary btn-sm">
+          + Nueva versión
+        </a>
+      </div>
+
+      <div class="card-body p-0">
+        {% for oferta in ofertante.ofertas.all %}
+          <div class="border-bottom p-3">
+            <div class="d-flex flex-wrap justify-content-between gap-3">
+              <div>
+                <div>
+                  <strong>Versión {{ oferta.version }}</strong>
+                  {% if perms.comparativas.delete_oferta %}
+                    <form
+                      method="post"
+                      action="{% url 'comparativas:oferta_delete' oferta.pk %}"
+                      class="d-inline ms-2"
+                      onsubmit="return confirm('¿Eliminar definitivamente esta versión? El ofertante y las demás versiones se conservarán.');"
+                    >
+                      {% csrf_token %}
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-outline-danger"
+                      >
+                        Eliminar versión
+                      </button>
+                    </form>
+                  {% endif %}
+
+                  <span class="badge bg-secondary ms-2">
+                    {{ oferta.get_estado_display }}
+                  </span>
+                </div>
+
+                <div class="small text-muted mt-1">
+                  {% if oferta.fecha_documento %}
+                    {{ oferta.fecha_documento|date:"d/m/Y" }}
+                  {% endif %}
+
+                  {% if oferta.referencia %}
+                    · {{ oferta.referencia }}
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="d-flex gap-4">
+                <div>
+                  <div class="small text-muted">Base</div>
+                  <div class="fw-semibold">
+                    {% if oferta.base != None %}
+                      {{ oferta.base|floatformat:2 }} €
+                    {% else %}
+                      —
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="small text-muted">Impuestos</div>
+                  <div class="fw-semibold">
+                    {% if oferta.impuestos != None %}
+                      {{ oferta.impuestos|floatformat:2 }} €
+                    {% else %}
+                      —
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="small text-muted">Total</div>
+                  <div class="fw-semibold">
+                    {% if oferta.total != None %}
+                      {{ oferta.total|floatformat:2 }} €
+                    {% else %}
+                      —
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="small fw-semibold">
+                  Documentos
+                </span>
+
+                <a href="{% url 'comparativas:documento_upload' oferta.pk %}"
+                   class="btn btn-outline-secondary btn-sm">
+                  Adjuntar archivo
+                </a>
+              </div>
+
+              <div class="mt-2">
+                {% for documento in oferta.documentos.all %}
+                  <div class="d-flex justify-content-between align-items-center border rounded px-2 py-2 mb-1">
+                    <div>
+                      <a href="{% url 'comparativas:documento_view' documento.pk %}"
+                         target="_blank"
+                         class="text-decoration-none fw-semibold">
+                        {{ documento.nombre_original }}
+                      </a>
+
+                      <div class="small text-muted">
+                        {{ documento.extension|upper }}
+                        ·
+                        {{ documento.tamano_bytes|filesizeformat }}
+                        ·
+                        {{ documento.get_estado_analisis_display }}
+                      </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                      {% with v3=documento.datos_extraidos.document_intelligence_v3 %}
+                        <a href="{% url 'comparativas:documento_intelligence' documento.pk %}"
+                           class="btn btn-outline-dark btn-sm">
+                          {% if v3.status == "COMPLETADO" %}
+                            Análisis INTASA IA V3
+                          {% else %}
+                            Analizar con INTASA IA
+                          {% endif %}
+                        </a>
+                      {% endwith %}
+
+                      {% with conceptos=documento.conceptos_extraidos.all %}
+                        {% if conceptos %}
+                          <span class="badge bg-success">
+                            {{ conceptos|length }}
+                            concepto{{ conceptos|length|pluralize }}
+                          </span>
+
+                          <a href="{% url 'comparativas:documento_conceptos' documento.pk %}"
+                             class="btn btn-outline-primary btn-sm">
+                            Revisar conceptos
+                          </a>
+
+                        {% elif documento.texto_extraido %}
+                          <a href="{% url 'comparativas:documento_conceptos' documento.pk %}"
+                             class="btn btn-outline-primary btn-sm">
+                            Analizar conceptos
+                          </a>
+
+                        {% else %}
+                          <span class="badge bg-light text-dark border">
+                            Sin texto extraído
+                          </span>
+                        {% endif %}
+                      {% endwith %}
+
+                      {% if documento.estado_analisis == "PENDIENTE" %}
+                        <span class="badge bg-light text-dark border">
+                          Pendiente de análisis
+                        </span>
+
+                      {% elif documento.estado_analisis == "COMPLETADO" %}
+                        <span class="badge bg-success">
+                          Analizado
+                        </span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="text-muted small">
+                    Sin documentos adjuntos.
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="p-3 text-muted">
+            Todavía no hay ninguna versión de presupuesto.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <div class="text-muted mb-3">
+          Añade proveedores existentes o futuros proveedores
+          para comenzar la comparación.
+        </div>
+
+        <a href="{% url 'comparativas:ofertante_create' comparativa.uuid %}"
+           class="btn btn-primary">
+          Añadir primer ofertante
+        </a>
+      </div>
+    </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

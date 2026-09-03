@@ -158,8 +158,7 @@
                   </td>
 
                   <td>
-                    <a href="{% url 'archivos:preview' a.id %}"
-                      target="_blank"
+                    <a href="{% url 'archivos:archivo_detalle' a.id %}?next={{ request.get_full_path|urlencode }}"
                       class="text-decoration-none file-name d-block">
                       {% with n=a.nombre_logico|default_if_none:a.nombre_original %}
                         {{ n|default:"(sin nombre)" }}
@@ -167,6 +166,9 @@
                       {% if a.version|default:1 > 1 %}
                         <span class="badge bg-secondary">v{{ a.version }}</span>
                       {% endif %}
+                      <span class="badge text-bg-light border">
+                        {{ a.storage_label }}
+                      </span>
                     </a>
                     <div class="file-meta">
                       {{ a.mimetype|default:"(desconocido)" }} · {{ a.tamano_kb|floatformat:1 }} KB

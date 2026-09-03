@@ -1,0 +1,271 @@
+{# COMPARATIVAS_V2C_EDIT_CONFIRMED_CONCEPTS_R1 #}
+{% extends "base.html" %}
+
+{% block title %}Editar conceptos confirmados{% endblock %}
+
+{% block content %}
+<style>
+  .concept-edit-compact {
+    font-size: .92rem;
+  }
+
+  .concept-edit-compact .card-header {
+    padding: .48rem .75rem;
+  }
+
+  .concept-edit-compact .table > :not(caption) > * > * {
+    padding: .30rem .38rem;
+    vertical-align: middle;
+  }
+
+  .concept-edit-compact .table thead th {
+    white-space: nowrap;
+    font-size: .86rem;
+    line-height: 1.1;
+  }
+
+  .concept-edit-compact .table tbody td {
+    line-height: 1.15;
+  }
+
+  .concept-edit-compact .form-control,
+  .concept-edit-compact .form-select {
+    min-height: 30px;
+    height: 30px;
+    padding: .18rem .42rem;
+    font-size: .88rem;
+    line-height: 1.1;
+  }
+
+  .concept-edit-compact textarea.form-control {
+    height: auto;
+    min-height: 54px;
+    line-height: 1.25;
+  }
+
+  .concept-edit-compact details {
+    margin-top: .15rem !important;
+  }
+
+  .concept-edit-compact details > summary {
+    cursor: pointer;
+    font-size: .78rem;
+    line-height: 1.05;
+  }
+
+  .concept-edit-compact .badge {
+    font-size: .72rem;
+    padding: .28em .48em;
+  }
+
+  .concept-edit-compact .original-evidence {
+    padding: .45rem !important;
+    line-height: 1.25;
+  }
+
+  .concept-edit-compact .edit-title-cell {
+    min-width: 360px;
+  }
+
+  @media (max-width: 991.98px) {
+    .concept-edit-compact {
+      font-size: .88rem;
+    }
+
+    .concept-edit-compact .edit-title-cell {
+      min-width: 300px;
+    }
+  }
+</style>
+<div class="container-fluid py-3 concept-edit-compact"
+     style="max-width: 1500px;">
+
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        Editar conceptos confirmados
+      </h1>
+
+      <div class="text-muted">
+        {{ ofertante.nombre }}
+        · Versión {{ oferta.version }}
+        · {{ documento.nombre_original }}
+      </div>
+    </div>
+
+    <a href="{% url 'comparativas:documento_conceptos' documento.pk %}"
+       class="btn btn-outline-secondary btn-sm">
+      Cancelar edición
+    </a>
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>Edición humana trazable.</strong>
+    Puedes corregir los datos interpretados,
+    pero la evidencia original del documento
+    no será modificada.
+
+    Los conceptos realmente cambiados quedarán
+    marcados con origen <strong>Humano</strong>
+    y se conservarán los valores anteriores.
+  </div>
+
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger">
+      {{ formset.non_form_errors }}
+    </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">
+          Conceptos confirmados
+        </span>
+
+        <span class="small text-muted">
+          {{ rows|length }} conceptos
+        </span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 45px;">#</th>
+              <th class="edit-title-cell">
+                Concepto
+              </th>
+              <th style="width: 110px;">
+                Cant.
+              </th>
+              <th style="width: 90px;">
+                Ud.
+              </th>
+              <th style="width: 130px;">
+                Precio
+              </th>
+              <th style="width: 130px;">
+                Importe
+              </th>
+              <th style="width: 150px;">
+                Alcance
+              </th>
+              <th style="width: 110px;">
+                Origen
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td>
+                  {{ row.concepto.orden }}
+                  {{ row.form.concept_id }}
+                </td>
+
+                <td>
+                  {{ row.form.titulo }}
+                  {{ row.form.titulo.errors }}
+
+                  <details class="small mt-2">
+                    <summary class="text-muted">
+                      Descripción y evidencia original
+                    </summary>
+
+                    <div class="mt-2">
+                      <label class="form-label small">
+                        Descripción revisada
+                      </label>
+
+                      {{ row.form.descripcion }}
+                      {{ row.form.descripcion.errors }}
+                    </div>
+
+                    <div class="border rounded bg-light original-evidence mt-2">
+                      <div class="fw-semibold">
+                        Evidencia original · no editable
+                      </div>
+
+                      <div class="mt-1">
+                        {{ row.concepto.evidencia|default:"—" }}
+                      </div>
+
+                      {% if row.concepto.pagina %}
+                        <div class="text-muted mt-1">
+                          Página {{ row.concepto.pagina }}
+                          {% if row.concepto.linea_inicio %}
+                            · líneas
+                            {{ row.concepto.linea_inicio }}
+                            {% if row.concepto.linea_fin %}
+                              –{{ row.concepto.linea_fin }}
+                            {% endif %}
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+                  </details>
+                </td>
+
+                <td>
+                  {{ row.form.cantidad }}
+                  {{ row.form.cantidad.errors }}
+                </td>
+
+                <td>
+                  {{ row.form.unidad }}
+                  {{ row.form.unidad.errors }}
+                </td>
+
+                <td>
+                  {{ row.form.precio_unitario }}
+                  {{ row.form.precio_unitario.errors }}
+                </td>
+
+                <td>
+                  {{ row.form.importe }}
+                  {{ row.form.importe.errors }}
+                </td>
+
+                <td>
+                  {{ row.form.alcance }}
+                  {{ row.form.alcance.errors }}
+                </td>
+
+                <td>
+                  {% if row.concepto.origen == "HUMANO" %}
+                    <span class="badge bg-warning text-dark">
+                      Humano
+                    </span>
+                  {% else %}
+                    <span class="badge bg-light text-dark border">
+                      {{ row.concepto.get_origen_display }}
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-footer bg-white d-flex justify-content-between">
+        <a href="{% url 'comparativas:documento_conceptos' documento.pk %}"
+           class="btn btn-outline-secondary">
+          Cancelar
+        </a>
+
+        <button type="submit"
+                class="btn btn-primary">
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

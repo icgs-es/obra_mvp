@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1">Importar líneas desde albarán</h1>
+      <div class="text-muted">
+        Factura {{ factura.cod_factura }} · {{ factura.proveedor }} · Nº proveedor {{ factura.num_factura_proveedor }}
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.pk }}/{% endif %}">Volver</a>
+  </div>
+
+  <div class="alert alert-warning">
+    Selecciona un albarán disponible del mismo proveedor. Los albaranes ya vinculados o facturados no aparecen en esta lista.
+    Con un clic puedes previsualizar sus líneas; después confirmas si quieres importar el albarán completo o solo algunas líneas.
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Albaranes disponibles</strong>
+      <span class="text-muted small">
+        Ocultos por estar ya asignados/facturados: {{ albaranes_ocultos_count|default:0 }}
+      </span>
+    </div>
+
+    {% if albaranes %}
+      <div class="list-group list-group-flush">
+        {% for alb in albaranes %}
+          <a
+            href="?albaran_id={{ alb.pk }}"
+            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if selected_albaran and selected_albaran.pk == alb.pk %}active{% endif %}"
+          >
+            <span>
+              <strong>{{ alb.cod_albaran }}</strong>
+              · {{ alb.num_albaran_proveedor }}
+              · {{ alb.proveedor }}
+            </span>
+            <span class="badge bg-light text-dark">Previsualizar</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card-body">
+        <div class="alert alert-info mb-0">
+          No hay albaranes disponibles para este proveedor. Si esperabas ver alguno, revisa si ya está vinculado a otra factura o marcado como facturado.
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if selected_albaran %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <strong>Albarán seleccionado:</strong>
+        {{ selected_albaran.cod_albaran }} · {{ selected_albaran.num_albaran_proveedor }}
+        <br>
+        <strong>Origen líneas:</strong> {{ source|default:"sin líneas" }}
+        <br>
+        <strong>Líneas detectadas:</strong> {{ lineas|length }}
+        {% if lineas.0.vd_mode %}
+          · <strong>Valor conocido en albarán:</strong> {{ total_base }} €
+          <br>
+          {# VALORACION_DIFERIDA_PREVIEW_UI_V1 #}
+          <strong>Fuente económica de factura:</strong>
+          <span class="badge {{ lineas.0.vd_fuente_clase }}">
+            {{ lineas.0.vd_fuente_estado }}
+          </span>
+          {% if lineas.0.vd_fuente_base != "" %}
+            · <strong>Base detectada en factura:</strong>
+            {{ lineas.0.vd_fuente_base }} €
+          {% endif %}
+        {% else %}
+          · <strong>Total base:</strong> {{ total_base }} €
+        {% endif %}
+      </div>
+    </div>
+
+    {% if lineas.0.vd_mode %}
+      <div class="alert alert-info">
+        <strong>Conciliación factura ↔ albarán activa.</strong>
+        El albarán contiene una o más líneas sin valorar.
+        Se muestran por separado los datos logísticos del albarán
+        y los datos económicos detectados en la factura.
+        <br>
+        <strong>No se realizará ninguna conversión automática de cantidades o unidades.</strong>
+        Revisa o corrige los valores económicos de factura y confirma cada línea.
+        Mientras no confirmes todas las líneas, la <strong>importación bloqueada</strong> protege la factura.
+      </div>
+    {% endif %}
+
+    {% if lineas %}
+      <form method="post">
+        {% csrf_token %}
+        {# VALORACION_DIFERIDA_EDITABLE_SAFE_EXECUTE_V1 #}
+        {% if lineas.0.vd_mode %}
+          <input type="hidden" name="accion" value="conciliar_importar">
+        {% else %}
+          <input type="hidden" name="accion" value="importar">
+        {% endif %}
+        <input type="hidden" name="albaran_id" value="{{ selected_albaran.pk }}">
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Importar</th>
+                  <th>Línea</th>
+                  <th>Código</th>
+                  <th>Referencia</th>
+                  <th>Descripción</th>
+                  <th class="text-end">Cantidad</th>
+                  <th>Unidad</th>
+                  <th class="text-end">Precio</th>
+                  <th class="text-end">Dto.</th>
+                  <th class="text-end">Base</th>
+                  <th class="text-end">IVA</th>
+                  <th class="text-end">Total c/IVA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in lineas %}
+                  <tr>
+                    <td>
+                      <input
+                        type="checkbox"
+                        name="lineas"
+                        value="{{ item.idx }}"
+                        checked
+                        {% if item.vd_preview_lock %}disabled{% endif %}
+                      >
+                    </td>
+                    <td>{{ item.linea }}</td>
+                    <td>{{ item.codigo }}</td>
+                    <td>{{ item.referencia_proveedor }}</td>
+                    <td>{{ item.descripcion }}</td>
+                    <td class="text-end">{{ item.cantidad }}</td>
+                    <td>{{ item.unidad|default:"—" }}</td>
+                    <td class="text-end">{{ item.precio }}
+                {# SIN_VALORAR_ALBARAN_BADGE_V1_4 #}
+                {% if item.sin_valorar_albaran %}
+                <span class="badge bg-warning text-dark ms-2">SIN VALORAR EN ALBARÁN</span>
+                {% endif %}</td>
+                    <td class="text-end">{{ item.descuento }}</td>
+                    <td class="text-end">{{ item.importe }} €</td>
+                    <td class="text-end">{{ item.importe_iva_linea }} €</td>
+                    <td class="text-end">{{ item.total_linea_con_iva }} €</td>
+                  </tr>
+
+                {% if item.vd_mode %}
+                  <tr class="table-light">
+                    <td></td>
+                    <td colspan="11">
+                      <div class="small">
+                        <span class="badge bg-primary me-1">FACTURA</span>
+
+                        {% if item.vd_factura_match %}
+                          <strong>{{ item.vd_factura_descripcion }}</strong>
+                          <span class="badge bg-success ms-1">Detectado en factura</span>
+                        {% else %}
+                          <strong>{{ item.descripcion }}</strong>
+                          <span class="badge bg-warning text-dark ms-1">Entrada manual</span>
+                        {% endif %}
+
+                        <div class="row g-2 mt-1 vd-edit-line" data-vd-idx="{{ item.idx }}">
+
+                          <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Cantidad factura</label>
+                            <input
+                              type="text"
+                              inputmode="decimal"
+                              class="form-control form-control-sm vd-qty"
+                              name="vd_cantidad_{{ item.idx }}"
+                              value="{% if item.vd_factura_match %}{{ item.vd_factura_cantidad }}{% else %}{{ item.cantidad }}{% endif %}"
+                              autocomplete="off"
+                            >
+                          </div>
+
+                          <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Unidad factura</label>
+                            <input
+                              type="text"
+                              class="form-control form-control-sm vd-unit"
+                              name="vd_unidad_{{ item.idx }}"
+                              value="{% if item.vd_factura_match %}{{ item.vd_factura_unidad }}{% else %}{{ item.unidad }}{% endif %}"
+                              maxlength="30"
+                              autocomplete="off"
+                            >
+                          </div>
+
+                          <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Precio</label>
+                            <div class="input-group input-group-sm">
+                              <input
+                                type="text"
+                                inputmode="decimal"
+                                class="form-control vd-price"
+                                name="vd_precio_{{ item.idx }}"
+                                value="{% if item.vd_factura_match %}{{ item.vd_factura_precio }}{% endif %}"
+                                autocomplete="off"
+                              >
+                              <span class="input-group-text">€</span>
+                            </div>
+                          </div>
+
+                          <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Descuento</label>
+                            <div class="input-group input-group-sm">
+                              <input
+                                type="text"
+                                inputmode="decimal"
+                                class="form-control vd-discount"
+                                name="vd_descuento_{{ item.idx }}"
+                                value="{% if item.vd_factura_match %}{{ item.vd_factura_descuento }}{% else %}0{% endif %}"
+                                autocomplete="off"
+                              >
+                              <span class="input-group-text">%</span>
+                            </div>
+                          </div>
+
+                          <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Base calculada</label>
+                            <div class="input-group input-group-sm">
+                              <input
+                                type="text"
+                                class="form-control vd-base"
+                                name="vd_base_{{ item.idx }}"
+                                value="{% if item.vd_factura_match %}{{ item.vd_factura_importe }}{% endif %}"
+                                readonly
+                              >
+                              <span class="input-group-text">€</span>
+                            </div>
+                          </div>
+
+                          <div class="col-6 col-md-2 d-flex align-items-end">
+                            <div class="form-check mb-1">
+                              <input
+                                class="form-check-input vd-confirm"
+                                type="checkbox"
+                                name="vd_confirm_{{ item.idx }}"
+                                id="vd_confirm_{{ item.idx }}"
+                              >
+                              <label class="form-check-label small fw-semibold" for="vd_confirm_{{ item.idx }}">
+                                Confirmar línea
+                              </label>
+                            </div>
+                          </div>
+
+                          {% if item.vd_factura_secundarias_text %}
+                            <div class="col-12">
+                              <span class="text-muted small">
+                                Cantidades documentales secundarias:
+                                {{ item.vd_factura_secundarias_text }}
+                              </span>
+                            </div>
+                          {% endif %}
+
+                        </div>
+
+                        <br>
+                        <span class="badge bg-secondary me-1">
+                          {{ item.vd_match_label }}
+                        </span>
+                        <span class="badge {{ item.vd_badge_class }}">
+                          {{ item.vd_status_label }}
+                        </span>
+
+                      </div>
+                    </td>
+                  </tr>
+                {% endif %}
+
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <div>
+              {% if lineas.0.vd_mode %}
+                <strong>Valor conocido en albarán:</strong> {{ total_base }} €
+              {% else %}
+                <strong>Total base previsualizada:</strong> {{ total_base }} €
+              {% endif %}
+            </div>
+            {% if lineas.0.vd_preview_lock %}
+              <button
+                id="vd-safe-submit"
+                class="btn btn-success"
+                type="submit"
+                disabled
+              >
+                Confirmar conciliación e importar {{ lineas|length }} líneas
+              </button>
+            {% else %}
+              <button class="btn btn-success" type="submit">
+                Vincular albarán e importar líneas seleccionadas
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <div class="alert alert-info">
+        Este albarán todavía no tiene líneas disponibles en BD/OCR. Primero ejecuta OCR de líneas del albarán.
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  const safeButton = document.getElementById("vd-safe-submit");
+  if (!safeButton) return;
+
+  const rows = Array.from(document.querySelectorAll(".vd-edit-line"));
+
+  function numberValue(el) {
+    if (!el) return NaN;
+    const raw = String(el.value || "")
+      .trim()
+      .replace(/\s/g, "")
+      .replace(",", ".");
+    if (!raw) return NaN;
+    return Number(raw);
+  }
+
+  function recalc(row) {
+    const qty = numberValue(row.querySelector(".vd-qty"));
+    const price = numberValue(row.querySelector(".vd-price"));
+    const discount = numberValue(row.querySelector(".vd-discount"));
+    const base = row.querySelector(".vd-base");
+
+    if (!Number.isFinite(qty) ||
+        !Number.isFinite(price) ||
+        !Number.isFinite(discount)) {
+      base.value = "";
+      return NaN;
+    }
+
+    const value = qty * price * (100 - discount) / 100;
+    const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
+    base.value = rounded.toFixed(2);
+    return rounded;
+  }
+
+  function validate() {
+    let valid = rows.length > 0;
+
+    rows.forEach(function (row) {
+      const qty = numberValue(row.querySelector(".vd-qty"));
+      const price = numberValue(row.querySelector(".vd-price"));
+      const discount = numberValue(row.querySelector(".vd-discount"));
+      const unit = row.querySelector(".vd-unit");
+      const confirm = row.querySelector(".vd-confirm");
+
+      recalc(row);
+
+      if (!Number.isFinite(qty) || qty === 0) valid = false;
+      if (!Number.isFinite(price)) valid = false;
+      if (!Number.isFinite(discount) || discount < 0 || discount > 100) valid = false;
+      if (!unit || !String(unit.value || "").trim()) valid = false;
+      if (!confirm || !confirm.checked) valid = false;
+    });
+
+    safeButton.disabled = !valid;
+  }
+
+  rows.forEach(function (row) {
+    row.querySelectorAll("input").forEach(function (input) {
+      input.addEventListener("input", validate);
+      input.addEventListener("change", validate);
+    });
+    recalc(row);
+  });
+
+  validate();
+})();
+</script>
+
+{% endblock %}

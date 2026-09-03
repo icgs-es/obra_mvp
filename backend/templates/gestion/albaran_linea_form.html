@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .articulo-search-wrap {
+    position: relative;
+  }
+  .articulo-search-results {
+    position: absolute;
+    z-index: 50;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: .35rem;
+    box-shadow: 0 8px 24px rgba(140,149,159,.2);
+    max-height: 260px;
+    overflow-y: auto;
+    display: none;
+  }
+  .articulo-search-item {
+    padding: .55rem .7rem;
+    cursor: pointer;
+    border-bottom: 1px solid #eef1f4;
+  }
+  .articulo-search-item:hover {
+    background: #f6f8fa;
+  }
+  .articulo-search-meta {
+    font-size: .78rem;
+    color: #667085;
+  }
+  .articulo-search-selected {
+    font-size: .8rem;
+    color: #008060;
+    margin-top: .35rem;
+  }
+</style>
+
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        {% if form.instance.pk %}Editar línea de albarán{% else %}Nueva línea de albarán{% endif %}
+      </h1>
+      <div class="text-muted small">
+        Albarán {{ albaran.cod_albaran }}{% if albaran.proveedor %} · {{ albaran.proveedor.nombre_comercial }}{% endif %}
+      </div>
+    </div>
+    <a href="{{ next_url|default:'/app/gestion/albaranes/' }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  <form method="post" novalidate>
+    <input type="hidden" name="next" value="{{ next_url|default:'/app/gestion/albaranes/' }}">
+    {% csrf_token %}
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.linea.id_for_label }}">Línea</label>
+            {{ form.linea }}
+            {{ form.linea.errors }}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label" for="id_articulo_search">Artículo / recurso</label>
+
+            <div class="articulo-search-wrap">
+              <input
+                type="text"
+                id="id_articulo_search"
+                class="form-control form-control-sm"
+                autocomplete="off"
+                value="{% if form.instance.articulo_compra %}{{ form.instance.articulo_compra }}{% endif %}"
+                placeholder="Busca por nombre del artículo o recurso. Ejemplo: CONTENEDOR, ESCOMBROS, PORTE. {% if request.user.is_superuser %}Si no existe, podrás crearlo como nuevo recurso.{% endif %}"
+              >
+              <div id="id_articulo_results" class="articulo-search-results"></div>
+                          {% if request.user.is_superuser %}
+                <div class="mt-2">
+                  <button
+                    type="button"
+                    id="id_crear_articulo_rapido_btn"
+                    class="btn btn-outline-primary btn-sm" style="display:none;"
+                  >
+                    + Crear recurso con este texto
+                  </button>
+                  <span class="form-text ms-2">
+                    Úsalo si el recurso no aparece en el buscador.
+                  </span>
+                </div>
+              {% endif %}
+</div>
+
+            <div style="display:none;">
+              {{ form.articulo_compra }}
+            </div>
+
+            <div id="id_articulo_selected" class="articulo-search-selected">
+              {% if form.instance.articulo_compra %}
+                Seleccionado: {{ form.instance.articulo_compra }}
+              {% endif %}
+            </div>
+
+            <div class="form-text">
+              Busca por nombre del artículo o recurso. Ejemplo: CONTENEDOR, ESCOMBROS, PORTE.
+            </div>
+
+            {{ form.articulo_compra.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.cantidad.id_for_label }}">Cantidad</label>
+            {{ form.cantidad }}
+            {{ form.cantidad.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.unidad.id_for_label }}">Unidad</label>
+            {{ form.unidad }}
+            {{ form.unidad.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.precio_unitario.id_for_label }}">Precio unitario</label>
+            {{ form.precio_unitario }}
+            {{ form.precio_unitario.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.descuento.id_for_label }}">Descuento %</label>
+            {{ form.descuento }}
+            {{ form.descuento.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.importe_descuento.id_for_label }}">Importe descuento adicional (€)</label>
+            {{ form.importe_descuento }}
+            {{ form.importe_descuento.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.importe_linea.id_for_label }}">Importe línea</label>
+            {{ form.importe_linea }}
+            <div class="form-text">Importe neto después de descuento.</div>
+            {{ form.importe_linea.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <div class="form-check mt-4">
+              {{ form.facturado }}
+              <label class="form-check-label" for="{{ form.facturado.id_for_label }}">Facturado</label>
+            </div>
+            {{ form.facturado.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <div class="form-check mt-4">
+              {{ form.en_pedido }}
+              <label class="form-check-label" for="{{ form.en_pedido.id_for_label }}">En pedido</label>
+            </div>
+            {{ form.en_pedido.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <div class="form-check mt-4">
+              {{ form.en_partida }}
+              <label class="form-check-label" for="{{ form.en_partida.id_for_label }}">En partida</label>
+            </div>
+            {{ form.en_partida.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.cantidad_en_partidas.id_for_label }}">Cantidad en partidas</label>
+            {{ form.cantidad_en_partidas }}
+            {{ form.cantidad_en_partidas.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <div class="form-check mt-4">
+              {{ form.en_almacen }}
+              <label class="form-check-label" for="{{ form.en_almacen.id_for_label }}">En almacén</label>
+            </div>
+            {{ form.en_almacen.errors }}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label" for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+            {{ form.observaciones }}
+            {{ form.observaciones.errors }}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer bg-white d-flex justify-content-end gap-2">
+        <a href="{{ next_url|default:'/app/gestion/albaranes/' }}" class="btn btn-outline-secondary">Cancelar</a>
+        <button class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  const cantidadInput = document.getElementById("id_cantidad");
+  const precioInput = document.getElementById("id_precio_unitario");
+  const descuentoPctInput = document.getElementById("id_descuento");
+  const descuentoImporteInput = document.getElementById("id_importe_descuento");
+  const importeInput = document.getElementById("id_importe_linea");
+  const unidadInput = document.getElementById("id_unidad");
+
+  function parseDecimal(value) {
+    let raw = String(value || "").trim();
+
+    if (!raw) return 0;
+
+    raw = raw.replace("€", "").replace(/\s/g, "");
+
+    // Si viene en formato español 1.234,56
+    if (raw.includes(",")) {
+      raw = raw.replace(/\./g, "").replace(",", ".");
+    }
+
+    // Si viene del input number, vendrá como 111.6000 y NO hay que quitar el punto.
+    const parsed = Number.parseFloat(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function setNumberValue(input, value, decimals) {
+    if (!input) return;
+
+    if (!Number.isFinite(value)) {
+      value = 0;
+    }
+
+    // Los input type=number necesitan punto decimal, no coma.
+    input.value = value.toFixed(decimals);
+  }
+
+  function isEmpty(input) {
+    return !input || String(input.value || "").trim() === "";
+  }
+
+  function ensureDefaults() {
+    if (isEmpty(descuentoPctInput)) {
+      setNumberValue(descuentoPctInput, 0, 4);
+    }
+
+    if (isEmpty(descuentoImporteInput)) {
+      setNumberValue(descuentoImporteInput, 0, 2);
+    }
+
+    if (isEmpty(importeInput)) {
+      setNumberValue(importeInput, 0, 2);
+    }
+  }
+
+  // GESTION_ALBARAN_DESCUENTO_CANONICO_JS_V1
+  function recalculateLine() {
+    const cantidad = parseDecimal(
+      cantidadInput && cantidadInput.value
+    );
+    const precio = parseDecimal(
+      precioInput && precioInput.value
+    );
+
+    let descuentoPct = parseDecimal(
+      descuentoPctInput && descuentoPctInput.value
+    );
+
+    let descuentoAdicional = parseDecimal(
+      descuentoImporteInput &&
+      descuentoImporteInput.value
+    );
+
+    descuentoPct = Math.min(
+      100,
+      Math.max(0, descuentoPct)
+    );
+
+    descuentoAdicional = Math.max(
+      0,
+      descuentoAdicional
+    );
+
+    const bruto = cantidad * precio;
+
+    const neto = (
+      bruto * (1 - descuentoPct / 100)
+    ) - descuentoAdicional;
+
+    setNumberValue(importeInput, neto, 2);
+  }
+
+  if (cantidadInput) {
+    cantidadInput.addEventListener("input", function () { recalculateLine("base"); });
+    cantidadInput.addEventListener("change", function () { recalculateLine("base"); });
+  }
+
+  if (precioInput) {
+    precioInput.addEventListener("input", function () { recalculateLine("base"); });
+    precioInput.addEventListener("change", function () { recalculateLine("base"); });
+  }
+
+  if (descuentoPctInput) {
+    descuentoPctInput.addEventListener("input", function () { recalculateLine("pct"); });
+    descuentoPctInput.addEventListener("change", function () { recalculateLine("pct"); });
+  }
+
+  if (descuentoImporteInput) {
+    descuentoImporteInput.addEventListener("input", function () { recalculateLine("importe_descuento"); });
+    descuentoImporteInput.addEventListener("change", function () { recalculateLine("importe_descuento"); });
+  }
+
+  const searchInput = document.getElementById("id_articulo_search");
+  const resultsBox = document.getElementById("id_articulo_results");
+  const selectedBox = document.getElementById("id_articulo_selected");
+  const articuloSelect = document.getElementById("id_articulo_compra");
+
+  const canCreateArticulo = {% if request.user.is_superuser %}true{% else %}false{% endif %};
+  const createArticuloUrl = "/app/gestion/articulos/crear-rapido/";
+  const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+  const articuloTeamId = "{{ albaran.team_id }}";
+
+  let searchTimer = null;
+
+  function hideResults() {
+    if (resultsBox) {
+      resultsBox.style.display = "none";
+      resultsBox.innerHTML = "";
+    }
+  }
+
+  function setSelectedArticulo(item) {
+    if (!articuloSelect || !item) return;
+
+    let option = Array.from(articuloSelect.options).find(function (opt) {
+      return String(opt.value) === String(item.id);
+    });
+
+    if (!option) {
+      option = new Option(item.label || item.nombre || ("Artículo " + item.id), item.id, true, true);
+      articuloSelect.add(option);
+    }
+
+    articuloSelect.value = item.id;
+
+    if (searchInput) {
+      searchInput.value = item.label || item.nombre || "";
+    }
+
+    if (selectedBox) {
+      selectedBox.textContent = "Seleccionado: " + (item.label || item.nombre || "");
+    }
+
+    if (unidadInput && !unidadInput.value && item.unidad) {
+      unidadInput.value = item.unidad;
+    }
+
+    if (precioInput && item.precio_autofill && item.precio_value) {
+      const precioActual = parseDecimal(precioInput.value);
+      if (!precioActual) {
+        setNumberValue(precioInput, parseDecimal(item.precio_value), 4);
+      }
+    }
+
+    ensureDefaults();
+
+    const createFastArticuloButton = document.getElementById("id_crear_articulo_rapido_btn");
+    if (createFastArticuloButton) {
+      createFastArticuloButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        createArticuloFromSearch();
+      });
+    }
+
+    recalculateLine("base");
+    hideResults();
+  }
+
+
+
+    function articuloSearchRealResultsCount() {
+      if (!resultsBox) return 0;
+
+      const items = Array.from(resultsBox.querySelectorAll(".articulo-search-item"));
+
+      return items.filter(function (el) {
+        const text = (el.textContent || "").trim();
+
+        if (!text) return false;
+        if (el.dataset && el.dataset.createArticuloFast === "1") return false;
+        if (text === "Sin resultados") return false;
+        if (text.indexOf("+ Crear nuevo recurso") !== -1) return false;
+        if (el.classList.contains("text-muted")) return false;
+
+        return true;
+      }).length;
+    }
+
+    function updateCreateArticuloButtonVisibility() {
+      const btn = document.getElementById("id_crear_articulo_rapido_btn");
+      if (!btn || !searchInput) return;
+
+      const q = searchInput.value.trim();
+      const realCount = articuloSearchRealResultsCount();
+
+      if (!canCreateArticulo || q.length < 3 || realCount > 0) {
+        btn.style.display = "none";
+        btn.disabled = true;
+        return;
+      }
+
+      btn.style.display = "inline-block";
+      btn.disabled = false;
+    }
+
+    function createArticuloFromSearch() {
+      if (!canCreateArticulo || !searchInput) return;
+
+      const nombre = searchInput.value.trim();
+
+      if (articuloSearchRealResultsCount() > 0) {
+        alert("Ya hay recursos/artículos coincidentes visibles. Selecciona uno existente antes de crear uno nuevo.");
+        return;
+      }
+      if (nombre.length < 3) {
+        alert("Escribe al menos 3 caracteres para crear un recurso.");
+        return;
+      }
+
+      if (!window.confirm('Vas a crear un NUEVO recurso/artículo con este nombre:\n\n' + nombre + '\n\nSolo continúa si has comprobado que no existe.')) {
+        return;
+      }
+
+      const payload = new URLSearchParams();
+      payload.set("nombre", nombre);
+      payload.set("team_id", articuloTeamId);
+      payload.set("unidad", unidadInput?.value || "");
+      payload.set("tipo", "MATERIAL");
+
+      const precioActual = precioInput ? parseDecimal(precioInput.value) : 0;
+      if (precioActual) {
+        payload.set("precio", String(precioActual));
+      }
+
+      fetch(createArticuloUrl, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": csrfToken,
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: payload.toString()
+      })
+        .then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok || !data.ok) {
+              throw new Error(data.error || "No se pudo crear el recurso.");
+            }
+            return data;
+          });
+        })
+        .then(function (data) {
+          setSelectedArticulo(data.item);
+
+          if (selectedBox) {
+            selectedBox.textContent = (data.message || "Artículo seleccionado.") + " " + (data.item?.label || "");
+          }
+
+          alert(data.message || "Artículo seleccionado.");
+          updateCreateArticuloButtonVisibility();
+        })
+        .catch(function (error) {
+          alert(error.message || "No se pudo crear el recurso.");
+        });
+    }
+
+  function renderResults(items) {
+    if (!resultsBox) return;
+
+    resultsBox.innerHTML = "";
+
+    if (!items || !items.length) {
+      resultsBox.innerHTML = '<div class="articulo-search-item text-muted">Sin resultados</div>';
+      resultsBox.style.display = "block";
+      return;
+    }
+
+    items.forEach(function (item) {
+      const div = document.createElement("div");
+      div.className = "articulo-search-item";
+
+      const label = document.createElement("div");
+      label.textContent = item.label || item.nombre || "";
+
+      const meta = document.createElement("div");
+      meta.className = "articulo-search-meta";
+      meta.textContent = [
+        item.tipo || "",
+        item.unidad ? ("unidad " + item.unidad) : "",
+        item.precio_text ? ("precio ref. " + item.precio_text) : ""
+      ].filter(Boolean).join(" · ");
+
+      div.appendChild(label);
+      div.appendChild(meta);
+
+      div.addEventListener("mousedown", function (event) {
+        event.preventDefault();
+        setSelectedArticulo(item);
+      });
+
+      resultsBox.appendChild(div);
+    });
+
+    resultsBox.style.display = "block";
+  }
+
+
+  function appendCreateArticuloIfNoResults(items) {
+    if (!resultsBox || !canCreateArticulo || !searchInput) return;
+
+    const q = searchInput.value.trim();
+    if (q.length < 3) return;
+
+    if (items && items.length) return;
+    if (resultsBox.querySelector("[data-create-articulo-fast='1']")) return;
+
+    const createDiv = document.createElement("div");
+    createDiv.className = "articulo-search-item";
+    createDiv.setAttribute("data-create-articulo-fast", "1");
+    createDiv.innerHTML = "<strong>+ Crear nuevo recurso</strong><br><span class='articulo-search-meta'>" + q + "</span>";
+
+    createDiv.addEventListener("mousedown", function (event) {
+      event.preventDefault();
+      createArticuloFromSearch();
+    });
+
+    resultsBox.appendChild(createDiv);
+    resultsBox.style.display = "block";
+  }
+
+  function searchArticulo() {
+    if (!searchInput || !resultsBox) return;
+
+    const q = searchInput.value.trim();
+
+    if (q.length < 2) {
+      hideResults();
+      return;
+    }
+
+    const url = "/app/gestion/articulos/buscar/?q="
+      + encodeURIComponent(q)
+      + "&team_id={{ albaran.team_id }}"
+      + "&context=albaran";
+
+    fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}})
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+          const items = data.results || data.items || [];
+          renderResults(items);
+          appendCreateArticuloIfNoResults(items);
+          setTimeout(updateCreateArticuloButtonVisibility, 20);
+        })
+      .catch(function () { hideResults(); });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", function () {
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(searchArticulo, 220);
+    });
+
+    searchInput.addEventListener("blur", function () {
+      window.setTimeout(hideResults, 180);
+    });
+  }
+
+  recalculateLine("base");
+})();
+</script>
+
+{% include "gestion/_unidad_compra_v1a_js.html" %}
+{% endblock %}

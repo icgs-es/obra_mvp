@@ -1,0 +1,111 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block content %}
+<style>
+  .stk-wrap{max-width:980px;margin:14px auto 90px;padding:0 12px;}
+  .stk-head{background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff;border-radius:20px;padding:20px;margin-bottom:14px;}
+  .stk-head h1{margin:0;font-size:28px;font-weight:900;}
+  .stk-head p{margin:6px 0 0;opacity:.9;font-weight:700;}
+  .stk-top{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .stk-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #2563eb;color:#2563eb;background:#fff;border-radius:12px;padding:10px 13px;font-weight:900;text-decoration:none;}
+  .stk-btn-primary{background:#1677ff;color:#fff;border-color:#1677ff;}
+  .stk-search{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:12px;margin-bottom:14px;display:flex;gap:8px;}
+  .stk-search input{flex:1;border:1px solid #cbd5e1;border-radius:12px;padding:11px 12px;font-size:16px;}
+  .stk-card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:0 8px 18px rgba(15,23,42,.06);}
+  .stk-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;}
+  .stk-title h2{margin:0;font-size:22px;font-weight:950;}
+  .stk-code{font-size:13px;color:#64748b;font-weight:900;margin-top:3px;}
+  .stk-stock{font-size:28px;font-weight:950;color:#0f172a;text-align:right;white-space:nowrap;}
+  .stk-unit{font-size:14px;color:#64748b;font-weight:900;}
+  .stk-alert{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px 10px;border-radius:12px;font-weight:800;margin:8px 0;}
+  .stk-table{width:100%;border-collapse:collapse;font-size:14px;}
+  .stk-table th{background:#f8fafc;text-align:left;color:#475569;font-size:12px;text-transform:uppercase;padding:8px;border-bottom:1px solid #e5e7eb;}
+  .stk-table td{padding:8px;border-bottom:1px solid #e5e7eb;vertical-align:middle;}
+  .badge{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:950;color:#fff;}
+  .b-salida{background:#dc2626;}
+  .b-entrada{background:#2563eb;}
+  .b-control{background:#64748b;}
+  .stk-actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+  @media(max-width:720px){
+    .stk-title{display:block}
+    .stk-stock{text-align:left;margin-top:8px}
+    .stk-table{font-size:13px}
+    .stk-table th:nth-child(4),.stk-table td:nth-child(4){display:none}
+  }
+</style>
+
+<div class="stk-wrap">
+  <section class="stk-head">
+    <h1>Stock rápido</h1>
+    <p>GASOIL · MORTERO · materiales críticos</p>
+  </section>
+
+  <div class="stk-top">
+    <a class="stk-btn" href="/app/obra-movil/">← Obra móvil</a>
+    <a class="stk-btn stk-btn-primary" href="/app/obra-movil/gasoil/salida/">Salida GASOIL</a>
+    <a class="stk-btn" href="/app/obra-movil/almacen/rapido/">Nuevo movimiento</a>
+  </div>
+
+  <form class="stk-search" method="get">
+    <input name="q" value="{{ q }}" placeholder="Buscar recurso, código...">
+    <button class="stk-btn stk-btn-primary" type="submit">Buscar</button>
+  </form>
+
+  {% for card in cards %}
+    <section class="stk-card">
+      <div class="stk-title">
+        <div>
+          <h2>{{ card.recurso.nombre }}</h2>
+          <div class="stk-code">Código {{ card.recurso.legacy_id }} · {{ card.recurso.tipo }} · {{ card.recurso.unidad }}</div>
+        </div>
+        <div class="stk-stock">
+          {{ card.stock_catalogo|floatformat:2|default:"—" }}
+          <div class="stk-unit">{{ card.recurso.unidad }}</div>
+        </div>
+      </div>
+
+      {% if card.alerta_stock %}
+        <div class="stk-alert">
+          Atención: stock de catálogo {{ card.stock_catalogo|floatformat:2 }} y último “quedan” {{ card.ultimo_quedan|floatformat:2 }} no coinciden.
+        </div>
+      {% endif %}
+
+      <table class="stk-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Cant.</th>
+            <th>Almacén</th>
+            <th>Quedan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in card.movimientos %}
+            <tr>
+              <td>{{ m.fecha_movimiento|date:"d/m/Y" }} {{ m.hora_movimiento|time:"H:i" }}</td>
+              <td>
+                <span class="badge {% if m.tipo_movimiento == 'SALIDA' %}b-salida{% elif m.tipo_movimiento == 'ENTRADA' %}b-entrada{% else %}b-control{% endif %}">
+                  {{ m.tipo_movimiento }}
+                </span>
+              </td>
+              <td>{{ m.cantidad|floatformat:2 }} {{ m.unidad }}</td>
+              <td>{% if m.almacen %}{{ m.almacen }}{% else %}—{% endif %}</td>
+              <td>{{ m.quedan|floatformat:2|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">Sin movimientos.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="stk-actions">
+        <a class="stk-btn stk-btn-primary" href="{{ card.accion_url }}">Movimiento</a>
+        <a class="stk-btn" href="/app/obra-movil/almacen/movimientos/?q={{ card.recurso.legacy_id }}">Ver movimientos</a>
+      </div>
+    </section>
+  {% empty %}
+    <section class="stk-card">No hay recursos.</section>
+  {% endfor %}
+</div>
+{% endblock %}

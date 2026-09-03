@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Crear desde PDF · Dry-run</h1>
+      <div class="text-muted small">Sube un PDF, extrae texto y revisa datos. No se guarda nada todavía.</div>
+    </div>
+    <a href="/app/gestion/" class="btn btn-outline-secondary btn-sm">Volver a Gestión</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <div class="col-md-3">
+          <label class="form-label">Tipo documento</label>
+          <select name="tipo_documento" class="form-select">
+            <option value="FACTURA_PDF" {% if tipo_documento == "FACTURA_PDF" %}selected{% endif %}>Factura</option>
+            <option value="ALBARAN_PDF" {% if tipo_documento == "ALBARAN_PDF" %}selected{% endif %}>Albarán</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">PDF</label>
+          <input type="file" name="archivo" accept="application/pdf,.pdf" class="form-control" required>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Extraer y revisar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if result %}
+    <div class="row g-3">
+      <div class="col-lg-5">
+        <div class="card">
+          <div class="card-header fw-semibold">Datos detectados</div>
+          <div class="card-body">
+            <table class="table table-sm">
+              <tr><th>Modo</th><td>{{ result.modo }}</td></tr>
+              <tr><th>Archivo</th><td>{{ result.archivo_original }}</td></tr>
+              <tr><th>Páginas</th><td>{{ result.text_result.pages }}</td></tr>
+              <tr><th>Texto extraído</th><td>{{ result.text_result.text_len }} caracteres</td></tr>
+              <tr><th>Confianza</th><td>{{ result.extraction.confidence }}</td></tr>
+              <tr><th>Número</th><td>{{ result.extraction.detected.numero_documento|default:"" }}</td></tr>
+              <tr><th>Fecha</th><td>{{ result.extraction.detected.fecha|default:"" }}</td></tr>
+              <tr><th>Base</th><td>{{ result.extraction.detected.base_imponible|default:"" }}</td></tr>
+              <tr><th>IVA</th><td>{{ result.extraction.detected.iva|default:"" }}</td></tr>
+              <tr><th>Total</th><td>{{ result.extraction.detected.total|default:"" }}</td></tr>
+            </table>
+
+            <h6 class="mt-3">Candidatos proveedor</h6>
+            <ul class="small">
+              {% for p in result.extraction.detected.proveedor_matches %}
+                <li>#{{ p.id }} · {{ p.str }} {% if p.cif %}· {{ p.cif }}{% endif %}</li>
+              {% empty %}
+                <li class="text-muted">Sin coincidencias.</li>
+              {% endfor %}
+            </ul>
+
+            <div class="alert alert-warning small mb-0">
+              Este paso no crea factura/albarán ni adjunto. La creación real se hará en el siguiente hito con confirmación humana.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">Vista técnica JSON</div>
+          <div class="card-body">
+            <pre class="small bg-light p-2 border rounded" style="max-height: 420px; overflow:auto;">{{ result_json }}</pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header fw-semibold">Texto extraído</div>
+          <div class="card-body">
+            <pre class="small bg-light p-2 border rounded" style="max-height: 420px; overflow:auto;">{{ result.text_result.preview }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

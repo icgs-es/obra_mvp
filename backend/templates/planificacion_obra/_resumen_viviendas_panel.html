@@ -1,0 +1,97 @@
+{% if vista_resumen_viviendas and resumen_viviendas %}
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <strong>Pantallazo de viviendas</strong>
+      <div class="text-secondary small">
+        Estado general, progreso actual y planificación futura de las viviendas filtradas.
+      </div>
+    </div>
+    <span class="badge bg-dark">{{ resumen_viviendas_kpis.total }} viviendas</span>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-2 mb-3">
+      <div class="col-md-2 col-6">
+        <div class="border rounded p-2 h-100">
+          <div class="small text-secondary">En curso ahora</div>
+          <div class="h4 mb-0">{{ resumen_viviendas_kpis.activas }}</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="border rounded p-2 h-100">
+          <div class="small text-secondary">Retrasadas</div>
+          <div class="h4 mb-0">{{ resumen_viviendas_kpis.retrasadas }}</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="border rounded p-2 h-100">
+          <div class="small text-secondary">Completadas</div>
+          <div class="h4 mb-0">{{ resumen_viviendas_kpis.completadas }}</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="border rounded p-2 h-100">
+          <div class="small text-secondary">Planificadas</div>
+          <div class="h4 mb-0">{{ resumen_viviendas_kpis.planificadas }}</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="border rounded p-2 h-100">
+          <div class="small text-secondary">Sin fecha</div>
+          <div class="h4 mb-0">{{ resumen_viviendas_kpis.sin_fecha }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      {% for item in resumen_viviendas %}
+        <div class="col-xl-3 col-lg-4 col-md-6">
+          <div class="card h-100 border-0 shadow-sm" style="background:#fafbfc;">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <div class="fw-semibold">Vivienda {{ item.vivienda }}</div>
+                  <div class="small text-secondary">Fase {{ item.fase|default:"—" }} · Planta(s): {{ item.plantas_label }}</div>
+                </div>
+                <span class="badge {{ item.estado_class }}">{{ item.estado_label }}</span>
+              </div>
+
+              <div class="mb-2">
+                <div class="d-flex justify-content-between small mb-1">
+                  <span>Progreso</span>
+                  <strong>{{ item.avance_pct }}%</strong>
+                </div>
+                <div class="progress" style="height:10px;">
+                  <div class="progress-bar" role="progressbar" style="width: {{ item.avance_pct }}%;"></div>
+                </div>
+              </div>
+
+              <div class="small mb-2">
+                <div><strong>Tareas:</strong> {{ item.total_tareas }}</div>
+                <div><strong>Realizadas:</strong> {{ item.realizadas }} · <strong>Parciales:</strong> {{ item.parciales }}</div>
+                <div><strong>Pendientes:</strong> {{ item.pendientes }} · <strong>Retrasadas:</strong> {{ item.retrasadas }}</div>
+              </div>
+
+              <div class="small text-secondary mb-2">
+                <div>P: {{ item.inicio_previsto|date:"d/m/Y"|default:"—" }} → {{ item.fin_previsto|date:"d/m/Y"|default:"—" }}</div>
+                <div>R: {{ item.inicio_real|date:"d/m/Y"|default:"—" }} → {{ item.fin_real|date:"d/m/Y"|default:"—" }}</div>
+                {% if item.next_start %}
+                  <div>Próximo inicio previsto: <strong>{{ item.next_start|date:"d/m/Y" }}</strong></div>
+                {% endif %}
+              </div>
+
+              <a
+                class="btn btn-outline-primary btn-sm w-100"
+                href="?obra={{ item.obra_id }}&fase={{ item.fase }}&vivienda={{ item.vivienda }}&vista=gantt&agrupacion=detalle&limit=all"
+              >
+                Abrir vivienda
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="mb-3">
+    <h1 class="h4 mb-1">Reasignar alias de proveedor</h1>
+    <div class="text-muted small">
+      {{ alias.proveedor }} · {{ alias.codigo_proveedor }} · {{ alias.descripcion_proveedor }}
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="card border-0 shadow-sm">
+    {% csrf_token %}
+    <div class="card-body">
+      <div class="alert alert-info small">
+        Puedes mover este código de proveedor a un artículo interno existente, o crear un nuevo artículo maestro.
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Artículo actual</label>
+        <input type="text" class="form-control" value="{{ alias.articulo.nombre }}" disabled>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Reasignar a artículo existente</label>
+        <select name="articulo_id" class="form-select">
+          <option value="">— Seleccionar —</option>
+          {% for a in articulos %}
+            <option value="{{ a.id }}">{{ a.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">O crear nuevo artículo maestro</label>
+        <input type="text" name="nuevo_nombre" class="form-control" placeholder="Nombre del nuevo artículo maestro">
+      </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-between">
+      <a href="/app/gestion/articulos/{{ alias.articulo.id }}/" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-success">Guardar reasignación</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

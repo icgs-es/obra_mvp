@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} · Ayuda INTASA{% endblock %}
+
+{% block head %}
+<style>
+  .help-article-shell {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .help-article-header {
+    padding: 1.7rem;
+    border-radius: 1.1rem;
+    color: #fff;
+    background:
+      linear-gradient(
+        135deg,
+        #14532d,
+        #297a4a
+      );
+  }
+
+  .help-article-content {
+    font-size: 0.97rem;
+    line-height: 1.65;
+  }
+
+  .help-article-content h2,
+  .help-article-content h3,
+  .help-article-content h4 {
+    margin-top: 1.6rem;
+    color: #193d25;
+  }
+
+  .help-article-content blockquote {
+    padding: 0.8rem 1rem;
+    border-left: 4px solid #4f9b69;
+    border-radius: 0.4rem;
+    background: #edf7f0;
+    color: #31553c;
+  }
+
+  .help-article-content code {
+    padding: 0.12rem 0.3rem;
+    border-radius: 0.3rem;
+    background: #eef1ef;
+    color: #24442d;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-article-shell">
+  <div class="mb-3">
+    <a
+      href="{% url 'ayuda:centro' %}"
+      class="text-decoration-none"
+    >
+      <i class="bi bi-arrow-left me-1"></i>
+      Centro de ayuda
+    </a>
+  </div>
+
+  <div class="help-article-header mb-4">
+    <div class="small text-uppercase opacity-75 fw-semibold mb-2">
+      {{ article.module }} · {{ article.submodule }}
+    </div>
+
+    <h1 class="h3 mb-2">
+      {{ article.title }}
+    </h1>
+
+    {% if article.summary %}
+      <div class="opacity-75">
+        {{ article.summary }}
+      </div>
+    {% endif %}
+  </div>
+
+  <article class="card border-0 shadow-sm">
+    <div class="card-body p-4 p-lg-5 help-article-content">
+      {{ body_html }}
+    </div>
+  </article>
+
+  {% if related %}
+    <div class="mt-4">
+      <h2 class="h6 text-muted text-uppercase">
+        También puede ayudarte
+      </h2>
+
+      <div class="list-group shadow-sm">
+        {% for item in related %}
+          <a
+            href="{% url 'ayuda:articulo' item.article_id %}"
+            class="list-group-item list-group-item-action"
+          >
+            {{ item.title }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

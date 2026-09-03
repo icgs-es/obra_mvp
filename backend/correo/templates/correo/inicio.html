@@ -1,0 +1,3081 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- INTASA_CORREO_V1C1_MASTER_DETAIL -->
+
+<div
+  class="container py-3 correo-page{% if dock_mode %} correo-page-dock{% endif %}"
+  data-dock-mode="{% if dock_mode %}1{% else %}0{% endif %}"
+>
+
+{% if dock_mode %}
+  <!-- INTASA_CORREO_V1F1_FLOATING_DOCK -->
+  <style>
+    body {
+      background: #ffffff !important;
+      overflow: auto;
+    }
+
+    body > nav {
+      display: none !important;
+    }
+
+    body > main.container {
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .correo-page-dock {
+      max-width: none !important;
+      padding: 0.5rem !important;
+    }
+
+    .correo-page-dock .correo-page-heading,
+    .correo-page-dock .correo-account-card {
+      display: none !important;
+    }
+
+    .correo-page-dock .correo-workspace {
+      display: grid !important;
+      grid-template-columns:
+        minmax(300px, 38%)
+        minmax(0, 1fr) !important;
+      gap: 0.5rem !important;
+      min-height: calc(100vh - 1rem) !important;
+    }
+
+    .correo-page-dock .correo-list-card,
+    .correo-page-dock .correo-reader-panel {
+      min-height: calc(100vh - 1rem) !important;
+      border-radius: 0.65rem !important;
+    }
+
+    .correo-page-dock .correo-message-list {
+      max-height: calc(100vh - 5.5rem) !important;
+    }
+
+    .correo-page-dock .correo-reader-panel {
+      position: relative !important;
+      inset: auto !important;
+      z-index: auto !important;
+      width: auto !important;
+      height: auto !important;
+      transform: none !important;
+    }
+
+    .correo-page-dock .correo-reader-overlay {
+      display: none !important;
+    }
+
+    body.correo-reader-open {
+      overflow: auto !important;
+    }
+
+    @media (max-width: 767.98px) {
+      .correo-page-dock {
+        padding: 0 !important;
+      }
+
+      .correo-page-dock .correo-workspace {
+        display: block !important;
+        min-height: 100vh !important;
+      }
+
+      .correo-page-dock .correo-list-card {
+        min-height: 100vh !important;
+        border-radius: 0 !important;
+      }
+
+      .correo-page-dock .correo-message-list {
+        max-height: calc(100vh - 4.5rem) !important;
+      }
+
+      .correo-page-dock .correo-reader-panel {
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        z-index: 1085 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 0 !important;
+        border-radius: 0 !important;
+        transform: translateX(105%) !important;
+      }
+
+      .correo-page-dock .correo-reader-panel.is-open {
+        transform: translateX(0) !important;
+      }
+
+      .correo-page-dock .correo-reader-overlay {
+        display: block !important;
+      }
+
+      body.correo-reader-open {
+        overflow: hidden !important;
+      }
+    }
+  </style>
+{% endif %}
+  <div class="correo-page-heading d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        <i class="bi bi-envelope-paper me-2"></i>
+        Correo corporativo
+      </h1>
+
+      <p class="small text-muted mb-0">
+        Bandeja personal conectada directamente con IONOS.
+      </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      {% if cuenta_correo and cuenta_correo.verificada %}
+        <button
+          type="button"
+          id="correo-new-message"
+          class="btn btn-success btn-sm"
+        >
+          <i class="bi bi-pencil-square me-1"></i>
+          Nuevo mensaje
+        </button>
+      {% endif %}
+
+      <a
+        href="{% url 'correo:inicio' %}"
+        class="btn btn-primary btn-sm"
+      >
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Actualizar
+      </a>
+
+      <a
+        href="{% url 'portal:dashboard' %}"
+        class="btn btn-outline-secondary btn-sm"
+      >
+        Volver a Mi jornada
+      </a>
+    </div>
+  </div>
+
+  <form id="correo-csrf-form" class="d-none">
+    {% csrf_token %}
+  </form>
+
+  {% if cuenta_correo %}
+    <div class="card shadow-sm mb-3 correo-account-card">
+      <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="min-w-0">
+            <div class="fw-semibold text-truncate">
+              {{ cuenta_correo.direccion }}
+            </div>
+
+            <div class="small text-muted text-truncate">
+              {{ cuenta_correo.nombre_remitente|default:request.user.get_full_name }}
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2">
+            {% if cuenta_correo.verificada %}
+              <span class="badge text-bg-success">
+                IONOS conectado
+              </span>
+            {% else %}
+              <span class="badge text-bg-warning">
+                Pendiente de verificar
+              </span>
+            {% endif %}
+
+            {% if bandeja %}
+              <span
+                id="correo-unread-count"
+                class="badge text-bg-primary"
+                data-value="{{ bandeja.no_leidos }}"
+              >
+                {{ bandeja.no_leidos }} sin leer
+              </span>
+
+              <span class="badge text-bg-light border text-dark">
+                {{ bandeja.total_mensajes }} mensajes
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if correo_error %}
+      <div class="alert alert-danger py-2 small">
+        <strong>No se pudo actualizar la bandeja.</strong>
+        {{ correo_error }}
+      </div>
+    {% endif %}
+
+    {% if bandeja %}
+      <div class="correo-workspace">
+        <section class="card shadow-sm correo-list-card">
+          <div class="card-header bg-white py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <h2 class="h6 mb-0">
+                Bandeja de entrada
+              </h2>
+
+              <span class="small text-muted">
+                Últimos {{ bandeja.mensajes|length }}
+              </span>
+            </div>
+          </div>
+
+          {% if bandeja.mensajes %}
+            <div class="correo-message-list">
+              {% for mensaje in bandeja.mensajes %}
+                <button
+                  type="button"
+                  id="correo-row-{{ mensaje.uid }}"
+                  class="correo-message-row {% if not mensaje.leido %}is-unread{% endif %}"
+                  data-uid="{{ mensaje.uid }}"
+                  data-unread="{% if mensaje.leido %}0{% else %}1{% endif %}"
+                  data-detail-url="{% url 'correo:detalle_mensaje' mensaje.uid %}"
+                  data-state-url="{% url 'correo:estado_mensaje' mensaje.uid %}"
+                  aria-label="Abrir mensaje {{ mensaje.asunto }}"
+                >
+                  <div class="correo-row-main">
+                    <div class="correo-row-sender-wrap">
+                      {% if not mensaje.leido %}
+                        <span
+                          class="correo-unread-dot"
+                          aria-label="Mensaje no leído"
+                        ></span>
+                      {% endif %}
+
+                      <span class="correo-row-sender">
+                        {{ mensaje.remitente_nombre }}
+                      </span>
+                    </div>
+
+                    <div class="correo-row-subject">
+                      {{ mensaje.asunto }}
+                    </div>
+
+                    <div class="correo-row-date">
+                      {% if mensaje.fecha %}
+                        {{ mensaje.fecha|date:"d/m H:i" }}
+                      {% else %}
+                        Sin fecha
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="correo-row-secondary">
+                    <span class="correo-row-email">
+                      {{ mensaje.remitente_email|default:"Remitente no disponible" }}
+                    </span>
+
+                    <span class="correo-row-size">
+                      {{ mensaje.tamano_bytes|filesizeformat }}
+                    </span>
+                  </div>
+                </button>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="card-body">
+              <div class="alert alert-light border mb-0">
+                La bandeja de entrada está vacía.
+              </div>
+            </div>
+          {% endif %}
+        </section>
+
+        <section
+          id="correo-reader-panel"
+          class="card shadow-sm correo-reader-panel"
+          aria-labelledby="correo-reader-title"
+        >
+          <div
+            id="correo-reader-empty"
+            class="correo-reader-empty"
+          >
+            <div class="correo-reader-empty-icon">
+              <i class="bi bi-envelope-open"></i>
+            </div>
+
+            <h2 class="h6 mb-2">
+              Selecciona un correo
+            </h2>
+
+            <p class="small text-muted mb-0">
+              El mensaje aparecerá aquí sin abandonar la bandeja.
+            </p>
+          </div>
+
+          <!-- INTASA_CORREO_V1D_COMPOSER -->
+          <div
+            id="correo-composer"
+            class="correo-composer"
+            hidden
+          >
+            <div class="correo-reader-header">
+              <div class="min-w-0 flex-grow-1">
+                <div class="small text-muted mb-1">
+                  Correo corporativo
+                </div>
+
+                <h2
+                  id="correo-composer-title"
+                  class="h6 mb-0"
+                >
+                  Nuevo mensaje
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                id="correo-composer-close"
+                class="btn btn-outline-secondary btn-sm"
+                aria-label="Cerrar redacción"
+              >
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <form
+              id="correo-compose-form"
+              class="correo-compose-form"
+              data-send-url="{% url 'correo:enviar_mensaje' %}"
+            >
+              <input
+                type="hidden"
+                name="nonce"
+                id="correo-compose-nonce"
+                value="{{ compose_nonce }}"
+              >
+
+              <input
+                type="hidden"
+                name="modo"
+                id="correo-compose-mode"
+                value="nuevo"
+              >
+
+              <input
+                type="hidden"
+                name="source_uid"
+                id="correo-compose-source"
+                value=""
+              >
+
+                      <!-- INTASA_CORREO_V1E2_OUTBOUND_ATTACHMENTS -->
+        <div class="mb-3">
+          <label
+            for="correo-compose-attachments"
+            class="form-label small fw-semibold"
+          >
+            <i class="bi bi-paperclip me-1"></i>
+            Adjuntos
+          </label>
+
+          <input
+            type="file"
+            id="correo-compose-attachments"
+            name="adjuntos"
+            class="form-control form-control-sm"
+            multiple
+          >
+
+          <div
+            id="correo-compose-attachments-summary"
+            class="small text-muted mt-1"
+          >
+            Máximo 10 archivos y 12 MB en total.
+          </div>
+
+          <div
+            id="correo-compose-attachments-list"
+            class="small mt-2"
+            hidden
+          ></div>
+
+          <div class="small text-muted mt-1">
+            Al reenviar, los adjuntos originales no se añaden
+            automáticamente; selecciona aquí los que necesites.
+          </div>
+        </div>
+
+<div
+                id="correo-compose-status"
+                class="alert mx-3 mt-3 mb-0"
+                hidden
+              ></div>
+
+              <div class="correo-compose-fields">
+                <div>
+                  <label
+                    for="correo-compose-to"
+                    class="form-label small mb-1"
+                  >
+                    Para
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="correo-compose-to"
+                    name="para"
+                    autocomplete="off"
+                    placeholder="persona@empresa.es"
+                    required
+                  >
+                </div>
+
+                <div>
+                  <label
+                    for="correo-compose-cc"
+                    class="form-label small mb-1"
+                  >
+                    CC
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="correo-compose-cc"
+                    name="copia"
+                    autocomplete="off"
+                    placeholder="Opcional"
+                  >
+                </div>
+
+                <div>
+                  <label
+                    for="correo-compose-bcc"
+                    class="form-label small mb-1"
+                  >
+                    CCO
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="correo-compose-bcc"
+                    name="copia_oculta"
+                    autocomplete="off"
+                    placeholder="Opcional"
+                  >
+                </div>
+
+                <div>
+                  <label
+                    for="correo-compose-subject"
+                    class="form-label small mb-1"
+                  >
+                    Asunto
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="correo-compose-subject"
+                    name="asunto"
+                    maxlength="500"
+                    placeholder="Asunto del mensaje"
+                  >
+                </div>
+
+                <div class="correo-compose-body-field">
+                  <label
+                    for="correo-compose-body"
+                    class="form-label small mb-1"
+                  >
+                    Mensaje
+                  </label>
+
+                  <textarea
+                    class="form-control form-control-sm"
+                    id="correo-compose-body"
+                    name="cuerpo"
+                    maxlength="250000"
+                    placeholder="Escribe tu mensaje…"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div class="correo-compose-footer">
+                <div class="small text-muted">
+                  Envío mediante IONOS.
+                  Adjuntos disponibles en V1E.
+                </div>
+
+                <button
+                  type="submit"
+                  id="correo-compose-send"
+                  class="btn btn-primary btn-sm"
+                >
+                  <i class="bi bi-send me-1"></i>
+                  Enviar
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div
+            id="correo-reader-active"
+            class="correo-reader-active"
+            hidden
+          >
+            <div class="correo-reader-header">
+              <div class="min-w-0 flex-grow-1">
+                <div class="small text-muted mb-1">
+                  Vista previa
+                </div>
+
+                <h2
+                  id="correo-reader-title"
+                  class="h6 mb-0 text-break"
+                >
+                  Mensaje
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                id="correo-reader-close"
+                class="btn btn-outline-secondary btn-sm"
+                aria-label="Cerrar mensaje"
+              >
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <div
+              id="correo-reader-loading"
+              class="correo-reader-loading"
+            >
+              <div
+                class="spinner-border spinner-border-sm text-primary"
+                role="status"
+              >
+                <span class="visually-hidden">
+                  Cargando mensaje
+                </span>
+              </div>
+
+              <div class="small text-muted mt-2">
+                Cargando desde IONOS…
+              </div>
+            </div>
+
+            <div
+              id="correo-reader-error"
+              class="alert alert-danger m-3 small"
+              hidden
+            ></div>
+
+            <div
+              id="correo-reader-content"
+              class="correo-reader-content"
+              hidden
+            >
+              <div class="correo-reader-meta">
+                <div class="mb-2">
+                  <div class="small text-muted">
+                    De
+                  </div>
+
+                  <div
+                    id="correo-reader-from"
+                    class="fw-semibold text-break"
+                  ></div>
+
+                  <div
+                    id="correo-reader-from-email"
+                    class="small text-muted text-break"
+                  ></div>
+                </div>
+
+                <div class="mb-2">
+                  <div class="small text-muted">
+                    Para
+                  </div>
+
+                  <div
+                    id="correo-reader-to"
+                    class="small text-break"
+                  ></div>
+                </div>
+
+                <div
+                  id="correo-reader-cc-block"
+                  class="mb-2"
+                  hidden
+                >
+                  <div class="small text-muted">
+                    Copia
+                  </div>
+
+                  <div
+                    id="correo-reader-cc"
+                    class="small text-break"
+                  ></div>
+                </div>
+
+                <div>
+                  <div class="small text-muted">
+                    Fecha
+                  </div>
+
+                  <div
+                    id="correo-reader-date"
+                    class="small"
+                  ></div>
+                </div>
+              </div>
+
+              <div
+                id="correo-reader-warning"
+                class="alert alert-warning small mx-3 mt-3 mb-0"
+                hidden
+              ></div>
+
+              <div class="correo-reader-body-wrap">
+                <pre
+                  id="correo-reader-body"
+                  class="correo-reader-body"
+                ></pre>
+              </div>
+
+              <div
+                id="correo-reader-attachments-block"
+                class="correo-reader-attachments"
+                hidden
+              >
+                <h3 class="h6 mb-2">
+                  <i class="bi bi-paperclip me-1"></i>
+                  Adjuntos
+                </h3>
+
+                <div
+                  id="correo-reader-attachments"
+                  class="d-grid gap-2"
+                ></div>
+
+                <div class="small text-muted mt-2">
+                  Descarga el archivo o guárdalo directamente
+                  en Archivos INTASA.
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="correo-reader-footer"
+              class="correo-reader-footer"
+              hidden
+            >
+              <button
+                type="button"
+                id="correo-mark-unread"
+                class="btn btn-outline-primary btn-sm"
+              >
+                <i class="bi bi-envelope me-1"></i>
+                No leído
+              </button>
+
+              <div class="d-flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  id="correo-reply"
+                  class="btn btn-outline-secondary btn-sm"
+                >
+                  Responder
+                </button>
+
+                <button
+                  type="button"
+                  id="correo-reply-all"
+                  class="btn btn-outline-secondary btn-sm"
+                >
+                  Responder a todos
+                </button>
+
+                <button
+                  type="button"
+                  id="correo-forward"
+                  class="btn btn-outline-secondary btn-sm"
+                >
+                  Reenviar
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-secondary">
+      Tu cuenta de correo todavía no está configurada.
+      Un administrador debe asociarla desde Administración.
+    </div>
+  {% endif %}
+</div>
+
+<!-- INTASA_CORREO_V1E1_ATTACHMENTS -->
+<div
+  id="correo-folder-picker"
+  class="correo-folder-picker"
+  data-folders-url="{% url 'correo:carpetas_archivos' %}"
+  hidden
+>
+  <div
+    class="correo-folder-picker-dialog card shadow-lg"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="correo-folder-picker-title"
+  >
+    <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
+      <div class="min-w-0">
+        <div class="small text-muted">
+          Archivos INTASA
+        </div>
+
+        <h2
+          id="correo-folder-picker-title"
+          class="h6 mb-0"
+        >
+          Seleccionar carpeta
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        id="correo-folder-picker-close"
+        class="btn btn-outline-secondary btn-sm"
+        aria-label="Cerrar selector"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="card-body d-flex flex-column min-h-0">
+      <div
+        id="correo-folder-picker-file"
+        class="small fw-semibold text-break mb-2"
+      ></div>
+
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <button
+          type="button"
+          id="correo-folder-picker-up"
+          class="btn btn-outline-secondary btn-sm"
+        >
+          <i class="bi bi-arrow-up me-1"></i>
+          Subir
+        </button>
+
+        <div
+          id="correo-folder-picker-path"
+          class="small text-muted text-break"
+        >
+          Archivos
+        </div>
+      </div>
+
+      <div
+        id="correo-folder-picker-status"
+        class="alert alert-danger py-2 small"
+        hidden
+      ></div>
+
+      <div
+        id="correo-folder-picker-loading"
+        class="text-center py-4"
+      >
+        <div
+          class="spinner-border spinner-border-sm text-primary"
+          role="status"
+        >
+          <span class="visually-hidden">
+            Cargando carpetas
+          </span>
+        </div>
+      </div>
+
+      <div
+        id="correo-folder-picker-list"
+        class="correo-folder-picker-list"
+        hidden
+      ></div>
+    </div>
+
+    <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="small text-muted">
+        El archivo se almacenará en INTASA Cloud.
+      </div>
+
+      <button
+        type="button"
+        id="correo-folder-picker-save"
+        class="btn btn-primary btn-sm"
+      >
+        <i class="bi bi-cloud-arrow-up me-1"></i>
+        Guardar aquí
+      </button>
+    </div>
+  </div>
+</div>
+
+<div
+  id="correo-reader-overlay"
+  class="correo-reader-overlay"
+  hidden
+></div>
+
+<!-- INTASA_CORREO_V1D3_POST_SEND_UX -->
+<div
+  id="correo-send-toast"
+  class="correo-send-toast alert"
+  role="status"
+  aria-live="polite"
+  hidden
+></div>
+
+<style>
+  .correo-page {
+    max-width: 1320px;
+  }
+
+  .min-w-0 {
+    min-width: 0;
+  }
+
+  .correo-workspace {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1.45fr)
+      minmax(350px, 0.9fr);
+    gap: 0.9rem;
+    align-items: start;
+  }
+
+  .correo-list-card,
+  .correo-reader-panel {
+    min-width: 0;
+  }
+
+  .correo-message-list {
+    max-height: calc(100vh - 245px);
+    min-height: 420px;
+    overflow-y: auto;
+  }
+
+  .correo-message-row {
+    display: block;
+    width: 100%;
+    min-height: 52px;
+    padding: 0.42rem 0.7rem;
+    border: 0;
+    border-bottom: 1px solid #e9ecef;
+    border-left: 3px solid transparent;
+    background: #fff;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .correo-message-row:hover,
+  .correo-message-row:focus {
+    background: #f8f9fa;
+    border-left-color: var(--bs-primary);
+    outline: 0;
+  }
+
+  .correo-message-row.is-unread {
+    background: #f4f8ff;
+  }
+
+  .correo-message-row.is-active {
+    background: #eaf2ff;
+    border-left-color: var(--bs-primary);
+  }
+
+  .correo-row-main {
+    display: grid;
+    grid-template-columns:
+      minmax(125px, 0.8fr)
+      minmax(0, 2.2fr)
+      74px;
+    gap: 0.55rem;
+    align-items: center;
+    line-height: 1.15;
+  }
+
+  .correo-row-sender-wrap,
+  .correo-row-subject,
+  .correo-row-email {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .correo-row-sender-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .correo-row-sender {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+
+  .correo-row-subject {
+    font-size: 0.84rem;
+  }
+
+  .correo-message-row.is-unread
+  .correo-row-sender,
+  .correo-message-row.is-unread
+  .correo-row-subject {
+    font-weight: 700;
+  }
+
+  .correo-row-date {
+    font-size: 0.73rem;
+    color: #495057;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .correo-row-secondary {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-left: 0.95rem;
+    margin-top: 0.18rem;
+    font-size: 0.72rem;
+    line-height: 1.1;
+    color: #6c757d;
+  }
+
+  .correo-row-size {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .correo-unread-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: var(--bs-primary);
+  }
+
+  .correo-reader-panel {
+    position: sticky;
+    top: 0.75rem;
+    height: calc(100vh - 165px);
+    min-height: 480px;
+    overflow: hidden;
+  }
+
+  .correo-reader-empty {
+    height: 100%;
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .correo-reader-empty-icon {
+    margin-bottom: 0.8rem;
+    color: #adb5bd;
+    font-size: 2rem;
+  }
+
+  .correo-reader-active {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .correo-reader-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .correo-reader-loading {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .correo-reader-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .correo-reader-meta {
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+  }
+
+  .correo-reader-body-wrap {
+    padding: 0.95rem;
+  }
+
+  .correo-reader-body {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #212529;
+    font-family: inherit;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .correo-folder-picker {
+    position: fixed;
+    inset: 0;
+    z-index: 1120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.48);
+  }
+
+  .correo-folder-picker-dialog {
+    width: min(640px, 100%);
+    max-height: min(720px, calc(100vh - 2rem));
+    overflow: hidden;
+  }
+
+  .correo-folder-picker-dialog .card-body {
+    min-height: 300px;
+    overflow: hidden;
+  }
+
+  .min-h-0 {
+    min-height: 0;
+  }
+
+  .correo-folder-picker-list {
+    flex: 1;
+    min-height: 220px;
+    max-height: 430px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.4rem;
+  }
+
+  .correo-folder-picker-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem 0.75rem;
+    border: 0;
+    border-bottom: 1px solid #e9ecef;
+    background: #fff;
+    text-align: left;
+  }
+
+  .correo-folder-picker-item:hover,
+  .correo-folder-picker-item:focus {
+    background: #f4f8ff;
+    outline: 0;
+  }
+
+  .correo-folder-picker-item:last-child {
+    border-bottom: 0;
+  }
+
+  .correo-folder-picker-empty {
+    padding: 2rem 1rem;
+    color: #6c757d;
+    text-align: center;
+  }
+
+  .correo-reader-attachments {
+    padding: 0.85rem 0.9rem;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+  }
+
+  .correo-reader-attachment {
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.4rem;
+    background: #fff;
+  }
+
+  .correo-reader-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.7rem 0.9rem;
+    border-top: 1px solid #dee2e6;
+    background: #fff;
+  }
+
+  .correo-reader-overlay {
+    display: none;
+  }
+
+  @media (max-width: 1199.98px) {
+    .correo-workspace {
+      display: block;
+    }
+
+    .correo-message-list {
+      max-height: calc(100vh - 245px);
+    }
+
+    .correo-reader-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 1085;
+      width: min(560px, 100vw);
+      height: 100vh;
+      min-height: 0;
+      border-radius: 0;
+      transform: translateX(105%);
+      transition: transform 180ms ease;
+    }
+
+    .correo-reader-panel.is-open {
+      transform: translateX(0);
+    }
+
+    .correo-reader-overlay {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 1080;
+      background: rgba(15, 23, 42, 0.42);
+    }
+
+    body.correo-reader-open {
+      overflow: hidden;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .correo-message-row {
+      min-height: 58px;
+    }
+
+    .correo-row-main {
+      grid-template-columns:
+        minmax(0, 1fr)
+        68px;
+    }
+
+    .correo-row-sender-wrap {
+      grid-column: 1;
+    }
+
+    .correo-row-date {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .correo-row-subject {
+      grid-column: 1 / -1;
+      margin-left: 0.95rem;
+    }
+
+    .correo-row-secondary {
+      padding-left: 0.95rem;
+    }
+  }
+
+  .correo-send-toast {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1110;
+    width: min(
+      420px,
+      calc(100vw - 2rem)
+    );
+    margin: 0;
+    box-shadow:
+      0 10px 30px
+      rgba(15, 23, 42, 0.22);
+  }
+
+  @media (max-width: 575.98px) {
+    .correo-send-toast {
+      right: 0.75rem;
+      bottom: 0.75rem;
+      width: calc(
+        100vw - 1.5rem
+      );
+    }
+  }
+
+  /* INTASA CORREO V1D · COMPOSITOR */
+  .correo-composer {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .correo-compose-form {
+    height: calc(100% - 58px);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .correo-compose-fields {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.85rem 0.9rem;
+  }
+
+  .correo-compose-body-field {
+    flex: 1;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #correo-compose-body {
+    flex: 1;
+    min-height: 220px;
+    resize: vertical;
+    line-height: 1.45;
+    font-family: inherit;
+  }
+
+  .correo-compose-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    border-top: 1px solid #dee2e6;
+    background: #fff;
+  }
+
+  @media (max-width: 575.98px) {
+    .correo-compose-footer {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    #correo-compose-send {
+      width: 100%;
+    }
+  }
+
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const panel = document.getElementById("correo-reader-panel");
+
+  if (!panel) {
+    return;
+  }
+
+  const overlay = document.getElementById(
+    "correo-reader-overlay"
+  );
+
+  const emptyState = document.getElementById(
+    "correo-reader-empty"
+  );
+
+  const activeState = document.getElementById(
+    "correo-reader-active"
+  );
+
+  const closeButton = document.getElementById(
+    "correo-reader-close"
+  );
+
+  const loading = document.getElementById(
+    "correo-reader-loading"
+  );
+
+  const errorBox = document.getElementById(
+    "correo-reader-error"
+  );
+
+  const content = document.getElementById(
+    "correo-reader-content"
+  );
+
+  const footer = document.getElementById(
+    "correo-reader-footer"
+  );
+
+  const title = document.getElementById(
+    "correo-reader-title"
+  );
+
+  const fromName = document.getElementById(
+    "correo-reader-from"
+  );
+
+  const fromEmail = document.getElementById(
+    "correo-reader-from-email"
+  );
+
+  const toValue = document.getElementById(
+    "correo-reader-to"
+  );
+
+  const ccBlock = document.getElementById(
+    "correo-reader-cc-block"
+  );
+
+  const ccValue = document.getElementById(
+    "correo-reader-cc"
+  );
+
+  const dateValue = document.getElementById(
+    "correo-reader-date"
+  );
+
+  const bodyValue = document.getElementById(
+    "correo-reader-body"
+  );
+
+  const warning = document.getElementById(
+    "correo-reader-warning"
+  );
+
+  const attachmentsBlock = document.getElementById(
+    "correo-reader-attachments-block"
+  );
+
+  const attachmentsList = document.getElementById(
+    "correo-reader-attachments"
+  );
+
+  const markUnreadButton = document.getElementById(
+    "correo-mark-unread"
+  );
+
+  const unreadBadge = document.getElementById(
+    "correo-unread-count"
+  );
+
+  const csrfInput = document.querySelector(
+    "#correo-csrf-form input[name=csrfmiddlewaretoken]"
+  );
+
+  const mobileQuery = window.matchMedia(
+    "(max-width: 1199.98px)"
+  );
+
+  let activeRow = null;
+  let activeStateUrl = "";
+  let requestSerial = 0;
+
+  function humanFileSize(bytes) {
+    const value = Number(bytes || 0);
+
+    if (value < 1024) {
+      return value + " B";
+    }
+
+    if (value < 1024 * 1024) {
+      return (value / 1024).toFixed(1) + " KB";
+    }
+
+    return (
+      value / (1024 * 1024)
+    ).toFixed(1) + " MB";
+  }
+
+  function openReader() {
+    const composer = document.getElementById(
+      "correo-composer"
+    );
+
+    if (composer) {
+      composer.hidden = true;
+    }
+
+    emptyState.hidden = true;
+    activeState.hidden = false;
+
+    if (mobileQuery.matches) {
+      overlay.hidden = false;
+      panel.classList.add("is-open");
+      document.body.classList.add(
+        "correo-reader-open"
+      );
+    }
+  }
+
+  function closeReader() {
+    if (activeRow) {
+      activeRow.classList.remove(
+        "is-active"
+      );
+    }
+
+    activeRow = null;
+    activeStateUrl = "";
+    window.INTASA_CORREO_ACTIVE_MESSAGE = null;
+
+    const composer = document.getElementById(
+      "correo-composer"
+    );
+
+    if (composer) {
+      composer.hidden = true;
+    }
+
+    if (mobileQuery.matches) {
+      panel.classList.remove("is-open");
+      document.body.classList.remove(
+        "correo-reader-open"
+      );
+
+      window.setTimeout(function () {
+        if (!panel.classList.contains("is-open")) {
+          overlay.hidden = true;
+        }
+      }, 190);
+    }
+
+    activeState.hidden = true;
+    emptyState.hidden = false;
+  }
+
+  function resetReader() {
+    title.textContent = "Mensaje";
+    fromName.textContent = "";
+    fromEmail.textContent = "";
+    toValue.textContent = "";
+    ccValue.textContent = "";
+    dateValue.textContent = "";
+    bodyValue.textContent = "";
+
+    ccBlock.hidden = true;
+    warning.hidden = true;
+    warning.textContent = "";
+
+    attachmentsBlock.hidden = true;
+    attachmentsList.replaceChildren();
+
+    errorBox.hidden = true;
+    errorBox.textContent = "";
+
+    content.hidden = true;
+    footer.hidden = true;
+    loading.hidden = false;
+  }
+
+  function setUnreadCount(value) {
+    if (!unreadBadge) {
+      return;
+    }
+
+    const safeValue = Math.max(
+      0,
+      Number(value || 0)
+    );
+
+    unreadBadge.dataset.value = String(
+      safeValue
+    );
+
+    unreadBadge.textContent = (
+      safeValue + " sin leer"
+    );
+  }
+
+  function updateRowState(row, isRead) {
+    if (!row) {
+      return;
+    }
+
+    row.dataset.unread = isRead ? "0" : "1";
+
+    row.classList.toggle(
+      "is-unread",
+      !isRead
+    );
+
+    const existingDot = row.querySelector(
+      ".correo-unread-dot"
+    );
+
+    const senderWrap = row.querySelector(
+      ".correo-row-sender-wrap"
+    );
+
+    if (isRead && existingDot) {
+      existingDot.remove();
+    }
+
+    if (
+      !isRead
+      && !existingDot
+      && senderWrap
+    ) {
+      const dot = document.createElement(
+        "span"
+      );
+
+      dot.className = "correo-unread-dot";
+      dot.setAttribute(
+        "aria-label",
+        "Mensaje no leído"
+      );
+
+      senderWrap.prepend(dot);
+    }
+  }
+
+  async function changeReadState(
+    stateUrl,
+    isRead
+  ) {
+    const body = new URLSearchParams();
+
+    body.set(
+      "leido",
+      isRead ? "1" : "0"
+    );
+
+    const response = await fetch(
+      stateUrl,
+      {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+          "Content-Type": (
+            "application/x-www-form-urlencoded; " +
+            "charset=UTF-8"
+          ),
+          "X-CSRFToken": (
+            csrfInput
+              ? csrfInput.value
+              : ""
+          ),
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: body.toString()
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(
+        data.error
+        || "No se pudo cambiar el estado."
+      );
+    }
+
+    updateRowState(
+      activeRow,
+      Boolean(data.leido)
+    );
+
+    setUnreadCount(
+      data.no_leidos
+    );
+
+    markUnreadButton.hidden = (
+      !data.leido
+    );
+
+    return data;
+  }
+
+  function renderAttachments(attachments) {
+    attachmentsList.replaceChildren();
+
+    if (
+      !attachments
+      || attachments.length === 0
+    ) {
+      attachmentsBlock.hidden = true;
+      return;
+    }
+
+    attachments.forEach(function (attachment) {
+      const wrapper = document.createElement(
+        "div"
+      );
+
+      const info = document.createElement(
+        "div"
+      );
+
+      const name = document.createElement(
+        "div"
+      );
+
+      const meta = document.createElement(
+        "div"
+      );
+
+      const actions = document.createElement(
+        "div"
+      );
+
+      const download = document.createElement(
+        "a"
+      );
+
+      wrapper.className = (
+        "correo-reader-attachment "
+        + "d-flex flex-wrap "
+        + "justify-content-between "
+        + "align-items-center gap-2"
+      );
+
+      info.className = "min-w-0 flex-grow-1";
+
+      name.className = (
+        "fw-semibold text-break"
+      );
+
+      meta.className = (
+        "small text-muted"
+      );
+
+      actions.className = (
+        "d-flex flex-wrap gap-2"
+      );
+
+      name.textContent = (
+        attachment.nombre
+        || "Adjunto sin nombre"
+      );
+
+      meta.textContent = (
+        (
+          attachment.tipo_contenido
+          || "Archivo"
+        )
+        + " · "
+        + humanFileSize(
+          attachment.tamano_bytes
+        )
+      );
+
+      download.className = (
+        "btn btn-outline-primary btn-sm"
+      );
+
+      download.href = (
+        attachment.download_url
+      );
+
+      download.textContent = "Descargar";
+
+      download.setAttribute(
+        "download",
+        attachment.nombre
+        || "adjunto"
+      );
+
+      info.appendChild(name);
+      info.appendChild(meta);
+
+      actions.appendChild(download);
+
+      if (attachment.save_url) {
+        const saveButton = (
+          document.createElement(
+            "button"
+          )
+        );
+
+        saveButton.type = "button";
+
+        saveButton.className = (
+          "btn btn-outline-success btn-sm"
+        );
+
+        saveButton.textContent = (
+          "Guardar en Archivos"
+        );
+
+        saveButton.addEventListener(
+          "click",
+          function () {
+            if (
+              window
+                .INTASA_CORREO_OPEN_FOLDER_PICKER
+            ) {
+              window
+                .INTASA_CORREO_OPEN_FOLDER_PICKER(
+                  attachment
+                );
+            }
+          }
+        );
+
+        actions.appendChild(
+          saveButton
+        );
+      }
+
+      wrapper.appendChild(info);
+      wrapper.appendChild(actions);
+
+      attachmentsList.appendChild(
+        wrapper
+      );
+    });
+
+    attachmentsBlock.hidden = false;
+  }
+
+  async function openMessage(row) {
+    requestSerial += 1;
+
+    const thisRequest = requestSerial;
+
+    if (activeRow) {
+      activeRow.classList.remove(
+        "is-active"
+      );
+    }
+
+    activeRow = row;
+    activeStateUrl = (
+      row.dataset.stateUrl || ""
+    );
+
+    row.classList.add(
+      "is-active"
+    );
+
+    resetReader();
+    openReader();
+
+    try {
+      const response = await fetch(
+        row.dataset.detailUrl,
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": (
+              "XMLHttpRequest"
+            )
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (thisRequest !== requestSerial) {
+        return;
+      }
+
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data.error
+          || "No se pudo abrir el mensaje."
+        );
+      }
+
+      const message = data.mensaje;
+
+      window.INTASA_CORREO_ACTIVE_MESSAGE = message;
+
+      title.textContent = (
+        message.asunto || "(Sin asunto)"
+      );
+
+      fromName.textContent = (
+        message.remitente_nombre
+        || "Remitente desconocido"
+      );
+
+      fromEmail.textContent = (
+        message.remitente_email || ""
+      );
+
+      toValue.textContent = (
+        message.destinatarios
+        || "No disponible"
+      );
+
+      if (message.copia) {
+        ccValue.textContent = message.copia;
+        ccBlock.hidden = false;
+      }
+
+      dateValue.textContent = (
+        message.fecha
+        || "Fecha no disponible"
+      );
+
+      bodyValue.textContent = (
+        message.cuerpo_texto
+        || "El mensaje no contiene texto visible."
+      );
+
+      if (message.contenido_recortado) {
+        warning.textContent = (
+          "El contenido se ha limitado " +
+          "por seguridad."
+        );
+
+        warning.hidden = false;
+      }
+
+      renderAttachments(
+        message.adjuntos
+      );
+
+      loading.hidden = true;
+      content.hidden = false;
+      footer.hidden = false;
+
+      markUnreadButton.hidden = (
+        !message.leido
+      );
+
+      if (
+        !message.leido
+        && activeStateUrl
+      ) {
+        try {
+          await changeReadState(
+            activeStateUrl,
+            true
+          );
+        } catch (stateError) {
+          warning.textContent = (
+            "El mensaje se abrió, pero no " +
+            "pudo sincronizarse como leído: " +
+            stateError.message
+          );
+
+          warning.hidden = false;
+        }
+      }
+    } catch (error) {
+      if (thisRequest !== requestSerial) {
+        return;
+      }
+
+      loading.hidden = true;
+      content.hidden = true;
+      footer.hidden = true;
+
+      errorBox.textContent = (
+        error.message
+        || "No se pudo abrir el mensaje."
+      );
+
+      errorBox.hidden = false;
+    }
+  }
+
+  document.querySelectorAll(
+    ".correo-message-row"
+  ).forEach(function (row) {
+    row.addEventListener(
+      "click",
+      function () {
+        openMessage(row);
+      }
+    );
+  });
+
+  closeButton.addEventListener(
+    "click",
+    closeReader
+  );
+
+  overlay.addEventListener(
+    "click",
+    closeReader
+  );
+
+  document.addEventListener(
+    "keydown",
+    function (event) {
+      if (
+        event.key === "Escape"
+        && !activeState.hidden
+      ) {
+        closeReader();
+      }
+    }
+  );
+
+  markUnreadButton.addEventListener(
+    "click",
+    async function () {
+      if (!activeStateUrl) {
+        return;
+      }
+
+      markUnreadButton.disabled = true;
+
+      try {
+        await changeReadState(
+          activeStateUrl,
+          false
+        );
+      } catch (error) {
+        warning.textContent = (
+          error.message
+          || "No se pudo cambiar el estado."
+        );
+
+        warning.hidden = false;
+      } finally {
+        markUnreadButton.disabled = false;
+      }
+    }
+  );
+
+  mobileQuery.addEventListener(
+    "change",
+    function () {
+      if (!mobileQuery.matches) {
+        overlay.hidden = true;
+        panel.classList.remove("is-open");
+        document.body.classList.remove(
+          "correo-reader-open"
+        );
+      }
+    }
+  );
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const composer = document.getElementById(
+    "correo-composer"
+  );
+
+  if (!composer) {
+    return;
+  }
+
+  const panel = document.getElementById(
+    "correo-reader-panel"
+  );
+
+  const overlay = document.getElementById(
+    "correo-reader-overlay"
+  );
+
+  const emptyState = document.getElementById(
+    "correo-reader-empty"
+  );
+
+  const activeState = document.getElementById(
+    "correo-reader-active"
+  );
+
+  const newButton = document.getElementById(
+    "correo-new-message"
+  );
+
+  const closeButton = document.getElementById(
+    "correo-composer-close"
+  );
+
+  const replyButton = document.getElementById(
+    "correo-reply"
+  );
+
+  const replyAllButton = document.getElementById(
+    "correo-reply-all"
+  );
+
+  const forwardButton = document.getElementById(
+    "correo-forward"
+  );
+
+  const form = document.getElementById(
+    "correo-compose-form"
+  );
+
+  const composerTitle = document.getElementById(
+    "correo-composer-title"
+  );
+
+  const nonceInput = document.getElementById(
+    "correo-compose-nonce"
+  );
+
+  const modeInput = document.getElementById(
+    "correo-compose-mode"
+  );
+
+  const sourceInput = document.getElementById(
+    "correo-compose-source"
+  );
+
+  const toInput = document.getElementById(
+    "correo-compose-to"
+  );
+
+  const ccInput = document.getElementById(
+    "correo-compose-cc"
+  );
+
+  const bccInput = document.getElementById(
+    "correo-compose-bcc"
+  );
+
+  const subjectInput = document.getElementById(
+    "correo-compose-subject"
+  );
+
+  const bodyInput = document.getElementById(
+    "correo-compose-body"
+  );
+
+  const sendButton = document.getElementById(
+    "correo-compose-send"
+  );
+
+  const statusBox = document.getElementById(
+    "correo-compose-status"
+  );
+
+  const sendToast = document.getElementById(
+    "correo-send-toast"
+  );
+
+  const csrfInput = document.querySelector(
+    "#correo-csrf-form input[name=csrfmiddlewaretoken]"
+  );
+
+  const mobileQuery = window.matchMedia(
+    "(max-width: 1199.98px)"
+  );
+
+  function setStatus(
+    message,
+    type
+  ) {
+    statusBox.className = (
+      "alert alert-"
+      + type
+      + " mx-3 mt-3 mb-0"
+    );
+
+    statusBox.textContent = message;
+    statusBox.hidden = false;
+  }
+
+  function clearStatus() {
+    statusBox.textContent = "";
+    statusBox.hidden = true;
+  }
+
+  let sendToastTimer = null;
+
+  function hideSendToast() {
+    if (sendToastTimer) {
+      window.clearTimeout(
+        sendToastTimer
+      );
+
+      sendToastTimer = null;
+    }
+
+    sendToast.hidden = true;
+    sendToast.textContent = "";
+  }
+
+  function showSendToast(
+    message,
+    type
+  ) {
+    hideSendToast();
+
+    sendToast.className = (
+      "correo-send-toast alert alert-"
+      + type
+    );
+
+    sendToast.textContent = message;
+    sendToast.hidden = false;
+
+    sendToastTimer = window.setTimeout(
+      function () {
+        hideSendToast();
+      },
+      7000
+    );
+  }
+
+  function showMobilePanel() {
+    if (!mobileQuery.matches) {
+      return;
+    }
+
+    overlay.hidden = false;
+    panel.classList.add("is-open");
+
+    document.body.classList.add(
+      "correo-reader-open"
+    );
+  }
+
+  function closeMobilePanel() {
+    if (!mobileQuery.matches) {
+      return;
+    }
+
+    panel.classList.remove("is-open");
+
+    document.body.classList.remove(
+      "correo-reader-open"
+    );
+
+    window.setTimeout(function () {
+      if (!panel.classList.contains("is-open")) {
+        overlay.hidden = true;
+      }
+    }, 190);
+  }
+
+  function openComposer(payload) {
+    clearStatus();
+    hideSendToast();
+
+    emptyState.hidden = true;
+    activeState.hidden = true;
+    composer.hidden = false;
+
+    composerTitle.textContent = (
+      payload.title || "Nuevo mensaje"
+    );
+
+    modeInput.value = (
+      payload.mode || "nuevo"
+    );
+
+    sourceInput.value = (
+      payload.sourceUid || ""
+    );
+
+    toInput.value = payload.to || "";
+    ccInput.value = payload.cc || "";
+    bccInput.value = "";
+
+    subjectInput.value = (
+      payload.subject || ""
+    );
+
+    bodyInput.value = (
+      payload.body || ""
+    );
+
+    showMobilePanel();
+
+    window.setTimeout(function () {
+      if (toInput.value) {
+        bodyInput.focus();
+
+        bodyInput.setSelectionRange(
+          0,
+          0
+        );
+      } else {
+        toInput.focus();
+      }
+    }, 20);
+  }
+
+  function closeComposer() {
+    composer.hidden = true;
+    clearStatus();
+
+    if (window.INTASA_CORREO_ACTIVE_MESSAGE) {
+      activeState.hidden = false;
+      emptyState.hidden = true;
+    } else {
+      activeState.hidden = true;
+      emptyState.hidden = false;
+      closeMobilePanel();
+    }
+  }
+
+  function getMessage() {
+    return (
+      window.INTASA_CORREO_ACTIVE_MESSAGE
+      || null
+    );
+  }
+
+  if (newButton) {
+    newButton.addEventListener(
+      "click",
+      function () {
+        openComposer({
+          title: "Nuevo mensaje",
+          mode: "nuevo",
+          sourceUid: "",
+          to: "",
+          cc: "",
+          subject: "",
+          body: ""
+        });
+      }
+    );
+  }
+
+  closeButton.addEventListener(
+    "click",
+    closeComposer
+  );
+
+  replyButton.addEventListener(
+    "click",
+    function () {
+      const message = getMessage();
+
+      if (!message) {
+        return;
+      }
+
+      openComposer({
+        title: "Responder",
+        mode: "responder",
+        sourceUid: message.uid,
+        to: message.componer.reply_to,
+        cc: "",
+        subject: message.componer.reply_subject,
+        body: message.componer.reply_body
+      });
+    }
+  );
+
+  replyAllButton.addEventListener(
+    "click",
+    function () {
+      const message = getMessage();
+
+      if (!message) {
+        return;
+      }
+
+      openComposer({
+        title: "Responder a todos",
+        mode: "responder_todos",
+        sourceUid: message.uid,
+        to: message.componer.reply_all_to,
+        cc: message.componer.reply_all_cc,
+        subject: message.componer.reply_subject,
+        body: message.componer.reply_body
+      });
+    }
+  );
+
+  forwardButton.addEventListener(
+    "click",
+    function () {
+      const message = getMessage();
+
+      if (!message) {
+        return;
+      }
+
+      openComposer({
+        title: "Reenviar",
+        mode: "reenviar",
+        sourceUid: message.uid,
+        to: "",
+        cc: "",
+        subject: message.componer.forward_subject,
+        body: message.componer.forward_body
+      });
+    }
+  );
+
+  form.addEventListener(
+    "submit",
+    async function (event) {
+      event.preventDefault();
+
+      clearStatus();
+      sendButton.disabled = true;
+
+      const originalButtonHtml = (
+        sendButton.innerHTML
+      );
+
+      sendButton.innerHTML = (
+        '<span class="spinner-border '
+        + 'spinner-border-sm me-1" '
+        + 'aria-hidden="true"></span>'
+        + "Enviando…"
+      );
+
+      try {
+        const response = await fetch(
+          form.dataset.sendUrl,
+          {
+            method: "POST",
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: {
+              "X-CSRFToken": (
+                csrfInput
+                  ? csrfInput.value
+                  : ""
+              ),
+              "X-Requested-With": (
+                "XMLHttpRequest"
+              )
+            },
+            body: new FormData(form)
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(
+            data.error
+            || "No se pudo enviar el mensaje."
+          );
+        }
+
+        if (data.next_nonce) {
+          nonceInput.value = (
+            data.next_nonce
+          );
+        }
+
+        let resultMessage = "";
+        let resultType = "success";
+
+        if (data.advertencia) {
+          resultMessage = data.advertencia;
+          resultType = "warning";
+        } else {
+          const folder = (
+            data.carpeta_enviados
+              ? (
+                  " y se guardó en "
+                  + data.carpeta_enviados
+                )
+              : ""
+          );
+
+          resultMessage = (
+            "Mensaje enviado correctamente"
+            + folder
+            + "."
+          );
+        }
+
+        modeInput.value = "nuevo";
+        sourceInput.value = "";
+        toInput.value = "";
+        ccInput.value = "";
+        bccInput.value = "";
+        subjectInput.value = "";
+        bodyInput.value = "";
+
+        clearStatus();
+        composer.hidden = true;
+
+        if (
+          window.INTASA_CORREO_ACTIVE_MESSAGE
+        ) {
+          activeState.hidden = false;
+          emptyState.hidden = true;
+        } else {
+          activeState.hidden = true;
+          emptyState.hidden = false;
+        }
+
+        showSendToast(
+          resultMessage,
+          resultType
+        );
+
+      } catch (error) {
+        setStatus(
+          (
+            error.message
+            || "No se pudo enviar el mensaje."
+          ),
+          "danger"
+        );
+
+      } finally {
+        sendButton.disabled = false;
+        sendButton.innerHTML = (
+          originalButtonHtml
+        );
+      }
+    }
+  );
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const picker = document.getElementById(
+    "correo-folder-picker"
+  );
+
+  if (!picker) {
+    return;
+  }
+
+  const closeButton = document.getElementById(
+    "correo-folder-picker-close"
+  );
+
+  const upButton = document.getElementById(
+    "correo-folder-picker-up"
+  );
+
+  const saveButton = document.getElementById(
+    "correo-folder-picker-save"
+  );
+
+  const fileValue = document.getElementById(
+    "correo-folder-picker-file"
+  );
+
+  const pathValue = document.getElementById(
+    "correo-folder-picker-path"
+  );
+
+  const statusBox = document.getElementById(
+    "correo-folder-picker-status"
+  );
+
+  const loading = document.getElementById(
+    "correo-folder-picker-loading"
+  );
+
+  const list = document.getElementById(
+    "correo-folder-picker-list"
+  );
+
+  const csrfInput = document.querySelector(
+    "#correo-csrf-form input[name=csrfmiddlewaretoken]"
+  );
+
+  const sendToast = document.getElementById(
+    "correo-send-toast"
+  );
+
+  let currentPath = "";
+  let parentPath = "";
+  let activeAttachment = null;
+  let toastTimer = null;
+
+  function showToast(
+    message,
+    type
+  ) {
+    if (!sendToast) {
+      return;
+    }
+
+    if (toastTimer) {
+      window.clearTimeout(
+        toastTimer
+      );
+    }
+
+    sendToast.className = (
+      "correo-send-toast alert alert-"
+      + type
+    );
+
+    sendToast.textContent = message;
+    sendToast.hidden = false;
+
+    toastTimer = window.setTimeout(
+      function () {
+        sendToast.hidden = true;
+        sendToast.textContent = "";
+      },
+      7000
+    );
+  }
+
+  function setError(message) {
+    statusBox.textContent = message;
+    statusBox.hidden = false;
+  }
+
+  function clearError() {
+    statusBox.textContent = "";
+    statusBox.hidden = true;
+  }
+
+  function closePicker() {
+    picker.hidden = true;
+    activeAttachment = null;
+    list.replaceChildren();
+    clearError();
+  }
+
+  function renderFolders(folders) {
+    list.replaceChildren();
+
+    if (!folders || folders.length === 0) {
+      const empty = document.createElement(
+        "div"
+      );
+
+      empty.className = (
+        "correo-folder-picker-empty"
+      );
+
+      empty.textContent = (
+        "Esta carpeta no contiene subcarpetas."
+      );
+
+      list.appendChild(empty);
+      return;
+    }
+
+    folders.forEach(function (folder) {
+      const button = document.createElement(
+        "button"
+      );
+
+      const icon = document.createElement(
+        "i"
+      );
+
+      const label = document.createElement(
+        "span"
+      );
+
+      button.type = "button";
+
+      button.className = (
+        "correo-folder-picker-item"
+      );
+
+      icon.className = (
+        "bi bi-folder2 text-warning"
+      );
+
+      label.className = (
+        "text-break"
+      );
+
+      label.textContent = folder.name;
+
+      button.appendChild(icon);
+      button.appendChild(label);
+
+      button.addEventListener(
+        "click",
+        function () {
+          loadFolders(
+            folder.path
+          );
+        }
+      );
+
+      list.appendChild(button);
+    });
+  }
+
+  async function loadFolders(path) {
+    clearError();
+
+    list.hidden = true;
+    loading.hidden = false;
+    saveButton.disabled = true;
+    upButton.disabled = true;
+
+    const url = new URL(
+      picker.dataset.foldersUrl,
+      window.location.origin
+    );
+
+    if (path) {
+      url.searchParams.set(
+        "path",
+        path
+      );
+    }
+
+    try {
+      const response = await fetch(
+        url.toString(),
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": (
+              "XMLHttpRequest"
+            )
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data.error
+          || "No se pudieron cargar las carpetas."
+        );
+      }
+
+      currentPath = (
+        data.current_path || ""
+      );
+
+      parentPath = (
+        data.parent_path || ""
+      );
+
+      pathValue.textContent = (
+        currentPath
+        || "Archivos"
+      );
+
+      upButton.disabled = !currentPath;
+
+      renderFolders(
+        data.folders
+      );
+
+      list.hidden = false;
+      saveButton.disabled = false;
+
+    } catch (error) {
+      setError(
+        error.message
+        || "No se pudieron cargar las carpetas."
+      );
+
+    } finally {
+      loading.hidden = true;
+    }
+  }
+
+  window.INTASA_CORREO_OPEN_FOLDER_PICKER = (
+    function (attachment) {
+      activeAttachment = attachment;
+
+      fileValue.textContent = (
+        attachment.nombre
+        || "Adjunto"
+      );
+
+      picker.hidden = false;
+
+      loadFolders("");
+    }
+  );
+
+  closeButton.addEventListener(
+    "click",
+    closePicker
+  );
+
+  picker.addEventListener(
+    "click",
+    function (event) {
+      if (event.target === picker) {
+        closePicker();
+      }
+    }
+  );
+
+  upButton.addEventListener(
+    "click",
+    function () {
+      loadFolders(
+        parentPath
+      );
+    }
+  );
+
+  saveButton.addEventListener(
+    "click",
+    async function () {
+      if (
+        !activeAttachment
+        || !activeAttachment.save_url
+      ) {
+        return;
+      }
+
+      clearError();
+      saveButton.disabled = true;
+
+      const originalHtml = (
+        saveButton.innerHTML
+      );
+
+      saveButton.innerHTML = (
+        '<span class="spinner-border '
+        + 'spinner-border-sm me-1" '
+        + 'aria-hidden="true"></span>'
+        + "Guardando…"
+      );
+
+      const body = new FormData();
+
+      body.set(
+        "path",
+        currentPath
+      );
+
+      try {
+        const response = await fetch(
+          activeAttachment.save_url,
+          {
+            method: "POST",
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: {
+              "X-CSRFToken": (
+                csrfInput
+                  ? csrfInput.value
+                  : ""
+              ),
+              "X-Requested-With": (
+                "XMLHttpRequest"
+              )
+            },
+            body: body
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(
+            data.error
+            || "No se pudo guardar el adjunto."
+          );
+        }
+
+        const message = (
+          data.warning
+          || (
+            "«"
+            + data.nombre
+            + "» se guardó en Archivos INTASA."
+          )
+        );
+
+        closePicker();
+
+        showToast(
+          message,
+          data.warning
+            ? "warning"
+            : "success"
+        );
+
+      } catch (error) {
+        setError(
+          error.message
+          || "No se pudo guardar el adjunto."
+        );
+
+      } finally {
+        saveButton.disabled = false;
+        saveButton.innerHTML = (
+          originalHtml
+        );
+      }
+    }
+  );
+
+  document.addEventListener(
+    "keydown",
+    function (event) {
+      if (
+        event.key === "Escape"
+        && !picker.hidden
+      ) {
+        closePicker();
+      }
+    }
+  );
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById(
+    "correo-compose-form"
+  );
+
+  const composer = document.getElementById(
+    "correo-compose"
+  );
+
+  const input = document.getElementById(
+    "correo-compose-attachments"
+  );
+
+  const summary = document.getElementById(
+    "correo-compose-attachments-summary"
+  );
+
+  const list = document.getElementById(
+    "correo-compose-attachments-list"
+  );
+
+  const statusBox = document.getElementById(
+    "correo-compose-status"
+  );
+
+  if (
+    !form
+    || !composer
+    || !input
+    || !summary
+    || !list
+  ) {
+    return;
+  }
+
+  const maxFiles = 10;
+  const maxBytes = 12 * 1024 * 1024;
+
+  function formatSize(bytes) {
+    if (bytes < 1024) {
+      return bytes + " B";
+    }
+
+    if (bytes < 1024 * 1024) {
+      return (
+        (bytes / 1024).toFixed(1)
+        + " KB"
+      );
+    }
+
+    return (
+      (
+        bytes
+        / (1024 * 1024)
+      ).toFixed(1)
+      + " MB"
+    );
+  }
+
+  function clearAttachments() {
+    input.value = "";
+    list.replaceChildren();
+    list.hidden = true;
+
+    summary.textContent = (
+      "Máximo 10 archivos y 12 MB en total."
+    );
+  }
+
+  function selectedTotal() {
+    return Array.from(
+      input.files || []
+    ).reduce(
+      function (total, file) {
+        return total + file.size;
+      },
+      0
+    );
+  }
+
+  function renderAttachments() {
+    const files = Array.from(
+      input.files || []
+    );
+
+    list.replaceChildren();
+
+    if (files.length === 0) {
+      clearAttachments();
+      return;
+    }
+
+    const total = selectedTotal();
+
+    files.forEach(function (file) {
+      const item = document.createElement(
+        "div"
+      );
+
+      item.className = (
+        "text-break mb-1"
+      );
+
+      item.textContent = (
+        "• "
+        + file.name
+        + " · "
+        + formatSize(file.size)
+      );
+
+      list.appendChild(item);
+    });
+
+    list.hidden = false;
+
+    summary.textContent = (
+      files.length
+      + (
+        files.length === 1
+          ? " archivo"
+          : " archivos"
+      )
+      + " · "
+      + formatSize(total)
+    );
+
+    if (
+      files.length > maxFiles
+      || total > maxBytes
+    ) {
+      summary.className = (
+        "small text-danger mt-1 fw-semibold"
+      );
+    } else {
+      summary.className = (
+        "small text-muted mt-1"
+      );
+    }
+  }
+
+  function showValidationError(message) {
+    if (!statusBox) {
+      window.alert(message);
+      return;
+    }
+
+    statusBox.className = (
+      "alert alert-danger small"
+    );
+
+    statusBox.textContent = message;
+    statusBox.hidden = false;
+  }
+
+  input.addEventListener(
+    "change",
+    renderAttachments
+  );
+
+  form.addEventListener(
+    "submit",
+    function (event) {
+      const files = Array.from(
+        input.files || []
+      );
+
+      const total = selectedTotal();
+
+      if (files.length > maxFiles) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        showValidationError(
+          "Solo se pueden adjuntar hasta 10 archivos."
+        );
+
+        return;
+      }
+
+      if (total > maxBytes) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        showValidationError(
+          "Los adjuntos superan el máximo total de 12 MB."
+        );
+      }
+    },
+    true
+  );
+
+  [
+    "correo-new-message",
+    "correo-reply",
+    "correo-reply-all",
+    "correo-forward"
+  ].forEach(function (buttonId) {
+    const button = document.getElementById(
+      buttonId
+    );
+
+    if (button) {
+      button.addEventListener(
+        "click",
+        clearAttachments,
+        true
+      );
+    }
+  });
+
+  const observer = new MutationObserver(
+    function () {
+      if (composer.hidden) {
+        clearAttachments();
+      }
+    }
+  );
+
+  observer.observe(
+    composer,
+    {
+      attributes: true,
+      attributeFilter: [
+        "hidden"
+      ]
+    }
+  );
+});
+</script>
+
+{% endblock %}

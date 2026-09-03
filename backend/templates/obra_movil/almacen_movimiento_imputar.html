@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Imputar movimiento a partida{% endblock %}
+
+{% block content %}
+<!-- OBRA_MOVIL_ALM_UX3_MOVIMIENTOS_IMPUTAR_OK -->
+<!-- OBRA_MOVIL_ALM_UX3_FIX_REVERSE_HOME_OK -->
+<style>
+  .alm3-wrap { max-width: 980px; margin: 0 auto; padding: 24px 14px 60px; }
+  .alm3-card {
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 16px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+    margin-bottom: 14px;
+  }
+  .alm3-card-body { padding: 18px; }
+  .alm3-title { font-size: 1.45rem; font-weight: 800; margin: 0 0 6px; }
+  .alm3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alm3-field label { font-weight: 800; font-size: .82rem; color: #334155; margin-bottom: 5px; }
+  .alm3-field select {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: .95rem;
+  }
+  .alm3-detail {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 7px 12px;
+    font-size: .92rem;
+  }
+  .alm3-detail .k { color: #64748b; font-weight: 800; }
+  .alm3-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .alm3-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    text-decoration: none;
+    font-weight: 700;
+    background: #fff;
+    color: #0f172a;
+  }
+  .alm3-btn-primary { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+  .alm3-warning {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    color: #9a3412;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-top: 12px;
+    font-weight: 700;
+  }
+  @media (max-width: 760px) {
+    .alm3-grid, .alm3-detail { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="alm3-wrap">
+  <a href="{% url 'obra_movil:almacen_movimientos' %}?estado=PENDIENTE" class="alm3-btn mb-2">← Volver a pendientes</a>
+
+  <div class="alm3-card">
+    <div class="alm3-card-body">
+      <h1 class="alm3-title">Imputar movimiento a partida</h1>
+      <p class="text-muted mb-3">Completa la vivienda/unidad y partida. Se actualizará el mismo movimiento y se creará el recurso real en planificación.</p>
+
+      <div class="alm3-detail">
+        <div class="k">Movimiento</div><div>#{{ mov.legacy_id_movimiento|default:mov.pk }}</div>
+        <div class="k">Fecha</div><div>{{ mov.fecha_movimiento|date:"d/m/Y" }} {{ mov.hora_movimiento|default:"" }}</div>
+        <div class="k">Tipo</div><div>{{ mov.tipo_movimiento }}</div>
+        <div class="k">Recurso</div><div>{{ mov.recurso }}</div>
+        <div class="k">Cantidad</div><div>{{ mov.cantidad|floatformat:4 }} {{ mov.unidad }}</div>
+        <div class="k">Almacén</div><div>{{ mov.almacen }}</div>
+        <div class="k">Persona</div><div>{{ mov.empleado }}</div>
+        <div class="k">Estado actual</div><div>{{ mov.ux3_destino_label }}</div>
+      </div>
+
+      <div class="alm3-warning">
+        La entrega a persona quedará imputada a la tarea de planificación correspondiente. No se crea otro movimiento de almacén.
+      </div>
+    </div>
+  </div>
+
+  <div class="alm3-card">
+    <div class="alm3-card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="alm3-grid">
+          <div class="alm3-field">
+            <label for="id_unidad_obra">Vivienda / unidad completa</label>
+            <select name="unidad_obra" id="id_unidad_obra" required>
+              <option value="">Selecciona vivienda/unidad...</option>
+              {% for unidad in unidades %}
+                <option value="{{ unidad.pk }}" {% if selected_unidad == unidad.pk|stringformat:"s" %}selected{% endif %}>{{ unidad.ux3_label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="alm3-field">
+            <label for="id_partida">Partida</label>
+            <select name="partida" id="id_partida" required>
+              <option value="">Selecciona partida...</option>
+              {% for partida in partidas %}
+                <option value="{{ partida.pk }}" {% if selected_partida == partida.pk|stringformat:"s" %}selected{% endif %}>{{ partida.ux3_label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="alm3-actions">
+          <button type="submit" class="alm3-btn alm3-btn-primary">Imputar a partida</button>
+          <a href="{% url 'obra_movil:almacen_movimientos' %}?estado=PENDIENTE" class="alm3-btn">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

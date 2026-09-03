@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva tarea de planificación{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1">Nueva tarea de planificación</h1>
+      <p class="text-secondary mb-0">
+        Selecciona vivienda, planta de planning, capítulo y partida. Las fechas son opcionales.
+      </p>
+    </div>
+    <a href="{{ cancel_url }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {% if obra %}
+    <div class="alert alert-info py-2">
+      <strong>Obra:</strong> {{ obra.codigo }} · {{ obra.nombre }}
+      <span class="text-secondary">· {{ obra.team.name }}</span>
+    </div>
+  {% endif %}
+
+  <form method="post" class="card shadow-sm border-0">
+    {% csrf_token %}
+    {# PLANNING_TASK_FORM_NEXT_V1 #}
+    {% if next_url %}
+      <input
+        type="hidden"
+        name="next"
+        value="{{ next_url }}"
+      >
+    {% endif %}
+
+    {% for hidden in form.hidden_fields %}
+      {{ hidden }}
+    {% endfor %}
+
+    <div class="card-body">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="row g-3">
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold" for="{{ form.unidad_obra.id_for_label }}">
+            Vivienda / unidad <span class="text-danger">*</span>
+          </label>
+          {{ form.unidad_obra }}
+          {% for error in form.unidad_obra.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold" for="{{ form.legacy_planta.id_for_label }}">
+            Planta <span class="text-danger">*</span>
+          </label>
+          {{ form.legacy_planta }}
+          {# UNIDAD_OBRA_PLANTAS_TEMPLATE_V1 #}
+            <div
+              class="form-text"
+              id="plantas_unidad_help"
+            >
+              Selecciona primero una vivienda.
+            </div>
+          {% for error in form.legacy_planta.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-semibold" for="{{ form.capitulo.id_for_label }}">
+            Capítulo <span class="text-danger">*</span>
+          </label>
+          {{ form.capitulo }}
+          {% for error in form.capitulo.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-semibold" for="{{ form.partida.id_for_label }}">
+            Partida <span class="text-danger">*</span>
+          </label>
+
+          <select name="{{ form.partida.html_name }}" id="{{ form.partida.id_for_label }}" class="form-select">
+            <option value="">---------</option>
+            {% for partida in form.fields.partida.queryset %}
+              <option value="{{ partida.pk }}"
+                      data-capitulo="{{ partida.capitulo_id }}"
+                      {% if form.partida.value|stringformat:"s" == partida.pk|stringformat:"s" %}selected{% endif %}>
+                {{ partida.capitulo.codigo }} · {{ partida.codigo }} · {{ partida.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+
+          <div class="form-text">Solo se muestran partidas del capítulo seleccionado.</div>
+          {% for error in form.partida.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label" for="{{ form.inicio_tarea.id_for_label }}">Fecha inicio</label>
+          {{ form.inicio_tarea }}
+          {% for error in form.inicio_tarea.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label" for="{{ form.fin_tarea.id_for_label }}">Fecha fin</label>
+          {{ form.fin_tarea }}
+          {% for error in form.fin_tarea.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label" for="{{ form.dias.id_for_label }}">Días</label>
+          {{ form.dias }}
+          <div class="form-text">Días naturales.</div>
+          {% for error in form.dias.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label" for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+          {{ form.observaciones }}
+          {% for error in form.observaciones.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Guardar tarea</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const capitulo = document.getElementById("id_capitulo");
+  const partida = document.getElementById("id_partida");
+  const inicio = document.getElementById("id_inicio_tarea");
+  const fin = document.getElementById("id_fin_tarea");
+  const dias = document.getElementById("id_dias");
+
+  const unidadObra = document.getElementById("id_unidad_obra");
+  const planta = document.getElementById("id_legacy_planta");
+  const plantasHelp = document.getElementById("plantas_unidad_help");
+  const PLANTAS_POR_UNIDAD = JSON.parse(
+    '{{ form.plantas_por_unidad_json|default:"{}"|escapejs }}'
+  );
+
+  function sincronizarPlantas(){
+    if(!unidadObra || !planta) return;
+
+    const unidadId = unidadObra.value || "";
+    const anterior = planta.value || "";
+    const values = PLANTAS_POR_UNIDAD[unidadId] || [];
+
+    planta.innerHTML = "";
+
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = values.length
+      ? "---------"
+      : (
+          unidadId
+            ? "Sin plantas configuradas"
+            : "---------"
+        );
+
+    planta.appendChild(empty);
+
+    values.forEach(function(value){
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      planta.appendChild(option);
+    });
+
+    if(values.includes(anterior)){
+      planta.value = anterior;
+    }else if(values.length === 1){
+      planta.value = values[0];
+    }else{
+      planta.value = "";
+    }
+
+    planta.disabled =
+      !unidadId || values.length === 0;
+
+    if(plantasHelp){
+      if(!unidadId){
+        plantasHelp.textContent =
+          "Selecciona primero una vivienda.";
+      }else if(!values.length){
+        plantasHelp.textContent =
+          "Esta vivienda no tiene plantas configuradas. " +
+          "Añádelas en Administración → Unidades de obra.";
+      }else{
+        plantasHelp.textContent =
+          "Plantas disponibles para esta vivienda: " +
+          values.join(", ") + ".";
+      }
+    }
+  }
+  function filtrarPartidas(){
+    if(!capitulo || !partida) return;
+
+    const capId = capitulo.value;
+    const selected = partida.value;
+
+    Array.from(partida.options).forEach(function(opt){
+      if(!opt.value){
+        opt.hidden = false;
+        return;
+      }
+      opt.hidden = !!capId && opt.dataset.capitulo !== capId;
+    });
+
+    const actual = partida.options[partida.selectedIndex];
+    if(actual && actual.hidden){
+      partida.value = "";
+    }
+
+    const visibles = Array.from(partida.options).filter(o => o.value && !o.hidden);
+    if(capId && visibles.length === 1 && !selected){
+      partida.value = visibles[0].value;
+    }
+  }
+
+  function calcularDias(){
+    if(!inicio || !fin || !dias || !inicio.value || !fin.value){
+      if(dias) dias.value = "";
+      return;
+    }
+
+    const d1 = new Date(inicio.value + "T00:00:00");
+    const d2 = new Date(fin.value + "T00:00:00");
+
+    if(isNaN(d1) || isNaN(d2) || d2 < d1){
+      dias.value = "";
+      return;
+    }
+
+    dias.value = Math.round((d2 - d1) / 86400000) + 1;
+  }
+
+  if(unidadObra) unidadObra.addEventListener("change", sincronizarPlantas);
+
+  if(capitulo) capitulo.addEventListener("change", filtrarPartidas);
+  if(inicio) inicio.addEventListener("change", calcularDias);
+  if(fin) fin.addEventListener("change", calcularDias);
+
+  sincronizarPlantas();
+  filtrarPartidas();
+  calcularDias();
+})();
+</script>
+{% endblock %}

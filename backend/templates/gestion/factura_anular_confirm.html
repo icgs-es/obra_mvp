@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Anular factura</h1>
+      <div class="text-muted small">
+        Factura {{ factura.cod_factura }} · Nº proveedor {{ factura.num_factura_proveedor }} · {{ factura.proveedor }}
+      </div>
+    </div>
+    <a href="/app/gestion/facturas/{{ factura.id }}/" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {% if blockers %}
+    <div class="alert alert-danger">
+      <strong>No se puede anular esta factura.</strong>
+      Tiene relaciones que deben revisarse primero:
+      <ul class="mb-0 mt-2">
+        {% for b in blockers %}
+          <li>{{ b }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="alert alert-warning">
+      Esta acción no borra la factura ni reutiliza el código interno.
+      La marcará como <strong>ANULADA</strong> y pondrá los importes a cero, conservando los importes originales en auditoría interna.
+    </div>
+
+    <form method="post" class="card border-0 shadow-sm">
+      {% csrf_token %}
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Motivo de anulación</label>
+          <textarea name="motivo_anulacion" rows="3" class="form-control" required>Factura duplicada / alta errónea</textarea>
+        </div>
+
+        <table class="table table-sm">
+          <tr><th>Código</th><td>{{ factura.cod_factura }}</td></tr>
+          <tr><th>Nº proveedor</th><td>{{ factura.num_factura_proveedor }}</td></tr>
+          <tr><th>Proveedor</th><td>{{ factura.proveedor }}</td></tr>
+          <tr><th>Empresa</th><td>{{ factura.team }}</td></tr>
+          <tr><th>Total actual</th><td>{{ factura.importe_factura }}</td></tr>
+        </table>
+      </div>
+
+      <div class="card-footer bg-white d-flex justify-content-between">
+        <a href="/app/gestion/facturas/{{ factura.id }}/" class="btn btn-outline-secondary">Cancelar</a>
+        <button class="btn btn-danger">Confirmar anulación</button>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

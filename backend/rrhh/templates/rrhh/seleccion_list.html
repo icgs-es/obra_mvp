@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+{% block title %}RRHH · Selección de personal{% endblock %}
+
+{% block content %}
+<style>
+  /* RRHH_CV_FAST_LOAD_DUPLICATE_DELETE_V1 */
+  .rrhh-selection-shell {
+    max-width: 1900px;
+    margin: 0 auto;
+  }
+
+  .rrhh-compact-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: .83rem;
+    line-height: 1.18;
+  }
+
+  .rrhh-compact-table th {
+    white-space: nowrap;
+    padding: .42rem .45rem;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+  }
+
+  .rrhh-compact-table td {
+    padding: .34rem .45rem;
+    vertical-align: middle;
+  }
+
+  .rrhh-candidate-name {
+    display: block;
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+  }
+
+  .rrhh-secondary-line {
+    display: block;
+    max-width: 300px;
+    color: var(--bs-secondary-color);
+    font-size: .76rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: .12rem;
+  }
+
+  .rrhh-actions {
+    white-space: nowrap;
+  }
+
+  .rrhh-actions .btn {
+    padding: .2rem .38rem;
+  }
+
+  /* RRHH_LIST_NO_PROCESS_COLUMN_V1 */
+  .rrhh-table-fit {
+    width: 100%;
+    overflow: visible;
+  }
+
+  /* RRHH_FILTERED_PRINT_V1 */
+  /* El botón usa el mismo formulario GET y sus filtros activos. */
+
+  /* RRHH_ORIGIN_COLUMN_V1 */
+  .rrhh-compact-table th:nth-child(1),
+  .rrhh-compact-table td:nth-child(1) {
+    width: 24%;
+  }
+
+  .rrhh-compact-table th:nth-child(2),
+  .rrhh-compact-table td:nth-child(2) {
+    width: 21%;
+  }
+
+  .rrhh-compact-table th:nth-child(3),
+  .rrhh-compact-table td:nth-child(3) {
+    width: 8%;
+  }
+
+  .rrhh-compact-table th:nth-child(4),
+  .rrhh-compact-table td:nth-child(4) {
+    width: 8%;
+  }
+
+  .rrhh-compact-table th:nth-child(5),
+  .rrhh-compact-table td:nth-child(5) {
+    width: 5%;
+  }
+
+  .rrhh-compact-table th:nth-child(6),
+  .rrhh-compact-table td:nth-child(6) {
+    width: 8%;
+  }
+
+  .rrhh-compact-table th:nth-child(7),
+  .rrhh-compact-table td:nth-child(7) {
+    width: 10%;
+  }
+
+  .rrhh-compact-table th:nth-child(8),
+  .rrhh-compact-table td:nth-child(8) {
+    width: 6%;
+  }
+
+  .rrhh-compact-table th:nth-child(9),
+  .rrhh-compact-table td:nth-child(9) {
+    width: 108px;
+    min-width: 108px;
+  }
+
+  .rrhh-compact-table td {
+    overflow: hidden;
+  }
+
+  .rrhh-contact-line,
+  .rrhh-planning-line,
+  .rrhh-responsible-line {
+    display: block;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rrhh-actions {
+    overflow: visible !important;
+  }
+
+  .rrhh-origin-badge {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    white-space: nowrap;
+    font-size: .72rem;
+    font-weight: 500;
+  }
+
+  /* RRHH_DISCARDED_ROW_VISUAL_V1 */
+  .rrhh-row-discarded {
+    --bs-table-bg: #f1f3f5;
+    --bs-table-hover-bg: #e9ecef;
+    --bs-table-color: #495057;
+  }
+
+  .rrhh-row-discarded > td:first-child {
+    box-shadow: inset 3px 0 0 #adb5bd;
+  }
+
+  .rrhh-row-discarded .rrhh-candidate-name {
+    color: #6c757d !important;
+  }
+
+  .rrhh-process-chip {
+    display: inline-flex;
+    align-items: stretch;
+  }
+
+  .rrhh-process-chip > a:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .rrhh-process-chip > a:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+</style>
+
+<div class="container-fluid py-3 px-3 px-xl-4 rrhh-selection-shell">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <h1 class="h3 mb-1">RRHH · Selección de personal</h1>
+      <p class="text-muted mb-0">
+        Procesos, currículos, valoraciones, llamadas y entrevistas.
+      </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a
+        href="{% url 'rrhh:proceso_seleccion_create' %}"
+        class="btn btn-outline-primary"
+      >
+        <i class="bi bi-briefcase"></i> Nuevo proceso
+      </a>
+      <a
+        href="{% url 'rrhh:candidatura_create' %}"
+        class="btn btn-outline-primary"
+      >
+        <i class="bi bi-person-plus"></i> Alta manual
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body py-2 px-3">
+          <div class="text-muted small">Candidaturas</div>
+          <div class="h4 mb-0">{{ metricas.total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body py-2 px-3">
+          <div class="text-muted small">Preseleccionadas</div>
+          <div class="h4 mb-0">{{ metricas.preseleccionados }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body py-2 px-3">
+          <div class="text-muted small">En entrevista</div>
+          <div class="h4 mb-0">{{ metricas.entrevistas }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body py-2 px-3">
+          <div class="text-muted small">Seleccionadas</div>
+          <div class="h4 mb-0">{{ metricas.seleccionados }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" class="card mb-3">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">Buscar</label>
+          <input
+            name="q"
+            value="{{ filtros.q }}"
+            class="form-control form-control-sm"
+            placeholder="Nombre, perfil, ciudad, correo..."
+          >
+        </div>
+        <div class="col-lg-2">
+          <label class="form-label small mb-1">Empresa</label>
+          <select name="team" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            {% for team in teams %}
+              <option
+                value="{{ team.id }}"
+                {% if selected_team_id == team.id|stringformat:"s" %}selected{% endif %}
+              >
+                {{ team.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-2">
+          <label class="form-label small mb-1">Proceso</label>
+          <select name="proceso" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for proceso in procesos %}
+              <option
+                value="{{ proceso.id }}"
+                {% if filtros.proceso == proceso.id|stringformat:"s" %}selected{% endif %}
+              >
+                {{ proceso.titulo }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-2">
+          <label class="form-label small mb-1">Estado</label>
+          <select name="estado" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for value, label in estado_choices %}
+              <option
+                value="{{ value }}"
+                {% if filtros.estado == value %}selected{% endif %}
+              >
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-2">
+          <label class="form-label small mb-1">Origen</label>
+          <select name="origen" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for value, label in origen_choices %}
+              <option
+                value="{{ value }}"
+                {% if filtros.origen == value %}selected{% endif %}
+              >
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-1">
+          <label class="form-label small mb-1">Nota</label>
+          <select name="puntuacion" class="form-select form-select-sm">
+            <option value="">—</option>
+            {% for value in "12345" %}
+              <option
+                value="{{ value }}"
+                {% if filtros.puntuacion == value %}selected{% endif %}
+              >
+                {{ value }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 d-flex gap-2 mt-2">
+          <button class="btn btn-sm btn-primary">Filtrar</button>
+          <a
+            href="{% url 'rrhh:seleccion_personal_list' %}"
+            class="btn btn-sm btn-outline-secondary"
+          >
+            Limpiar
+          </a>
+          <button
+            type="submit"
+            formaction="{% url 'rrhh:seleccion_personal_print' %}"
+            formtarget="_blank"
+            class="btn btn-sm btn-outline-danger"
+          >
+            <i class="bi bi-printer"></i>
+            Imprimir PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="card mb-3">
+    <div class="card-header bg-white py-2">
+      <strong>Procesos de selección</strong>
+    </div>
+    <div class="card-body py-2 d-flex flex-wrap gap-2">
+      {% for proceso in procesos %}
+        <div class="rrhh-process-chip">
+          <a
+            href="{% url 'rrhh:proceso_seleccion_detail' proceso.pk %}"
+            class="btn btn-sm btn-outline-secondary"
+          >
+            <strong>{{ proceso.titulo }}</strong>
+            · {{ proceso.team.name }}
+            <span class="badge bg-light text-dark border">
+              {{ proceso.total_candidaturas }}
+            </span>
+          </a>
+          <a
+            href="{% url 'rrhh:candidatura_desde_cv' proceso.pk %}"
+            class="btn btn-sm btn-primary"
+            title="Carga rápida de currículos"
+          >
+            <i class="bi bi-file-earmark-plus"></i> CV
+          </a>
+        </div>
+      {% empty %}
+        <span class="text-muted">No hay procesos disponibles.</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="rrhh-table-fit">
+      <table class="table table-hover table-sm mb-0 rrhh-compact-table">
+        <thead>
+          <tr>
+            <th>Candidato</th>
+            <th>Contacto</th>
+            <th>Solicitud</th>
+            <th>Origen</th>
+            <th>Nota</th>
+            <th>Estado</th>
+            <th>Planificación</th>
+            <th>Responsable</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for candidatura in candidaturas %}
+            <tr{% if candidatura.estado == 'DESCARTADO' %} class="rrhh-row-discarded"{% endif %}>
+              <td>
+                <a
+                  href="{% url 'rrhh:candidatura_detail' candidatura.pk %}"
+                  class="rrhh-candidate-name text-decoration-none"
+                  title="{{ candidatura.candidato.nombre_completo }}"
+                >
+                  {{ candidatura.candidato.nombre_completo }}
+                </a>
+                <span class="rrhh-secondary-line">
+                  {{ candidatura.candidato.perfil_profesional|default:"Sin perfil" }}
+                  {% if candidatura.candidato.ciudad %}
+                    · {{ candidatura.candidato.ciudad }}
+                  {% endif %}
+                  {% if procesos|length > 1 %}
+                    · {{ candidatura.proceso.titulo }}
+                  {% endif %}
+                </span>
+              </td>
+              <td>
+                <span
+                  class="rrhh-contact-line"
+                  title="{{ candidatura.candidato.email|default:'—' }}"
+                >
+                  {{ candidatura.candidato.email|default:"—" }}
+                </span>
+                <span
+                  class="rrhh-secondary-line"
+                  title="{{ candidatura.candidato.telefono|default:'—' }}"
+                >
+                  {{ candidatura.candidato.telefono|default:"—" }}
+                </span>
+              </td>
+              <td class="text-nowrap">
+                {{ candidatura.fecha_solicitud|date:"d/m/Y" }}
+              </td>
+              <td>
+                <span
+                  class="badge bg-light text-dark border rrhh-origin-badge"
+                  title="{{ candidatura.get_origen_display }}"
+                >
+                  {{ candidatura.get_origen_display }}
+                </span>
+              </td>
+              <td class="text-nowrap">
+                {% if candidatura.puntuacion %}
+                  <strong>{{ candidatura.puntuacion }}/5</strong>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="text-nowrap">
+                <span class="badge {% if candidatura.estado == 'SELECCIONADO' or candidatura.estado == 'CONTRATADO' %}bg-success{% elif candidatura.estado == 'DESCARTADO' %}bg-secondary{% elif candidatura.estado == 'ENTREVISTA_PROGRAMADA' %}bg-warning text-dark{% else %}bg-primary{% endif %}">
+                  {{ candidatura.get_estado_display }}
+                </span>
+              </td>
+              <td>
+                <span
+                  class="rrhh-planning-line"
+                  title="Próximo contacto"
+                >
+                  C:
+                  {{ candidatura.fecha_proximo_contacto|date:"d/m H:i"|default:"—" }}
+                </span>
+                <span
+                  class="rrhh-secondary-line"
+                  title="Entrevista"
+                >
+                  E:
+                  {{ candidatura.fecha_entrevista|date:"d/m H:i"|default:"—" }}
+                </span>
+              </td>
+              <td>
+                <span
+                  class="rrhh-responsible-line"
+                  title="{{ candidatura.responsable|default:'—' }}"
+                >
+                  {{ candidatura.responsable|default:"—" }}
+                </span>
+              </td>
+              <td class="text-end rrhh-actions">
+                <a
+                  href="{% url 'rrhh:candidatura_detail' candidatura.pk %}"
+                  class="btn btn-sm btn-outline-primary"
+                  title="Abrir candidatura"
+                >
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if candidatura.cv_disponible %}
+                  <a
+                    href="{% url 'rrhh:candidatura_cv' candidatura.pk %}"
+                    target="_blank"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Ver currículo"
+                  >
+                    <i class="bi bi-file-earmark-pdf"></i>
+                  </a>
+                {% endif %}
+                {% if request.user.is_superuser or perms.rrhh.delete_candidatura %}
+                  <a
+                    href="{% url 'rrhh:candidatura_delete' candidatura.pk %}"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Eliminar candidatura"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                No hay candidaturas con estos filtros.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div class="card-footer bg-white py-2">
+        <nav aria-label="Paginación de candidaturas">
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a
+                  class="page-link"
+                  href="?page={{ page_obj.previous_page_number }}&q={{ filtros.q|urlencode }}&proceso={{ filtros.proceso }}&estado={{ filtros.estado }}&origen={{ filtros.origen }}&puntuacion={{ filtros.puntuacion }}"
+                >
+                  Anterior
+                </a>
+              </li>
+            {% endif %}
+            <li class="page-item disabled">
+              <span class="page-link">
+                Página {{ page_obj.number }} de
+                {{ page_obj.paginator.num_pages }}
+              </span>
+            </li>
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a
+                  class="page-link"
+                  href="?page={{ page_obj.next_page_number }}&q={{ filtros.q|urlencode }}&proceso={{ filtros.proceso }}&estado={{ filtros.estado }}&origen={{ filtros.origen }}&puntuacion={{ filtros.puntuacion }}"
+                >
+                  Siguiente
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

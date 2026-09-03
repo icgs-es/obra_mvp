@@ -35,6 +35,7 @@
             {% endif %}
           {% endif %}
           <a href="{% url 'planificacion_obra:asignacion_update' asignacion.pk %}" class="btn btn-primary btn-sm">✎ Editar</a>
+          <a href="{% url 'planificacion_obra:asignacion_repetir' asignacion.pk %}" class="btn btn-outline-primary btn-sm">🔁 Repetir</a>
           <a href="{% url 'planificacion_obra:asignacion_delete' asignacion.pk %}" class="btn btn-outline-danger btn-sm">🗑 Eliminar</a>
         </div>
       </div>

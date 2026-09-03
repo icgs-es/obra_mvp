@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}{% if comparativa %}Editar comparativa{% else %}Nueva comparativa{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width: 900px;">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+          {% if comparativa %}
+            Editar comparativa
+          {% else %}
+            Nueva comparativa
+          {% endif %}
+        </h1>
+      <div class="text-muted small">
+        {% if comparativa %}
+          Actualiza los datos y el alcance del expediente.
+        {% else %}
+          Define primero el alcance que deberán cumplir las ofertas.
+        {% endif %}
+      </div>
+    </div>
+
+    <a href="{% if comparativa %}{% url 'comparativas:detail' comparativa.uuid %}{% else %}{% url 'comparativas:list' %}{% endif %}"
+       class="btn btn-outline-secondary btn-sm">
+      Volver
+    </a>
+  </div>
+
+  {% if sin_team %}
+    <div class="alert alert-warning">
+      No tienes empresas disponibles.
+    </div>
+  {% else %}
+  <form method="post" class="card">
+    {% csrf_token %}
+
+    <div class="card-body">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">
+            {{ form.team.label }}
+          </label>
+          {{ form.team }}
+          {{ form.team.errors }}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">
+            {{ form.obra_ref.label }}
+          </label>
+          {{ form.obra_ref }}
+          {{ form.obra_ref.errors }}
+        </div>
+
+        <div class="col-md-8">
+          <label class="form-label">
+            {{ form.titulo.label }}
+          </label>
+          {{ form.titulo }}
+          {{ form.titulo.errors }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">
+            {{ form.categoria.label }}
+          </label>
+          {{ form.categoria }}
+          {{ form.categoria.errors }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">
+            {{ form.estado.label }}
+          </label>
+          {{ form.estado }}
+          {{ form.estado.errors }}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">
+            {{ form.descripcion.label }}
+          </label>
+          {{ form.descripcion }}
+          {{ form.descripcion.errors }}
+          <div class="form-text">
+            Ejemplo: 3 cocinas, 3 baños completos,
+            1 aseo con ducha, contadores, redes generales...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white text-end">
+      <button class="btn btn-primary">
+        {% if comparativa %}Guardar cambios{% else %}Crear comparativa{% endif %}
+      </button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+<script>
+// COMPARATIVAS_EDITAR_EXPEDIENTE_V1
+// COMPARATIVAS_MULTIEMPRESA_OBRA_SELECTOR_V1
+document.addEventListener("DOMContentLoaded", function () {
+  const teamSelect = document.getElementById("id_team");
+  const obraSelect = document.getElementById("id_obra_ref");
+
+  if (!teamSelect || !obraSelect) {
+    return;
+  }
+
+  const emptyOption = obraSelect.querySelector(
+    'option[value=""]'
+  );
+
+  function filterObras(clearSelection) {
+    const teamId = String(
+      teamSelect.value || ""
+    );
+
+    if (clearSelection) {
+      obraSelect.value = "";
+    }
+
+    if (emptyOption) {
+      emptyOption.textContent = teamId
+        ? "Sin obra vinculada"
+        : "Selecciona primero una empresa";
+    }
+
+    Array.from(
+      obraSelect.options
+    ).forEach(function (option) {
+      if (!option.value) {
+        option.hidden = false;
+        option.disabled = false;
+        return;
+      }
+
+      const optionTeam = String(
+        option.dataset.teamId || ""
+      );
+
+      const visible = Boolean(
+        teamId && optionTeam === teamId
+      );
+
+      option.hidden = !visible;
+      option.disabled = !visible;
+    });
+
+    if (!teamId) {
+      obraSelect.value = "";
+      obraSelect.disabled = true;
+      return;
+    }
+
+    obraSelect.disabled = false;
+
+    const selectedOption = (
+      obraSelect.options[
+        obraSelect.selectedIndex
+      ]
+    );
+
+    if (
+      selectedOption &&
+      selectedOption.value &&
+      String(
+        selectedOption.dataset.teamId || ""
+      ) !== teamId
+    ) {
+      obraSelect.value = "";
+    }
+  }
+
+  teamSelect.addEventListener(
+    "change",
+    function () {
+      filterObras(true);
+    }
+  );
+
+  filterObras(false);
+});
+</script>
+
+{% endblock %}

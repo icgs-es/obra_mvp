@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Comparativas de presupuestos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Comparativas de presupuestos</h1>
+      <div class="text-muted small">
+        Evaluación de ofertas, candidatos, versiones y documentación.
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      {% if modo_todas %}
+        <span class="badge bg-primary">TODAS LAS EMPRESAS</span>
+      {% elif team %}
+        <span class="badge bg-primary">{{ team.name }}</span>
+      {% endif %}
+
+      <a href="/app/gestion/"
+         class="btn btn-outline-secondary btn-sm">
+        Gestión
+      </a>
+
+      <a href="{% url 'comparativas:create' %}"
+         class="btn btn-primary btn-sm">
+        + Nueva comparativa
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if sin_team %}
+    <div class="alert alert-warning">
+      No tienes empresa activa asignada.
+    </div>
+  {% else %}
+
+  <form method="get" class="card card-body mb-3">
+    <div class="row g-2">
+      <div class="col-md-7">
+        <input type="search"
+               name="q"
+               value="{{ q }}"
+               class="form-control"
+               placeholder="Buscar comparativa, obra o especialidad">
+      </div>
+
+      <div class="col-md-3">
+        <select name="estado" class="form-select">
+          <option value="">Todos los estados</option>
+          {% for value,label in estados %}
+            <option value="{{ value }}"
+              {% if estado == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-outline-primary">
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Comparativa</th>
+            <th>Empresa</th>
+            <th>Obra / referencia</th>
+            <th>Estado</th>
+            <th class="text-center">Ofertantes</th>
+            <th class="text-center">Versiones</th>
+            <th>Actualizada</th>
+            <th></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for c in comparativas %}
+          <tr>
+            <td>
+              <a class="fw-semibold text-decoration-none"
+                 href="{% url 'comparativas:detail' c.uuid %}">
+                {{ c.titulo }}
+              </a>
+              {% if c.categoria %}
+                <div class="text-muted small">
+                  {{ c.categoria }}
+                </div>
+              {% endif %}
+            </td>
+
+            <td>{{ c.team.name }}</td>
+
+            <td>
+              {% if c.referencia_nombre %}
+                <span class="fw-semibold">
+                  {{ c.referencia_codigo }}
+                </span>
+                <div class="small text-muted">
+                  {{ c.referencia_nombre }}
+                </div>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if c.estado == "ADJUDICADA" %}
+                <span class="badge bg-success">
+                  {{ c.get_estado_display }}
+                </span>
+              {% elif c.estado == "PENDIENTE_DECISION" %}
+                <span class="badge bg-warning text-dark">
+                  {{ c.get_estado_display }}
+                </span>
+              {% else %}
+                <span class="badge bg-secondary">
+                  {{ c.get_estado_display }}
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="text-center">
+              {{ c.ofertantes_total }}
+            </td>
+
+            <td class="text-center">
+              {{ c.ofertas_total }}
+            </td>
+
+            <td>
+              {{ c.updated_at|date:"d/m/Y H:i" }}
+            </td>
+
+            <td class="text-end">
+              <a href="{% url 'comparativas:detail' c.uuid %}"
+                 class="btn btn-outline-primary btn-sm">
+                Abrir
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              Todavía no existen comparativas.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

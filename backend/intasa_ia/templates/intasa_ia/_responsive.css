@@ -1,0 +1,322 @@
+/* PORTAL_RESPONSIVE_GERENCIA_V1_IA
+ * Scope all layout rules to INTASA IA. Print and other modules are untouched.
+ */
+
+.ia-shell,
+.ia-shell * {
+  box-sizing: border-box;
+}
+
+.ia-message,
+.ia-web-sources,
+.ia-web-source-link {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ia-messages {
+  min-height: 420px;
+  max-height: 620px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ia-touch-target {
+  min-height: 44px;
+}
+
+.ia-selected-attachments,
+.ia-message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.ia-processing-status {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ia-processing-status form {
+  margin: 0;
+}
+
+.ia-selected-file,
+.ia-attachment-card {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: .5rem;
+  border: 1px solid rgba(108, 117, 125, .35);
+  border-radius: .5rem;
+  background: rgba(255, 255, 255, .85);
+  color: #212529;
+}
+
+.ia-attachment-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ia-conversation-item {
+  padding: .4rem .5rem .4rem 1rem;
+}
+
+.ia-conversation-item .ia-conversation-link {
+  color: inherit;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.ia-delete-conversation-button {
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+  color: #6c757d;
+}
+
+.ia-conversation-item.active .ia-delete-conversation-button {
+  color: #fff;
+}
+
+.ia-delete-conversation-button:hover,
+.ia-delete-conversation-button:focus-visible {
+  color: #b02a37;
+  background: rgba(220, 53, 69, .12);
+}
+
+.ia-delete-modal-actions form {
+  margin: 0;
+}
+
+@media screen and (max-width: 767.98px) {
+  .ia-shell {
+    min-height: auto;
+    padding-top: .25rem !important;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .ia-page-header {
+    gap: .5rem !important;
+    margin-bottom: .75rem !important;
+  }
+
+  .ia-page-heading,
+  .ia-privacy-status {
+    width: 100%;
+  }
+
+  .ia-page-title {
+    font-size: 1.45rem;
+  }
+
+  .ia-page-intro {
+    font-size: .9rem;
+    line-height: 1.35;
+  }
+
+  .ia-privacy-status {
+    text-align: left !important;
+  }
+
+  .ia-privacy-status .small {
+    display: inline;
+    margin-left: .25rem;
+  }
+
+  .ia-provider-status {
+    margin-bottom: .75rem;
+    padding: .65rem .75rem;
+    font-size: .82rem;
+    line-height: 1.35;
+  }
+
+  .ia-provider-status strong,
+  .ia-provider-status .small {
+    display: block;
+  }
+
+  .ia-conversations-offcanvas {
+    width: min(88vw, 360px) !important;
+  }
+
+  .ia-conversations-offcanvas .offcanvas-body {
+    overflow-y: auto;
+  }
+
+  .ia-sidebar {
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none !important;
+  }
+
+  .ia-layout {
+    --bs-gutter-x: 0;
+  }
+
+  .ia-hero .card-body {
+    padding: 1rem !important;
+  }
+
+  .ia-hero h2 {
+    margin-bottom: .4rem;
+    font-size: 1.55rem;
+    line-height: 1.15;
+  }
+
+  .ia-hero .lead {
+    font-size: .95rem;
+    line-height: 1.4;
+  }
+
+  .ia-hero-privacy {
+    display: none;
+  }
+
+  .ia-suggestions-heading {
+    font-size: 1rem;
+  }
+
+  .ia-suggestion-column .card-body {
+    padding: .8rem;
+  }
+
+  .ia-suggestion-toggle {
+    min-height: 44px;
+  }
+
+  .ia-suggestion-toggle[aria-expanded="true"] .ia-collapse-indicator,
+  .ia-future-heading [aria-expanded="true"] .bi-chevron-down {
+    transform: rotate(180deg);
+  }
+
+  .ia-collapse-indicator,
+  .ia-future-heading .bi-chevron-down {
+    transition: transform .15s ease;
+  }
+
+  .ia-suggestion-description {
+    margin-top: .6rem;
+  }
+
+  .ia-prompt {
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .ia-future-heading .badge {
+    white-space: normal;
+    text-align: left;
+  }
+
+  .ia-messages {
+    min-height: min(48dvh, 360px);
+    max-height: 58dvh;
+    padding: .75rem;
+  }
+
+  .ia-message {
+    width: 100%;
+    max-width: 96%;
+    padding: .75rem !important;
+  }
+
+  .ia-web-sources ul {
+    padding-left: 1rem !important;
+  }
+
+  .ia-composer {
+    position: static;
+    padding: .75rem;
+  }
+
+  .ia-composer textarea {
+    min-height: 92px;
+  }
+
+  .ia-send-button {
+    width: 100%;
+  }
+
+  .ia-selected-attachments,
+  .ia-message-attachments,
+  .ia-processing-status,
+  .ia-selected-file,
+  .ia-attachment-card {
+    width: 100%;
+  }
+
+  .ia-selected-file,
+  .ia-attachment-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ia-sharing-form > div,
+  .ia-shared-user,
+  .ia-shared-user > div,
+  .ia-shared-user form,
+  .ia-shared-user button {
+    width: 100%;
+  }
+
+  .ia-shared-user {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: .5rem;
+  }
+
+  .ia-delete-modal-actions,
+  .ia-delete-modal-actions form,
+  .ia-delete-modal-actions button {
+    width: 100%;
+  }
+}
+
+@media screen and (min-width: 768px) and (max-width: 1199.98px) {
+  .ia-shell {
+    padding-top: 1rem !important;
+  }
+
+  .ia-layout {
+    --bs-gutter-x: 1rem;
+  }
+
+  .ia-sidebar {
+    max-height: calc(100vh - 125px);
+  }
+
+  .ia-hero .card-body {
+    padding: 1.5rem !important;
+  }
+
+  .ia-hero h2 {
+    font-size: 2rem;
+  }
+
+  .ia-message {
+    max-width: 92%;
+  }
+
+  .ia-messages {
+    min-height: 380px;
+    max-height: 58vh;
+  }
+
+  .ia-suggestion-column {
+    width: 50%;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .ia-message {
+    max-width: 84%;
+  }
+}

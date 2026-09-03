@@ -9,7 +9,11 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+    'apps.gestion.apps.GestionConfig',
+    # COMPARATIVAS_PRESUPUESTOS_APP_V1
+    "comparativas.apps.ComparativasConfig",
     'planificacion_obra.apps.PlanificacionObraConfig',
+    'obra_movil.apps.ObraMovilConfig',
 
     # Django apps
     "django.contrib.admin",
@@ -26,6 +30,10 @@ INSTALLED_APPS = [
     "apps.frontend",
     "apps.core",
     "portal",
+    "actividad.apps.ActividadConfig",
+    "ayuda.apps.AyudaConfig",
+    "intasa_ia.apps.IntasaIAConfig",
+    "correo.apps.CorreoConfig",
     "agenda",
     "tareas",
     "usuarios",
@@ -42,6 +50,12 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "portal.rbac_middleware.PortalModuleAccessMiddleware",
+    "apps.gestion.middleware.GestionAccessMiddleware",
+    "apps.gestion.middleware.GestionDefaultTodasEmpresasMiddleware",
+    "obra_movil.middleware.ObraMovilUserRedirectMiddleware",
+    "apps.gestion.audit.GestionAuditMiddleware",
+
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

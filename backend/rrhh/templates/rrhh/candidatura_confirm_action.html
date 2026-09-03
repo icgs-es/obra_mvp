@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}RRHH · Confirmar acción{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 820px;">
+  <a
+    href="{% url 'rrhh:candidatura_detail' candidatura.pk %}"
+    class="btn btn-sm btn-outline-secondary mb-3"
+  >
+    <i class="bi bi-arrow-left"></i> Volver
+  </a>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+      {% if action_mode == "remove_cv" %}
+        <h1 class="h4 mb-3">Quitar currículo de la candidatura</h1>
+        <p>
+          Se eliminará el PDF de
+          <strong>{{ candidatura.candidato.nombre_completo }}</strong>,
+          pero se conservarán la candidatura, la evaluación y todo el
+          seguimiento.
+        </p>
+
+        {% if candidatura.cv_disponible %}
+          <div class="alert alert-warning">
+            <strong>Archivo:</strong>
+            {{ candidatura.cv_nombre|default:"Currículo PDF" }}
+          </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-danger">
+              <i class="bi bi-file-earmark-x"></i>
+              Quitar currículo
+            </button>
+            <a
+              href="{% url 'rrhh:candidatura_detail' candidatura.pk %}"
+              class="btn btn-outline-secondary"
+            >
+              Cancelar
+            </a>
+          </div>
+        </form>
+      {% else %}
+        <h1 class="h4 mb-3">Eliminar candidatura</h1>
+        <p>
+          Vas a eliminar la candidatura de
+          <strong>{{ candidatura.candidato.nombre_completo }}</strong>
+          del proceso
+          <strong>{{ candidatura.proceso.titulo }}</strong>.
+        </p>
+
+        <div class="alert alert-danger">
+          Se eliminarán también sus seguimientos y el PDF almacenado.
+          Esta acción no se puede deshacer desde el portal.
+        </div>
+
+        {% if candidate_application_count == 1 %}
+          <div class="alert alert-warning">
+            Este candidato no tiene otras candidaturas. Su ficha de
+            candidato también se eliminará para no dejar un registro
+            huérfano.
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            La ficha del candidato se conservará porque participa en
+            otras candidaturas.
+          </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-danger">
+              <i class="bi bi-trash"></i>
+              Eliminar candidatura
+            </button>
+            <a
+              href="{% url 'rrhh:candidatura_detail' candidatura.pk %}"
+              class="btn btn-outline-secondary"
+            >
+              Cancelar
+            </a>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- OBRA_MOVIL_ALMACEN_FORM_V2 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi bi-box-seam"></i>
+    </span>
+    <div>
+      <h1 class="h3 mb-1">Nuevo movimiento</h1>
+      <p class="mb-0 opacity-75">Entrada, salida, rotura o control de stock.</p>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">
+      <i class="bi bi-funnel me-1"></i> Filtrar recurso
+    </h2>
+
+    <form method="get" class="obra-mobile-filter">
+      <div class="mb-2">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.f_almacen.id_for_label }}">{{ filtro_form.f_almacen.label }}</label>
+        {{ filtro_form.f_almacen }}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.q_recurso.id_for_label }}">{{ filtro_form.q_recurso.label }}</label>
+        {{ filtro_form.q_recurso }}
+      </div>
+
+      <div class="d-grid gap-2">
+        <button class="btn btn-outline-primary btn-lg rounded-4" type="submit">
+          Aplicar filtros
+        </button>
+        <a class="btn btn-light rounded-4" href="{% url 'obra_movil:almacen_nuevo' %}">
+          Limpiar filtros
+        </a>
+      </div>
+    </form>
+
+    <div class="small text-muted mt-3">
+      Recursos disponibles: {{ recursos_disponibles_count }}
+      {% if recursos_limitados %}
+        · Mostrando primeros 250. Usa búsqueda para afinar.
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<form method="post" class="card border-0 shadow-sm rounded-4 obra-mobile-form" novalidate>
+  {% csrf_token %}
+  {% for key, value in filtros_hidden.items %}
+    <input type="hidden" name="{{ key }}" value="{{ value }}">
+  {% endfor %}
+  <div class="card-body">
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger rounded-4">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.almacen.id_for_label }}">{{ form.almacen.label }}</label>
+      {{ form.almacen }}
+      {% if form.almacen.errors %}<div class="text-danger small mt-1">{{ form.almacen.errors }}</div>{% endif %}
+      <div class="form-text">El almacén determina la obra y la empresa del movimiento.</div>
+    </div>
+
+    <div class="mb-3">
+      <div class="form-label fw-semibold">{{ form.tipo_movimiento.label }}</div>
+      <div class="obra-radio-panel">
+        {{ form.tipo_movimiento }}
+      </div>
+      {% if form.tipo_movimiento.errors %}<div class="text-danger small mt-1">{{ form.tipo_movimiento.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.recurso.id_for_label }}">{{ form.recurso.label }}</label>
+      {{ form.recurso }}
+      {% if form.recurso.errors %}<div class="text-danger small mt-1">{{ form.recurso.errors }}</div>{% endif %}
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.cantidad.id_for_label }}">{{ form.cantidad.label }}</label>
+        {{ form.cantidad }}
+        {% if form.cantidad.errors %}<div class="text-danger small mt-1">{{ form.cantidad.errors }}</div>{% endif %}
+      </div>
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.unidad.id_for_label }}">{{ form.unidad.label }}</label>
+        {{ form.unidad }}
+        {% if form.unidad.errors %}<div class="text-danger small mt-1">{{ form.unidad.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.fecha_movimiento.id_for_label }}">{{ form.fecha_movimiento.label }}</label>
+        {{ form.fecha_movimiento }}
+        {% if form.fecha_movimiento.errors %}<div class="text-danger small mt-1">{{ form.fecha_movimiento.errors }}</div>{% endif %}
+      </div>
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.hora_movimiento.id_for_label }}">{{ form.hora_movimiento.label }}</label>
+        {{ form.hora_movimiento }}
+        {% if form.hora_movimiento.errors %}<div class="text-danger small mt-1">{{ form.hora_movimiento.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <details class="mb-3">
+      <summary class="fw-semibold mb-2">Destino / trazabilidad opcional</summary>
+
+      <div class="mb-3 mt-3">
+        <label class="form-label fw-semibold" for="{{ form.unidad_obra.id_for_label }}">{{ form.unidad_obra.label }}</label>
+        {{ form.unidad_obra }}
+        {% if form.unidad_obra.errors %}<div class="text-danger small mt-1">{{ form.unidad_obra.errors }}</div>{% endif %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="{{ form.partida.id_for_label }}">{{ form.partida.label }}</label>
+        {{ form.partida }}
+        {% if form.partida.errors %}<div class="text-danger small mt-1">{{ form.partida.errors }}</div>{% endif %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="{{ form.empleado.id_for_label }}">{{ form.empleado.label }}</label>
+        {{ form.empleado }}
+        {% if form.empleado.errors %}<div class="text-danger small mt-1">{{ form.empleado.errors }}</div>{% endif %}
+      </div>
+
+      <div class="row g-2">
+        <div class="col-6 mb-3">
+          <label class="form-label fw-semibold" for="{{ form.vehiculo.id_for_label }}">{{ form.vehiculo.label }}</label>
+          {{ form.vehiculo }}
+          {% if form.vehiculo.errors %}<div class="text-danger small mt-1">{{ form.vehiculo.errors }}</div>{% endif %}
+        </div>
+        <div class="col-6 mb-3">
+          <label class="form-label fw-semibold" for="{{ form.kilometraje.id_for_label }}">{{ form.kilometraje.label }}</label>
+          {{ form.kilometraje }}
+          {% if form.kilometraje.errors %}<div class="text-danger small mt-1">{{ form.kilometraje.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </details>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.observaciones.id_for_label }}">{{ form.observaciones.label }}</label>
+      {{ form.observaciones }}
+      {% if form.observaciones.errors %}<div class="text-danger small mt-1">{{ form.observaciones.errors }}</div>{% endif %}
+    </div>
+
+    <div class="alert alert-light border rounded-4 small">
+      Reglas: entrada suma stock; salida y rotura restan stock; control stock fija el stock al valor contado.
+    </div>
+
+    <div class="d-grid gap-2">
+      <button class="btn btn-primary btn-lg rounded-4" type="submit">
+        <i class="bi bi-check2-circle me-1"></i> Guardar movimiento
+      </button>
+      <a class="btn btn-light btn-lg rounded-4" href="{% url 'obra_movil:almacen_home' %}">
+        Cancelar
+      </a>
+    </div>
+  </div>
+</form>
+
+<style>
+  /* OBRA_MOVIL_ALMACEN_FORM_STYLE_V2 */
+  .obra-mobile-form select,
+  .obra-mobile-form input,
+  .obra-mobile-form textarea,
+  .obra-mobile-filter select,
+  .obra-mobile-filter input {
+    border-radius: 1rem;
+  }
+  .obra-radio-panel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .6rem;
+  }
+  .obra-radio-panel li label {
+    display: block;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 1rem;
+    padding: .85rem;
+    background: #f8fafc;
+    font-weight: 700;
+  }
+  .obra-radio-panel input {
+    margin-right: .35rem;
+  }
+  details {
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 1rem;
+    padding: .85rem;
+    background: #f8fafc;
+  }
+</style>
+{% endblock %}

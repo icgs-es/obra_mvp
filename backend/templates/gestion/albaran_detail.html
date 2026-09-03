@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% load gestion_money %}
+
+{% block content %}
+<style>
+
+
+/* === GESTION LINEAS CONTROLLED TABLE === */
+.gestion-lineas-table {
+  width: 100%;
+  table-layout: auto;
+  font-size: .84rem;
+  line-height: 1.22;
+}
+
+.gestion-lineas-table th,
+.gestion-lineas-table td {
+  padding: .26rem .42rem !important;
+  vertical-align: middle !important;
+}
+
+.gestion-lineas-table thead th {
+  font-size: .80rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gestion-lineas-table td:nth-child(1),
+.gestion-lineas-table th:nth-child(1) {
+  width: 46px;
+  white-space: nowrap;
+}
+
+.gestion-lineas-table td:nth-child(2) {
+  min-width: 420px;
+  max-width: 760px;
+}
+
+.gestion-lineas-table td:nth-child(2) a {
+  font-size: .84rem;
+  line-height: 1.18;
+}
+
+/* Columnas numéricas compactas, sin forzar scroll */
+.gestion-lineas-table td:nth-last-child(4),
+.gestion-lineas-table td:nth-last-child(3),
+.gestion-lineas-table td:nth-last-child(2) {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.gestion-lineas-table td:last-child,
+.gestion-lineas-table th:last-child {
+  width: 112px;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.gestion-lineas-table td:last-child .btn,
+.gestion-lineas-table td:last-child .btn-sm {
+  padding: .12rem .34rem !important;
+  font-size: .70rem !important;
+  line-height: 1.1 !important;
+  border-radius: 5px !important;
+  margin-left: .10rem;
+}
+
+.gestion-lineas-table-wrap {
+  overflow-x: visible !important;
+}
+
+</style>
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Albarán de compra {{ albaran.cod_albaran }}</h1>
+      <div class="text-muted small">
+        {% if albaran.proveedor %}{{ albaran.proveedor.nombre_comercial }}{% else %}Proveedor no definido{% endif %}
+        {% if albaran.num_albaran_proveedor %} · Nº proveedor: {{ albaran.num_albaran_proveedor }}{% endif %}
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      {% if team %}<span class="badge bg-primary">{{ team.name }}</span>{% endif %}
+      <a href="{{ next_url }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+      <a href="/app/gestion/albaranes/{{ albaran.id }}/editar/?next={{ next_url|urlencode }}" class="btn btn-outline-primary btn-sm">Editar</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-semibold">Cabecera</div>
+        <div class="card-body">
+          <div class="row g-2 small">
+            <div class="col-md-4"><span class="text-muted">Fecha albarán:</span> {{ albaran.fecha_albaran|date:"d/m/Y"|default:"—" }}</div>
+            <div class="col-md-4"><span class="text-muted">Entrega:</span> {{ albaran.fecha_entrega_mercaderia|date:"d/m/Y"|default:"—" }}</div>
+            <div class="col-md-4"><span class="text-muted">Situación:</span> {{ albaran.situacion|default:"—" }}</div>
+
+            <div class="col-md-4"><span class="text-muted">Importe:</span> <strong>{{ albaran.importe_albaran|money_es }}</strong></div>
+            <div class="col-md-4"><span class="text-muted">Asignado factura:</span> {% if albaran.asignado_factura %}Sí{% else %}No{% endif %}</div>
+            <div class="col-md-4"><span class="text-muted">Importe asignado:</span> {{ albaran.importe_asignado_factura|money_es }}</div>
+
+            <div class="col-md-4"><span class="text-muted">Recepcionado por:</span> {{ albaran.recepcionado_por|default:"—" }}</div>
+            <div class="col-md-4"><span class="text-muted">Autorizado jefe obra:</span> {% if albaran.autorizado_jefe_obra %}Sí{% else %}No{% endif %}</div>
+            <div><strong>Asignado partida:</strong> {{ albaran|albaran_partida_badge }} {# ALBARAN_HEADER_PARTIDA_ESTADO_V2 #}</div>
+
+            <div class="col-12 mt-2">
+              <span class="text-muted">Descripción:</span><br>
+              {{ albaran.descripcion|default:"—" }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-semibold">Auditoría</div>
+        <div class="card-body small">
+          <div class="mb-2">
+            {% if auditoria.estado == "OK" %}
+              <span class="badge bg-success">OK</span>
+            {% elif auditoria.estado == "SIN_LINEAS" %}
+              <span class="badge bg-secondary">Sin líneas</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Diferencia líneas</span>
+            {% endif %}
+          </div>
+
+          <div><span class="text-muted">Nº líneas:</span> {{ auditoria.num_lineas }}</div>
+          <div><span class="text-muted">Importe cabecera:</span> {{ auditoria.importe_cabecera|money_es }}</div>
+          <div><span class="text-muted">Suma líneas:</span> {{ auditoria.suma_lineas|money_es }}</div>
+          <div><span class="text-muted">Diferencia:</span> {{ auditoria.diferencia|money_es }}</div>
+
+          <form method="post" action="/app/gestion/albaranes/{{ albaran.id }}/recalcular-lineas/?next={{ next_url|urlencode }}" class="mt-3">
+            {% csrf_token %}
+            <button class="btn btn-outline-primary btn-sm w-100">
+              Recalcular importe desde líneas
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white fw-semibold">Facturas vinculadas</div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Factura</th>
+            <th>Nº proveedor</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th class="text-end">Importe asignado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in vinculos %}
+          <tr>
+            <td class="fw-semibold">
+              <a href="/app/gestion/facturas/{{ v.factura.id }}/" class="text-decoration-none">{{ v.factura.cod_factura }}</a>
+            </td>
+            <td>{{ v.factura.num_factura_proveedor|default:"—" }}</td>
+            <td>{{ v.factura.fecha_emision|date:"d/m/Y"|default:"—" }}</td>
+            <td>{{ v.factura.estado|default:"—" }}</td>
+            <td class="text-end">{{ v.importe_asignado|money_es }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted p-3">Este albarán no tiene facturas vinculadas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+      <span class="fw-semibold">Líneas de albarán</span>
+      <div class="d-flex gap-2">
+        <a href="/app/gestion/albaranes/{{ albaran.id }}/lineas/desde-ocr/?next={{ next_url|urlencode }}" class="btn btn-outline-primary btn-sm">Importar OCR</a>
+        <a href="/app/gestion/albaranes/{{ albaran.id }}/lineas/nueva/?next={{ next_url|urlencode }}" class="btn btn-primary btn-sm">Nueva línea</a> {# ALBARAN_LINEAS_A_ALMACEN_BTN_V1 #}<a href="{% url 'gestion:albaran_lineas_a_almacen' albaran.id %}?next={{ next_url|urlencode }}" class="btn btn-outline-success btn-sm">Enviar a almacén</a> {# ALBARAN_LINEAS_A_PARTIDA_BTN_V1 #}<a href="{% url 'gestion:albaran_lineas_a_partida' albaran.id %}?next={{ next_url|urlencode }}" class="btn btn-outline-primary btn-sm">Enviar a partida/tarea</a>
+      </div>
+    </div>
+    <div class="gestion-lineas-table-wrap table-responsive">
+      <table class="gestion-lineas-table table table-sm table-hover align-middle mb-0 small">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 55px;">Línea</th>
+            <th>Artículo / descripción</th>
+            <th style="width: 75px;">Unidad</th>
+            <th class="text-end" style="width: 95px;">Cantidad</th>
+            <th class="text-end" style="width: 95px;">Precio</th>
+            <th class="text-end" style="width: 95px;">Importe</th>
+            <th style="width: 80px;">Fact.</th>
+                {# ALBARAN_DETAIL_FLAGS_FACT_ALM_PARTIDA_V2 #}<th>Alm.</th><th>Partida</th>
+            <th class="text-end" style="width: 135px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in lineas %}
+          <tr>
+            <td class="text-muted">{{ l.linea }}</td>
+            <td>
+              {% if l.articulo_compra %}
+                <div class="fw-semibold">
+                  <a href="/app/gestion/articulos/{{ l.articulo_compra.id }}/" class="text-decoration-none">
+                    {{ l.articulo_compra.nombre }}
+                  </a>
+                </div>
+              {% elif l.raw_data.descripcion_detectada %}
+                <div class="fw-semibold">{{ l.raw_data.descripcion_detectada }}</div>
+              {% elif l.raw_data.descripcion %}
+                <div class="fw-semibold">{{ l.raw_data.descripcion }}</div>
+              {% elif l.raw_data.nombre_articulo %}
+                <div class="fw-semibold">{{ l.raw_data.nombre_articulo }}</div>
+              {% elif l.raw_data.descripcion_articulo %}
+                <div class="fw-semibold">{{ l.raw_data.descripcion_articulo }}</div>
+              {% else %}
+                <div class="fw-semibold text-muted">Artículo sin descripción</div>
+              {% endif %}
+
+              <div class="text-muted" style="font-size: 0.78rem;">
+                {% if l.raw_data.codigo_detectado %}
+                  Cód. proveedor: {{ l.raw_data.codigo_detectado }}
+                {% elif l.raw_data.codigo %}
+                  Cód. proveedor: {{ l.raw_data.codigo }}
+                {% elif l.raw_data.ref_pro %}
+                  Ref. proveedor: {{ l.raw_data.ref_pro }}
+                {% elif l.cod_articulo_legacy %}
+                  Código: {{ l.cod_articulo_legacy }}
+                {% endif %}
+
+                {% if l.cod_articulo_legacy %}
+                  · Legacy: {{ l.cod_articulo_legacy }}
+                {% endif %}
+              </div>
+            </td>
+            <td>{{ l.unidad|default:"—" }}</td>
+            <td class="text-end">{{ l.cantidad|floatformat:2 }}</td>
+            <td class="text-end">{{ l.precio_unitario|money_es }}</td>
+            <td class="text-end fw-semibold">{{ l.importe_linea|money_es }}</td>
+            <td>{% if l.facturado %}Sí{% else %}No{% endif %}</td>
+                <td>
+                  {% if l.en_almacen %}
+                    <span class="badge bg-success">Sí</span>
+                  {% else %}
+                    <span class="badge bg-secondary">No</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {# ALBARAN_PARTIDA_PARCIAL_V1 #}
+                  {% if l.en_partida %}
+                    <span class="badge bg-primary">Sí</span>
+                    {% if l.cantidad_en_partidas %}
+                      <div class="small text-muted">{{ l.cantidad_en_partidas }} / {{ l.cantidad }}</div>
+                    {% endif %}
+                  {% elif l.cantidad_en_partidas %}
+                    <span class="badge bg-warning text-dark">Parcial</span>
+                    <div class="small text-muted">{{ l.cantidad_en_partidas }} / {{ l.cantidad }}</div>
+                  {% else %}
+                    <span class="badge bg-secondary">No</span>
+                  {% endif %}
+                </td>
+            <td class="text-end text-nowrap">
+              <a href="/app/gestion/albaranes/{{ albaran.id }}/lineas/{{ l.id }}/editar/?next={{ next_url|urlencode }}" class="btn btn-outline-primary btn-sm py-0 px-2">Editar</a>
+              <a href="/app/gestion/albaranes/{{ albaran.id }}/lineas/{{ l.id }}/eliminar/?next={{ next_url|urlencode }}" class="btn btn-outline-danger btn-sm py-0 px-2">Eliminar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-muted p-3">Este albarán no tiene líneas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div class="fw-semibold">Documentos adjuntos</div>
+      <span class="badge text-bg-light">PDF albarán / anexos</span>
+    </div>
+
+    <div class="card-body">
+      <form method="post" action="/app/gestion/albaranes/{{ albaran.id }}/adjuntos/subir/?next={{ next_url|urlencode }}" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+        <input type="hidden" name="next" value="{{ next_url|default:'/app/gestion/albaranes/' }}">
+        {% csrf_token %}
+
+        <div class="col-md-4">
+          <label class="form-label small text-muted mb-1">Tipo documento</label>
+          <select name="tipo_documento" class="form-select form-select-sm">
+            <option value="ALBARAN_PDF" selected>PDF albarán</option>
+            <option value="ANEXO">Anexo</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+
+        <div class="col-md-5">
+          <label class="form-label small text-muted mb-1">Archivo PDF</label>
+          <input type="file" name="archivo" accept="application/pdf,.pdf" required class="form-control form-control-sm">
+        </div>
+
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            Adjuntar PDF
+          </button>
+        </div>
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Tipo</th>
+              <th>Tamaño</th>
+              <th>Subido</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for adjunto in albaran.adjuntos.all %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ adjunto.nombre_original }}</div>
+                  <div class="small text-muted">{{ adjunto.content_type }}</div>
+                </td>
+                <td>{{ adjunto.get_tipo_documento_display }}</td>
+                <td>{{ adjunto.tamano_bytes|filesizeformat }}</td>
+                <td>{{ adjunto.creado_en|date:"d/m/Y H:i" }}</td>
+                <td class="text-end">
+                  <a href="/app/gestion/adjuntos/{{ adjunto.id }}/ver/" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    Ver PDF
+                  </a>
+
+                  <form method="post" action="/app/gestion/albaranes/{{ albaran.id }}/adjuntos/{{ adjunto.id }}/eliminar/?next={{ next_url|urlencode }}" class="d-inline" onsubmit="return confirm('¿Eliminar este adjunto?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                      Eliminar
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-muted small">
+                  Este albarán todavía no tiene documentos adjuntos.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+{# CENTRO_COSTE_GESTION_ALBARAN_DETAIL_V1 #}
+<div class="card mt-3">
+  <div class="card-header">
+    <strong>Clasificación de gestión</strong>
+  </div>
+  <div class="card-body">
+    <p class="mb-1"><strong>Ámbito:</strong> {{ albaran.ambito_gestion|default:"SIN_CLASIFICAR" }}</p>
+    <p class="mb-1"><strong>Centro de coste:</strong> {% if albaran.centro_coste %}{{ albaran.centro_coste }}{% else %}-{% endif %}</p>
+    <p class="mb-0"><strong>Obra vinculada:</strong> {% if albaran.obra_planificacion %}{{ albaran.obra_planificacion.codigo }} · {{ albaran.obra_planificacion.nombre }}{% else %}-{% endif %}</p>
+  </div>
+</div>
+
+{# GESTION_TRAZABILIDAD_V1 #}
+<div class="card mt-3">
+  <div class="card-header">
+    <strong>Trazabilidad</strong>
+  </div>
+  <div class="card-body">
+    <p class="mb-1">
+      <strong>Creado por:</strong>
+      {% if albaran.creado_por %}{{ albaran.creado_por.get_username }}{% else %}-{% endif %}
+      · <strong>Origen:</strong> {{ albaran.origen_alta|default:"-" }}
+      · <strong>Fecha creación:</strong> {{ albaran.created_at|date:"d/m/Y H:i" }}
+    </p>
+    <p class="mb-3">
+      <strong>Última modificación:</strong>
+      {% if albaran.modificado_por %}{{ albaran.modificado_por.get_username }}{% else %}-{% endif %}
+      · {{ albaran.updated_at|date:"d/m/Y H:i" }}
+    </p>
+
+    <h6>Últimos movimientos</h6>
+    <div class="table-responsive">
+      <table class="table table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in albaran.audit_logs.all|slice:":10" %}
+            <tr>
+              <td>{{ log.created_at|date:"d/m/Y H:i" }}</td>
+              <td>{% if log.usuario %}{{ log.usuario.get_username }}{% else %}Sistema{% endif %}</td>
+              <td>{{ log.accion }}</td>
+              <td>{{ log.descripcion }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-muted">Sin movimientos registrados todavía.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

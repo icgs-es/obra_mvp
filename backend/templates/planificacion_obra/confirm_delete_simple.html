@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="card border-danger shadow-sm">
+    <div class="card-header bg-danger text-white">
+      {{ titulo }}
+    </div>
+
+    <div class="card-body">
+      <p class="mb-2">Confirma esta eliminación:</p>
+      <div class="alert alert-warning">
+        {{ descripcion }}
+      </div>
+
+      <form method="post" class="d-flex justify-content-between">
+        {% csrf_token %}
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-danger">Eliminar definitivamente</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

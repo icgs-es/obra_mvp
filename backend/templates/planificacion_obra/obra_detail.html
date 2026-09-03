@@ -14,8 +14,9 @@
   </div>
 
   <div class="d-flex gap-2">
-    <a href="{% url 'planificacion_obra:obras_list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-bar-chart-line"></i> Resumen de obras
+      {# PI_OBRA_DETAIL_PANEL_LINK_V2 #}
+    <a href="{% url 'planificacion_obra:index' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-grid"></i> Panel de obra
     </a>
     <a href="{% url 'planificacion_obra:index' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-calendar-check"></i> Planificación

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}RRHH · {{ empleado.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a href="{% url 'rrhh:empleados_list' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Volver a empleados
+    </a>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <h1 class="h3 mb-1">{{ empleado.nombre_completo }}</h1>
+          <div class="text-muted">
+            {{ empleado.team.name }}
+            {% if empleado.empresa_empleadora %}
+              · {{ empleado.empresa_empleadora }}
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="text-end">
+          <a href="{% url 'rrhh:empleado_edit' empleado.pk %}" class="btn btn-sm btn-outline-primary mb-2">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          <br>
+          {% if empleado.situacion == "ACTIVO" %}
+            <span class="badge bg-success fs-6">Activo</span>
+          {% else %}
+            <span class="badge bg-secondary fs-6">{{ empleado.get_situacion_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="text-muted small">Área principal</div>
+          <strong>{{ empleado.get_area_principal_display }}</strong>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Tipo relación</div>
+          <strong>{{ empleado.get_tipo_relacion_display }}</strong>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Puesto</div>
+          <strong>{{ empleado.puesto|default:"—" }}</strong>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Profesión</div>
+          <strong>{{ empleado.profesion|default:"—" }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Datos laborales</strong>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="text-muted small">Fecha alta</div>
+              <div>{{ empleado.fecha_alta|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Fecha baja</div>
+              <div>{{ empleado.fecha_baja|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Código</div>
+              <div>{{ empleado.codigo|default:"—" }}</div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="text-muted small">Coste hora</div>
+              <div>{{ empleado.coste_hora|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Precio bruto hora</div>
+              <div>{{ empleado.precio_bruto_hora|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Coste bruto nómina</div>
+              <div>{{ empleado.coste_bruto_nomina|default:"—" }}</div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="text-muted small">Sueldo</div>
+              <div>{{ empleado.sueldo|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Coeficiente</div>
+              <div>{{ empleado.coeficiente|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Retención</div>
+              <div>{{ empleado.retencion|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Vinculación con obra / legacy</strong>
+        </div>
+        <div class="card-body">
+          {% if empleados_obra_legacy %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>ID legacy</th>
+                    <th>Nombre legacy</th>
+                    <th>Categoría</th>
+                    <th>Situación</th>
+                    <th>Precio hora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for legacy in empleados_obra_legacy %}
+                    <tr>
+                      <td>{{ legacy.id }}</td>
+                      <td>{{ legacy.nombre }}</td>
+                      <td>{{ legacy.categoria|default:"—" }}</td>
+                      <td>{{ legacy.situacion|default:"—" }}</td>
+                      <td>{{ legacy.precio_hora|default:"—" }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">Este empleado no tiene vínculo legacy con EmpleadoObra.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Grupos de trabajo</strong>
+        </div>
+        <div class="card-body">
+          {% for grupo in grupos %}
+            <span class="badge bg-light text-dark border mb-1">{{ grupo.nombre }}</span>
+          {% empty %}
+            <span class="text-muted">Sin grupo asignado</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Usuario y módulos</strong>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="text-muted small">Usuario del sistema</div>
+            {% if empleado.user %}
+              <strong>{{ empleado.user }}</strong>
+            {% else %}
+              <span class="text-muted">Sin usuario asociado</span>
+            {% endif %}
+          </div>
+
+          <div class="d-flex flex-wrap gap-2">
+            {% if empleado.es_fichable %}
+              <span class="badge bg-primary">Fichable</span>
+            {% else %}
+              <span class="badge bg-light text-dark border">No fichable</span>
+            {% endif %}
+
+            {% if empleado.es_planificable_obra %}
+              <span class="badge bg-warning text-dark">Planificable obra</span>
+            {% else %}
+              <span class="badge bg-light text-dark border">No planificable obra</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Trazabilidad</strong>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <div class="text-muted small">Origen</div>
+            <div>{{ empleado.origen|default:"manual" }}</div>
+          </div>
+          <div class="mb-2">
+            <div class="text-muted small">Referencia externa</div>
+            <div>{{ empleado.referencia_externa|default:"—" }}</div>
+          </div>
+          <div class="mb-2">
+            <div class="text-muted small">Recursos reales vinculados</div>
+            <div>{{ recursos_reales_count }}</div>
+          </div>
+          <div class="text-muted small">
+            Creado: {{ empleado.creado_en }}<br>
+            Actualizado: {{ empleado.actualizado_en }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

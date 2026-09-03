@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load gestion_money %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Importar líneas OCR de factura</h1>
+      <div class="text-muted small">
+        Factura {{ factura.cod_factura }} · {{ factura.proveedor }} · Nº proveedor {{ factura.num_factura_proveedor }}
+      </div>
+    </div>
+    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  
+  {# FACTURA_OCR_ACCIONES_PLANTILLA_ALWAYS_V3 #}
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body small">
+      <div class="d-flex flex-wrap align-items-center gap-2 justify-content-between">
+        <div>
+          <strong>Plantilla OCR de factura</strong>
+          <div class="text-muted">
+            Esta acción crea una plantilla FACTURA completa para el proveedor, basada en el parser genérico de servicios.
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <form method="post" action="{% url 'gestion:factura_ocr_crear_plantilla_desde_lineas' factura.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+              Crear plantilla OCR para este proveedor
+            </button>
+          </form>
+
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="document.getElementById('ocr-text-preview-v3').classList.toggle('d-none')">
+            Ver texto OCR detectado
+          </button>
+        </div>
+      </div>
+
+      <pre id="ocr-text-preview-v3"
+           class="d-none mt-3 p-3 bg-light border rounded small"
+           style="white-space: pre-wrap; max-height: 420px; overflow:auto;">{{ ocr_text|default:"No hay texto OCR disponible." }}</pre>
+    </div>
+  </div>
+
+  {% if not lineas %}
+    <div class="alert alert-warning mt-3">
+      <strong>No se detectaron líneas.</strong>
+      Puedes crear una plantilla OCR completa para este proveedor o revisar el texto OCR detectado.
+    </div>
+  {% endif %}
+
+<div class="alert alert-warning small">
+    Revisa las líneas antes de importar. Se crearán líneas de factura, artículos internos y alias por proveedor. Si se localizan albaranes existentes, quedarán vinculados.
+  </div>
+
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body small">
+      <strong>Adjunto:</strong> {{ adjunto.nombre_original }} ·
+      <strong>Origen texto:</strong> {{ origen_texto }} ·
+      <strong>Líneas detectadas:</strong> {{ lineas|length }} ·
+      <strong>Total líneas:</strong> {{ parsed.total_lineas|default:"0.00" }} € ·
+      <strong>Base factura:</strong> {{ factura.importe_base_imponible|money_es }}
+    </div>
+  </div>
+
+  
+
+{% if lineas %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Importar</th>
+                <th>Línea</th>
+                <th>Albarán</th>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Dto.</th>
+                <th class="text-end">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lineas %}
+                <tr>
+                  <td><input type="checkbox" name="sel_{{ forloop.counter0 }}" checked></td>
+                  <td>{{ l.linea }}</td>
+                  <td style="min-width:145px;">
+                    <input type="text" name="num_albaran_{{ forloop.counter0 }}" value="{{ l.num_albaran_proveedor }}" class="form-control form-control-sm">
+                    {% if l.albaran_encontrado %}
+                      <div class="small text-success">Encontrado: {{ l.cod_albaran_detectado }}</div>
+                    {% else %}
+                      <div class="small text-muted">No localizado</div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <input type="text" name="codigo_{{ forloop.counter0 }}" value="{{ l.codigo_detectado }}" class="form-control form-control-sm">
+                  </td>
+                  <td style="min-width:300px;">
+                    <input type="text" name="descripcion_{{ forloop.counter0 }}" value="{{ l.descripcion }}" class="form-control form-control-sm">
+                    <div class="text-muted small">{{ l.raw_line }}</div>
+                  </td>
+                  <td>
+                    <input type="text" name="cantidad_{{ forloop.counter0 }}" value="{{ l.cantidad }}" class="form-control form-control-sm text-end">
+                  </td>
+                  <td>
+                    <input type="text" name="precio_{{ forloop.counter0 }}" value="{{ l.precio_input|default:'0.0000' }}" class="form-control form-control-sm text-end">
+                  </td>
+                  <td>
+                    <input type="text" name="descuento_{{ forloop.counter0 }}" value="{{ l.descuento_input|default:'0.00' }}" class="form-control form-control-sm text-end">
+                  </td>
+                  <td>
+                    <input type="text" name="importe_{{ forloop.counter0 }}" value="{{ l.importe_input|default:'0.00' }}" class="form-control form-control-sm text-end">
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">Total detectado: {{ parsed.total_lineas|default:"0.00" }} €</div>
+          <button type="submit" class="btn btn-success">Confirmar e importar líneas</button>
+        </div>
+      </div>
+    </form>
+  {% else %}
+    <div class="alert alert-info">No se detectaron líneas con el patrón actual.
+</div>
+
+{# FACTURA_LINEAS_OCR_CREAR_PLANTILLA_VER_TEXTO_V1 #}
+<div class="card mt-3">
+  <div class="card-body">
+    <h6 class="mb-2">Acciones OCR</h6>
+    <p class="text-muted mb-3">
+      Esta factura tiene PDF adjunto, pero el patrón actual no ha detectado líneas.
+      Puedes crear una plantilla OCR para este proveedor y revisar el texto leído.
+    </p>
+
+    <form method="post" action="{% url 'gestion:factura_ocr_crear_plantilla_desde_lineas' factura.id %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-primary btn-sm">
+        Crear plantilla OCR para este proveedor
+      </button>
+    </form>
+
+    <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="document.getElementById('ocr-text-preview').classList.toggle('d-none')">
+      Ver texto OCR detectado
+    </button>
+
+    <pre id="ocr-text-preview" class="d-none mt-3 p-3 bg-light border rounded small" style="white-space: pre-wrap; max-height: 420px; overflow:auto;">{{ ocr_text|default:"No hay texto OCR disponible." }}</pre>
+  </div>
+</div>
+
+<div class="d-none">
+</div>
+  {% endif %}
+</div>
+{% endblock %}

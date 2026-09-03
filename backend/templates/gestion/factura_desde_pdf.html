@@ -1,0 +1,964 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {# FACTURA_PDF_MESSAGES_VISIBLE_V1 #}
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'warning' }} border shadow-sm" style="font-size: 1rem; white-space: normal;">
+          <strong>Aviso:</strong> {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+<div class="container-fluid py-3 factura-fast-form">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Crear factura desde PDF</h1>
+      <div class="text-muted small">
+        Empresa: <strong>{{ selected_team.name }}</strong> · OCR con revisión humana antes de guardar.
+      </div>
+    </div>
+    <a href="/app/gestion/facturas/" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not review_mode %}
+    <form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="_action" value="extract">
+
+      <div class="card-body">
+        {% if modo_todas %}
+          <div class="mb-3">
+            <label class="form-label small text-muted">Empresa</label>
+            <select name="team_id" id="id_factura_ocr_team_id" class="form-select form-select-sm"
+                      onchange="window.location='/app/gestion/facturas/desde-pdf/?team_id=' + encodeURIComponent(this.value) + '&ambito_gestion=' + encodeURIComponent(document.getElementById('id_factura_ocr_ambito_gestion') ? document.getElementById('id_factura_ocr_ambito_gestion').value : 'OBRA');">
+              {% for t in team_scope %}
+                <option value="{{ t.id }}" {% if selected_team and t.id == selected_team.id %}selected{% endif %}>{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        {# OCR_FACTURA_PROVEEDOR_PLANTILLA_UI_V1 #}
+        <div class="row g-2 mb-3">
+          
+            {# OCR_FACTURA_AMBITO_ANTES_PROVEEDOR_V1 #}
+            <div class="col-md-3">
+              <label class="form-label">Ámbito</label>
+              <select name="ambito_gestion" id="id_factura_ocr_ambito_gestion" class="form-select"
+                        onchange="window.location='/app/gestion/facturas/desde-pdf/?team_id=' + encodeURIComponent(document.getElementById('id_factura_ocr_team_id') ? document.getElementById('id_factura_ocr_team_id').value : '{{ selected_team.id|default:'' }}') + '&ambito_gestion=' + encodeURIComponent(this.value);">
+                <option value="OBRA" {% if selected_ambito_gestion|default:"OBRA" == "OBRA" %}selected{% endif %}>Obra</option>
+                <option value="ADMINISTRACION" {% if selected_ambito_gestion == "ADMINISTRACION" %}selected{% endif %}>Administración</option>
+                <option value="COMERCIAL" {% if selected_ambito_gestion == "COMERCIAL" %}selected{% endif %}>Comercial</option>
+                <option value="GERENCIA" {% if selected_ambito_gestion == "GERENCIA" %}selected{% endif %}>Gerencia</option>
+                <option value="INFORMATICA" {% if selected_ambito_gestion == "INFORMATICA" %}selected{% endif %}>Informática</option>
+                <option value="VEHICULOS" {% if selected_ambito_gestion == "VEHICULOS" %}selected{% endif %}>Vehículos</option>
+                <option value="ALQUILERES" {% if selected_ambito_gestion == "ALQUILERES" %}selected{% endif %}>Alquileres</option>
+                <option value="SERVICIOS_GENERALES" {% if selected_ambito_gestion == "SERVICIOS_GENERALES" %}selected{% endif %}>Servicios generales</option>
+                <option value="OTROS" {% if selected_ambito_gestion == "OTROS" %}selected{% endif %}>Otros</option>
+              </select>
+              <div class="form-text">Primero selecciona ámbito.</div>
+            </div>
+<div class="col-md-5">
+            <label class="form-label">Proveedor a leer</label>
+            <select name="proveedor_id" id="id_factura_ocr_proveedor_id" class="form-select" required>
+              <option value="">Selecciona proveedor...</option>
+              {% for p in proveedores %}
+                <option value="{{ p.id }}"
+                        data-ambito="{{ p.ambito_gestion|default:'OBRA' }}"
+                        {% if selected_provider_id|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
+                  {{ p.nombre_comercial|default:p.nombre_fiscal }}{% if p.cif %} · {{ p.cif }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">El proveedor se decide antes del OCR. El OCR no lo cambiará.</div>
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label">Plantilla OCR</label>
+            <select name="plantilla_ocr_id" id="id_factura_ocr_plantilla_id" class="form-select" required>
+              <option value="">Primero selecciona proveedor...</option>
+            </select>
+            <div class="form-text" id="id_factura_ocr_plantilla_help">
+              Se cargarán las plantillas activas de factura para ese proveedor.
+            </div>
+
+            {% if request.user.is_superuser %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-primary mt-2"
+                      id="id_factura_ocr_crear_plantilla_btn"
+                      style="display:none;">
+                + Crear plantilla OCR para este proveedor
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="col-md-2 d-flex align-items-end">
+            <span class="badge text-bg-light border w-100 py-2" id="id_factura_ocr_plantilla_estado">
+              Plantilla pendiente
+            </span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">PDF factura</label>
+          <input type="file" name="archivo_pdf" accept="application/pdf,.pdf" required class="form-control">
+          <div class="form-text">No se guarda nada hasta confirmar la revisión.</div>
+        </div>
+      </div>
+
+      <div class="card-footer bg-white text-end">
+        <button class="btn btn-primary">Leer PDF y revisar</button>
+      </div>
+    </form>
+  {% else %}
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <form method="post" class="card border-0 shadow-sm">
+          {% csrf_token %}
+          <input type="hidden" name="_action" value="confirm">
+          <input type="hidden" name="token" value="{{ token }}">
+            {# FACTURA_PDF_CONFIRM_HIDDEN_AMBITO_V3 #}
+            <input type="hidden" name="ambito_gestion" value="{{ selected_ambito_gestion|default:'OBRA' }}">
+            {# FACTURA_PDF_CONFIRM_HIDDEN_AMBITO_V2 #}
+            <input type="hidden" name="ambito_gestion" value="{{ selected_ambito_gestion|default:'OBRA' }}">
+
+          <div class="card-header bg-white fw-semibold">Confirmar factura</div>
+          <div class="card-body">
+            <div class="alert alert-warning small">
+              Revisa número, fecha e importes antes de crear la factura. El proveedor queda fijado por la selección previa.
+            </div>
+
+            {# FACTURA_RECTIFICATIVA_REVIEW_V1 #}
+            {% with nat=extracted.factura_naturaleza_v1 %}
+              {% if nat.tipo_factura == "RECTIFICATIVA" %}
+                <div class="alert alert-warning border-warning shadow-sm">
+                  <div class="fw-bold mb-2">
+                    Documento rectificativo
+                    {% if nat.subtipo_rectificativa == "ABONO" %}
+                      · ABONO
+                    {% endif %}
+                  </div>
+
+                  {% if nat.numero_factura_rectificada %}
+                    <div>
+                      Rectifica la factura:
+                      <strong>{{ nat.numero_factura_rectificada }}</strong>
+                    </div>
+                  {% endif %}
+
+                  {% if nat.subtipo_rectificativa == "ABONO" %}
+                    <hr class="my-2">
+
+                    <div class="small">
+                      <strong>Importes impresos por el proveedor:</strong>
+                      Base {{ nat.documento_importes.base }} €
+                      · IVA {{ nat.documento_importes.iva }} €
+                      · Total {{ nat.documento_importes.total }} €
+                    </div>
+
+                    <div class="small mt-1">
+                      <strong>Efecto económico INTASA:</strong>
+                      Base {{ nat.efecto_economico.base }} €
+                      · IVA {{ nat.efecto_economico.iva }} €
+                      · Total {{ nat.efecto_economico.total }} €
+                    </div>
+
+                    <div class="small mt-2">
+                      El proveedor expresa el abono en positivo.
+                      INTASA lo registra con efecto económico negativo
+                      para evitar que se contabilice como una nueva compra.
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            {# FACTURA_PDF_CONFIRM_REQUIRED_VISIBLE_V1 #}
+            {% if not initial.num_factura_proveedor %}
+              <div class="alert alert-danger">
+                <strong>Falta el Nº factura proveedor.</strong>
+                El OCR no lo ha detectado. Escríbelo manualmente antes de confirmar.
+              </div>
+            {% endif %}
+
+            {% if selected_plantilla_ocr %}
+              <div class="alert alert-info small">
+                Plantilla OCR aplicada:
+                <strong>{{ selected_plantilla_ocr.nombre }}</strong>
+                · parser <code>{{ selected_plantilla_ocr.parser_key }}</code>.
+                El proveedor no será cambiado por el OCR.
+              </div>
+            {% endif %}
+
+            <div class="row g-3">
+              <div class="col-md-7">
+                <label class="form-label small text-muted">Proveedor fijado antes del OCR</label>
+                <input type="hidden" name="proveedor_id" value="{{ selected_provider_id|default:'' }}">
+                <input type="hidden" name="plantilla_ocr_id" value="{{ selected_plantilla_ocr_id|default:'' }}">
+                <select name="proveedor_display" class="form-select form-select-sm" disabled>
+                  <option value="">— Seleccionar —</option>
+                  {% for p in proveedores %}
+                    <option value="{{ p.id }}" {% if selected_provider_id|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
+                      {{ p.nombre_comercial }} {% if p.cif %}· {{ p.cif }}{% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label small text-muted">Nº factura proveedor <span class="text-danger">*</span></label>
+                <input type="text" name="num_factura_proveedor" value="{{ initial.num_factura_proveedor }}" class="form-control form-control-sm" required placeholder="Obligatorio: escribe el nº si el OCR no lo detectó">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label small text-muted">Fecha emisión</label>
+                <input type="date" name="fecha_emision" value="{{ initial.fecha_emision }}" class="form-control form-control-sm">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label small text-muted">Base imponible</label>
+                <input type="text" name="importe_base_imponible" value="{{ initial.importe_base_imponible }}" class="form-control form-control-sm text-end">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label small text-muted">IVA</label>
+                <input type="text" name="importe_iva" value="{{ initial.importe_iva }}" class="form-control form-control-sm text-end">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label small text-muted">Total factura</label>
+                <input type="text" name="importe_factura" value="{{ initial.importe_factura }}" class="form-control form-control-sm text-end">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label small text-muted">Retención</label>
+                <input type="text" name="retencion" value="{{ initial.retencion }}" class="form-control form-control-sm text-end" readonly>
+                <div class="form-text small">Calculada desde porcentaje y base.</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label small text-muted">% retención</label>
+                <input type="text" name="retencion_porcentaje" value="{{ initial.retencion_porcentaje }}" class="form-control form-control-sm text-end">
+              </div>
+
+              {% if extracted.retencion_aviso %}<div class="col-12"><div class="alert alert-warning py-2 small mb-0">{{ extracted.retencion_aviso }}</div></div>{% endif %}
+
+              <div class="col-md-3">
+                <label class="form-label small text-muted">Estado</label>
+                <input type="text" name="estado" value="{{ initial.estado }}" class="form-control form-control-sm">
+              </div>
+              <div class="col-md-3">
+                {# FACTURA_PDF_FORMA_PAGO_FIELD_V1 #}
+                <label class="form-label small text-muted">Forma de pago</label>
+                {# FACTURA_PDF_FORMA_PAGO_SELECT_V2 #}
+                <select name="forma_pago" class="form-select form-select-sm">
+                  {% for value,label in forma_pago_choices %}
+                    <option value="{{ value }}" {% if initial.forma_pago == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small text-muted">Observaciones</label>
+                <textarea name="observaciones" class="form-control form-control-sm" rows="3">{{ initial.observaciones }}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer bg-white d-flex justify-content-between">
+            <a href="/app/gestion/facturas/desde-pdf/" class="btn btn-outline-secondary">Cancelar</a>
+            <button class="btn btn-success">Confirmar y crear factura</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white fw-semibold">Datos detectados</div>
+          <div class="card-body small">
+            <div><span class="text-muted">Archivo:</span> {{ original_name }}</div>
+            <div><span class="text-muted">Método:</span> {{ extracted.method|default:"—" }}</div>
+            <div><span class="text-muted">OCR usado:</span> {% if extracted.ocr_used %}Sí{% else %}No{% endif %}</div>
+            <div><span class="text-muted">Texto:</span> {{ extracted.text_len }} caracteres</div>
+            <div><span class="text-muted">Confianza:</span> {{ extracted.confidence }}</div>
+            <hr>
+            <div><span class="text-muted">Número:</span> {{ extracted.numero_documento|default:"—" }}</div>
+            <div><span class="text-muted">Fecha:</span> {{ extracted.fecha|default:"—" }}</div>
+            <div><span class="text-muted">Base:</span> {{ extracted.base_imponible|default:"—" }}</div>
+            <div><span class="text-muted">IVA:</span> {{ extracted.iva|default:"—" }}</div>
+            <div><span class="text-muted">Total:</span> {{ extracted.total|default:"—" }}</div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white fw-semibold">Proveedor sugerido</div>
+          <div class="card-body small">
+            {% for m in extracted.proveedor_matches %}
+              <div class="mb-2">
+                <div class="fw-semibold">#{{ m.id }} · {{ m.nombre }}</div>
+                <div class="text-muted">{{ m.cif }} · {{ m.reason }}</div>
+              </div>
+            {% empty %}
+              <div class="text-muted">Sin coincidencias. Selecciona proveedor manualmente.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .ocr-processing-box {
+    display: none;
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    border: 1px solid #f0c36d;
+    background: #fff3cd;
+    color: #6b4e00;
+    border-radius: 8px;
+    font-weight: 600;
+    animation: ocrBlink 1s linear infinite;
+  }
+
+  @keyframes ocrBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .45; }
+  }
+
+  .ocr-processing-box.show {
+    display: block;
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // OCR_FACTURA_PROVEEDOR_PLANTILLA_JS_V1
+
+  const proveedor = document.getElementById("id_factura_ocr_proveedor_id");
+  const plantilla = document.getElementById("id_factura_ocr_plantilla_id");
+  const help = document.getElementById("id_factura_ocr_plantilla_help");
+  const estado = document.getElementById("id_factura_ocr_plantilla_estado");
+  const selectedPlantillaId = "{{ selected_plantilla_ocr_id|default:'' }}";
+  const crearBtn = document.getElementById("id_factura_ocr_crear_plantilla_btn");
+  const createEndpoint = "/app/gestion/ocr/plantillas/crear-rapida/";
+
+  if (!proveedor || !plantilla) {
+    return;
+  }
+
+  const endpoint = "/app/gestion/ocr/plantillas-proveedor/?tipo_documento=FACTURA&proveedor_id=";
+
+  function getCsrfToken() {
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input ? input.value : "";
+  }
+
+  function showCrearBtn(show) {
+    if (!crearBtn) return;
+    crearBtn.style.display = show ? "inline-block" : "none";
+  }
+
+  function setEstado(text, cls) {
+    if (!estado) return;
+    estado.className = "badge w-100 py-2 " + (cls || "text-bg-light border");
+    estado.textContent = text;
+  }
+
+  function resetPlantillas(message) {
+    plantilla.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = message || "Selecciona proveedor...";
+    plantilla.appendChild(opt);
+    if (help) help.textContent = "Se cargarán las plantillas activas de factura para ese proveedor.";
+    setEstado("Plantilla pendiente", "text-bg-light border");
+    showCrearBtn(false);
+  }
+
+  async function cargarPlantillas() {
+    const proveedorId = proveedor.value || "";
+    resetPlantillas("Cargando plantillas...");
+
+    if (!proveedorId) {
+      resetPlantillas("Primero selecciona proveedor...");
+      return;
+    }
+
+    try {
+      const resp = await fetch(endpoint + encodeURIComponent(proveedorId), {
+        headers: {"X-Requested-With": "XMLHttpRequest"}
+      });
+
+      const data = await resp.json();
+      plantilla.innerHTML = "";
+
+      if (!data.ok || !data.plantillas || data.plantillas.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Sin plantilla activa para este proveedor";
+        plantilla.appendChild(opt);
+        if (help) help.textContent = "No hay plantilla activa. Crea una plantilla OCR antes de importar.";
+        setEstado("Sin plantilla", "text-bg-danger");
+        showCrearBtn(true);
+        return;
+      }
+
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = "Selecciona plantilla OCR...";
+      plantilla.appendChild(empty);
+
+      data.plantillas.forEach(function (tpl) {
+        const opt = document.createElement("option");
+        opt.value = tpl.id;
+        opt.textContent = tpl.nombre + " · " + tpl.parser_key;
+        if (String(tpl.id) === String(selectedPlantillaId)) {
+          opt.selected = true;
+        }
+        plantilla.appendChild(opt);
+      });
+
+      if (help) help.textContent = data.count + " plantilla(s) activa(s) de factura disponibles.";
+      setEstado("Plantilla disponible", "text-bg-success");
+      showCrearBtn(false);
+    } catch (err) {
+      resetPlantillas("Error cargando plantillas");
+      if (help) help.textContent = "No se pudieron cargar las plantillas OCR.";
+      setEstado("Error", "text-bg-danger");
+    }
+  }
+
+  async function crearPlantillaRapida() {
+    const proveedorId = proveedor.value || "";
+    if (!proveedorId) {
+      alert("Selecciona proveedor antes de crear plantilla OCR.");
+      return;
+    }
+
+    if (!confirm("Crear una plantilla OCR activa de FACTURA para este proveedor y probarla con este PDF?")) {
+      return;
+    }
+
+    if (crearBtn) {
+      crearBtn.disabled = true;
+      crearBtn.textContent = "Creando plantilla...";
+    }
+
+    try {
+      const body = new URLSearchParams();
+      body.append("proveedor_id", proveedorId);
+      body.append("tipo_documento", "FACTURA");
+      body.append("valorado_default", "1");
+
+      const resp = await fetch(createEndpoint, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCsrfToken(),
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: body.toString()
+      });
+
+      const data = await resp.json();
+
+      if (!data.ok) {
+        alert(data.message || "No se pudo crear la plantilla OCR.");
+        return;
+      }
+
+      plantilla.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = data.plantilla.id;
+      opt.textContent = data.plantilla.nombre + " · " + data.plantilla.parser_key;
+      opt.selected = true;
+      plantilla.appendChild(opt);
+
+      if (help) help.textContent = data.message || "Plantilla OCR creada.";
+      setEstado("Plantilla creada", "text-bg-success");
+      showCrearBtn(false);
+    } catch (err) {
+      alert("Error creando plantilla OCR.");
+    } finally {
+      if (crearBtn) {
+        crearBtn.disabled = false;
+        crearBtn.textContent = "+ Crear plantilla OCR para este proveedor";
+      }
+    }
+  }
+
+  if (crearBtn) {
+    crearBtn.addEventListener("click", crearPlantillaRapida);
+  }
+
+  proveedor.addEventListener("change", cargarPlantillas);
+  if (proveedor.value) {
+    cargarPlantillas();
+  }
+});
+</script>
+
+<script>
+(function () {
+  function getAction(form) {
+    const actionInput = form.querySelector('input[name="_action"]');
+    return actionInput ? actionInput.value : "";
+  }
+
+  function getMessage(action) {
+    if (action === "extract") {
+      return "Leyendo PDF con OCR... espera unos segundos.";
+    }
+    if (action === "confirm") {
+      return "Creando documento y guardando adjunto... no cierres esta ventana.";
+    }
+    return "Procesando... espera unos segundos.";
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("form").forEach(function (form) {
+      form.addEventListener("submit", function (event) {
+        if (form.dataset.ocrSubmitting === "1") {
+          return;
+        }
+
+        form.dataset.ocrSubmitting = "1";
+
+        const action = getAction(form);
+        const box = document.createElement("div");
+        box.className = "ocr-processing-box show";
+        box.textContent = getMessage(action);
+
+        form.insertBefore(box, form.firstChild);
+
+        form.querySelectorAll("button, input[type='submit']").forEach(function (btn) {
+          btn.disabled = true;
+          if (btn.tagName === "BUTTON") {
+            btn.dataset.originalText = btn.textContent;
+            btn.textContent = action === "extract" ? "Leyendo PDF..." : "Guardando...";
+          }
+        });
+      });
+    });
+  });
+})();
+</script>
+
+
+<script>
+// OCR_FACTURA_CREAR_PLANTILLA_FAST_JS_V2
+document.addEventListener("DOMContentLoaded", function () {
+  const proveedor = document.getElementById("id_factura_ocr_proveedor_id");
+  const plantilla = document.getElementById("id_factura_ocr_plantilla_id");
+  const help = document.getElementById("id_factura_ocr_plantilla_help");
+  const estado = document.getElementById("id_factura_ocr_plantilla_estado");
+  const crearBtn = document.getElementById("id_factura_ocr_crear_plantilla_btn");
+  const endpoint = "/app/gestion/ocr/plantillas/crear-rapida/";
+
+  if (!proveedor || !plantilla || !crearBtn) {
+    return;
+  }
+
+  function csrfToken() {
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input ? input.value : "";
+  }
+
+  function setEstado(text, cls) {
+    if (!estado) return;
+    estado.className = "badge w-100 py-2 " + (cls || "text-bg-light border");
+    estado.textContent = text;
+  }
+
+  function debeMostrarBoton() {
+    const txt = (plantilla.options[plantilla.selectedIndex]?.textContent || "").toLowerCase();
+    const sinPlantilla = txt.includes("sin plantilla");
+    crearBtn.style.display = sinPlantilla ? "inline-block" : "none";
+  }
+
+  proveedor.addEventListener("change", function () {
+    setTimeout(debeMostrarBoton, 700);
+  });
+
+  plantilla.addEventListener("change", debeMostrarBoton);
+  setTimeout(debeMostrarBoton, 900);
+
+  crearBtn.addEventListener("click", async function () {
+    const proveedorId = proveedor.value || "";
+    if (!proveedorId) {
+      alert("Selecciona proveedor antes de crear plantilla OCR.");
+      return;
+    }
+
+    if (!confirm("Crear plantilla OCR activa de FACTURA para este proveedor?")) {
+      return;
+    }
+
+    crearBtn.disabled = true;
+    crearBtn.textContent = "Creando plantilla...";
+
+    try {
+      const body = new URLSearchParams();
+      body.append("proveedor_id", proveedorId);
+      body.append("tipo_documento", "FACTURA");
+      body.append("valorado_default", "1");
+
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken(),
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: body.toString()
+      });
+
+      const data = await resp.json();
+
+      if (!data.ok) {
+        alert(data.message || "No se pudo crear la plantilla OCR.");
+        return;
+      }
+
+      plantilla.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = data.plantilla.id;
+      opt.textContent = data.plantilla.nombre + " · " + data.plantilla.parser_key;
+      opt.selected = true;
+      plantilla.appendChild(opt);
+
+      if (help) help.textContent = data.message || "Plantilla OCR creada.";
+      setEstado("Plantilla creada", "text-bg-success");
+      crearBtn.style.display = "none";
+    } catch (err) {
+      alert("Error creando plantilla OCR.");
+    } finally {
+      crearBtn.disabled = false;
+      crearBtn.textContent = "+ Crear plantilla OCR para este proveedor";
+    }
+  });
+});
+</script>
+
+
+
+<script id="factura-pdf-retencion-ui-v1">
+(function () {
+  function number(name) {
+    const node = document.querySelector('[name="' + name + '"]');
+    if (!node) return 0;
+    let value = String(node.value || '').replace(/\./g, '').replace(',', '.');
+    return Number(value) || 0;
+  }
+  function recalc() {
+    const base = number('importe_base_imponible');
+    const iva = number('importe_iva');
+    const pct = number('retencion_porcentaje');
+    const ret = Math.round(base * pct) / 100;
+    const retNode = document.querySelector('[name="retencion"]');
+    const totalNode = document.querySelector('[name="importe_factura"]');
+    if (retNode) retNode.value = ret.toFixed(2);
+    if (totalNode) totalNode.value = (base + iva - ret).toFixed(2);
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    ['importe_base_imponible', 'importe_iva', 'retencion_porcentaje'].forEach(function (name) {
+      const node = document.querySelector('[name="' + name + '"]');
+      if (node) { node.addEventListener('input', recalc); node.addEventListener('change', recalc); }
+    });
+    recalc();
+  });
+})();
+</script>
+
+<script id="factura-pdf-decimal-es-ui-v6">
+(function () {
+  "use strict";
+
+  const FIELD_NAMES = [
+    "importe_base_imponible",
+    "base_imponible",
+    "base",
+    "importe_iva",
+    "iva",
+    "importe_factura",
+    "total_factura",
+    "total",
+    "retencion",
+    "importe_retencion"
+  ];
+
+  function decimalFromAny(value) {
+    let s = String(value || "").trim();
+
+    if (!s) return "";
+
+    s = s
+      .replace(/€/g, "")
+      .replace(/EUR/gi, "")
+      .replace(/\u00a0/g, "")
+      .replace(/\s+/g, "")
+      .replace(/'/g, "");
+
+    s = s.replace(/[^0-9,.\-]/g, "");
+
+    if (!s || s === "-" || s === "," || s === ".") return "";
+
+    let negative = false;
+    if (s.startsWith("-")) {
+      negative = true;
+      s = s.slice(1);
+    }
+
+    if (s.includes(".") && s.includes(",")) {
+      const lastDot = s.lastIndexOf(".");
+      const lastComma = s.lastIndexOf(",");
+
+      if (lastComma > lastDot) {
+        // Español: 17.475,62 -> 17475.62
+        s = s.replace(/\./g, "").replace(",", ".");
+      } else {
+        // Anglosajón: 17,475.62 -> 17475.62
+        s = s.replace(/,/g, "");
+      }
+    } else if (s.includes(",")) {
+      // Español sin miles: 17475,62 -> 17475.62
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (s.includes(".")) {
+      const parts = s.split(".");
+
+      // Español sin decimales y con miles: 17.475 -> 17475
+      if (
+        parts.length > 1 &&
+        parts.slice(1).every(function (p) { return p.length === 3; }) &&
+        parts[0].length <= 3
+      ) {
+        s = parts.join("");
+      }
+      // Si no, se considera formato técnico válido: 17475.62 / 21.00
+    }
+
+    if (negative) s = "-" + s;
+
+    return s;
+  }
+
+  function formatEs(value, decimals) {
+    const normalized = decimalFromAny(value);
+    if (!normalized) return "";
+
+    const n = Number(normalized);
+    if (!Number.isFinite(n)) return String(value || "");
+
+    return new Intl.NumberFormat("es-ES", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(n);
+  }
+
+  function getMoneyInputs() {
+    const selectors = FIELD_NAMES.map(function (name) {
+      return 'input[name="' + name + '"]';
+    }).join(",");
+
+    return Array.from(document.querySelectorAll(selectors)).filter(function (el) {
+      return el.type !== "hidden";
+    });
+  }
+
+  function prepareMoneyInputs() {
+    getMoneyInputs().forEach(function (el) {
+      el.setAttribute("type", "text");
+      el.setAttribute("inputmode", "decimal");
+      el.setAttribute("autocomplete", "off");
+      el.dataset.decimalEs = "1";
+
+      if (el.value) {
+        el.value = formatEs(el.value, 2);
+      }
+
+      el.addEventListener("blur", function () {
+        el.value = formatEs(el.value, 2);
+      });
+    });
+  }
+
+  function normalizeBeforeSubmit() {
+    document.querySelectorAll("form").forEach(function (form) {
+      form.addEventListener("submit", function () {
+        getMoneyInputs().forEach(function (el) {
+          el.value = decimalFromAny(el.value);
+        });
+      });
+    });
+  }
+
+  function formatDetectedTextNodes() {
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function (node) {
+          const parent = node.parentElement;
+          if (!parent) return NodeFilter.FILTER_REJECT;
+
+          const tag = parent.tagName ? parent.tagName.toUpperCase() : "";
+          if (["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "SELECT", "OPTION"].includes(tag)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          const text = node.nodeValue || "";
+          if (!/(Base|IVA|Total|Retención)\s*:/i.test(text)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+
+    const nodes = [];
+    while (walker.nextNode()) {
+      nodes.push(walker.currentNode);
+    }
+
+    nodes.forEach(function (node) {
+      node.nodeValue = node.nodeValue.replace(
+        /(Base|IVA|Total|Retención)(\s*:\s*)(-?\d[\d.,]*)/gi,
+        function (_, label, sep, rawNumber) {
+          return label + sep + formatEs(rawNumber, 2);
+        }
+      );
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    prepareMoneyInputs();
+    normalizeBeforeSubmit();
+    formatDetectedTextNodes();
+  });
+})();
+</script>
+
+
+
+
+
+<script id="factura-pdf-ambito-reload-proveedores-v1">
+(function () {
+  "use strict";
+
+  // FACTURA_PDF_AMBITO_RELOAD_PROVEEDORES_V1
+  const ambito = document.getElementById("id_factura_ocr_ambito_gestion");
+  const teamSelect =
+    document.getElementById("id_factura_ocr_team_id") ||
+    document.querySelector('select[name="team_id"]');
+
+  function reloadProveedorScope() {
+    const url = new URL("/app/gestion/facturas/desde-pdf/", window.location.origin);
+
+    if (teamSelect && teamSelect.value) {
+      url.searchParams.set("team_id", teamSelect.value);
+    } else {
+      const selectedTeamId = "{{ selected_team.id|default:'' }}";
+      if (selectedTeamId) url.searchParams.set("team_id", selectedTeamId);
+    }
+
+    if (ambito && ambito.value) {
+      url.searchParams.set("ambito_gestion", ambito.value);
+    }
+
+    window.location.href = url.pathname + url.search;
+  }
+
+  if (ambito) {
+    ambito.addEventListener("change", reloadProveedorScope);
+  }
+
+  if (teamSelect) {
+    teamSelect.addEventListener("change", reloadProveedorScope);
+  }
+
+  // FACTURA_PDF_SYNC_AMBITO_URL_ONLOAD_V2
+  // Algunos navegadores restauran visualmente el valor del select sin que la URL
+  // lleve ambito_gestion. Si no sincronizamos, el backend renderiza proveedores
+  // de otro ámbito y el usuario ve el selector vacío.
+  try {
+    const currentUrl = new URL(window.location.href);
+    const urlAmbito = currentUrl.searchParams.get("ambito_gestion") || "";
+    const visualAmbito = ambito && ambito.value ? ambito.value : "";
+    const urlTeam = currentUrl.searchParams.get("team_id") || "";
+    const visualTeam = teamSelect && teamSelect.value ? teamSelect.value : "{{ selected_team.id|default:'' }}";
+
+    if (visualAmbito && urlAmbito !== visualAmbito) {
+      currentUrl.searchParams.set("ambito_gestion", visualAmbito);
+      if (visualTeam && urlTeam !== visualTeam) {
+        currentUrl.searchParams.set("team_id", visualTeam);
+      }
+      window.location.replace(currentUrl.pathname + currentUrl.search);
+      return;
+    }
+
+    if (visualTeam && urlTeam && urlTeam !== visualTeam) {
+      currentUrl.searchParams.set("team_id", visualTeam);
+      if (visualAmbito) currentUrl.searchParams.set("ambito_gestion", visualAmbito);
+      window.location.replace(currentUrl.pathname + currentUrl.search);
+      return;
+    }
+  } catch (e) {
+    // No bloquear la pantalla por errores de sincronización visual.
+  }
+})();
+</script>
+
+
+
+<script id="factura-pdf-force-provider-select-front-v3">
+(function () {
+  "use strict";
+
+  // FACTURA_PDF_FORCE_PROVIDER_SELECT_FRONT_V3
+  const providerSelect = document.getElementById("id_factura_ocr_proveedor_id");
+  if (!providerSelect) return;
+
+  const serverProviders = [
+    {% for p in proveedores %}
+      {
+        id: "{{ p.id }}",
+        text: "{{ p.nombre_comercial|default:p.nombre_fiscal|escapejs }}{% if p.cif %} · {{ p.cif|escapejs }}{% endif %}"
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  function rebuildProviderOptionsIfNeeded() {
+    const realOptions = Array.from(providerSelect.options).filter(function (opt) {
+      return String(opt.value || "").trim() !== "";
+    });
+
+    if (realOptions.length > 0 || serverProviders.length === 0) {
+      return;
+    }
+
+    serverProviders.forEach(function (p) {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.text;
+      providerSelect.appendChild(opt);
+    });
+  }
+
+  rebuildProviderOptionsIfNeeded();
+})();
+</script>
+
+{% endblock %}

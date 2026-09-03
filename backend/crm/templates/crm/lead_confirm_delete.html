@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h4 mb-3">Eliminar lead</h1>
+          <p>¿Seguro que deseas eliminar el lead <strong>{{ object.nombre }}</strong>?</p>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary">
+                Cancelar
+              </a>
+              <button type="submit" class="btn btn-danger">
+                Eliminar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

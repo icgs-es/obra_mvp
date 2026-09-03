@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        {% if factura.importe_factura < 0 %}Plan de devoluciones{% else %}Plan de pagos{% endif %} · {{ factura.cod_factura }}
+      </h1>
+
+      <div class="text-muted small">
+        {{ factura.proveedor|default:"Proveedor no definido" }}
+        {% if factura.num_factura_proveedor %}
+          · Nº proveedor:
+          {{ factura.num_factura_proveedor }}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a
+        href="/app/gestion/facturacion/ayuda/"
+        class="btn btn-outline-secondary btn-sm"
+        title="Ayuda de facturación"
+      >
+        ? Ayuda
+      </a>
+
+      <a
+        href="/app/gestion/facturas/{{ factura.id }}/"
+        class="btn btn-outline-secondary btn-sm"
+      >
+        Volver a la factura
+      </a>
+    </div>
+  </div>
+
+  <div class="alert alert-light border">
+    <strong>Total de la factura:</strong>
+    {{ factura.importe_factura }} €
+
+    ·
+
+    <strong>Estado actual:</strong>
+    {{ factura.estado|default:"PENDIENTE" }}
+  </div>
+
+  {% if not plan_autorizado %}
+    <div class="alert alert-warning border">
+      <strong>PLAN NO AUTORIZADO.</strong>
+      Gerencia debe revisar y pulsar <strong>{% if factura.importe_factura < 0 %}Autorizar plan de devoluciones{% else %}Autorizar plan de pagos{% endif %}</strong>.
+      Una fecha vencida no implica que el {% if factura.importe_factura < 0 %}abono esté devuelto{% else %}pago esté pagado{% endif %}.
+    </div>
+  {% else %}
+    <div class="alert alert-success border">
+      <strong>PLAN AUTORIZADO.</strong>
+      Administración ya puede registrar pagos reales.
+    </div>
+  {% endif %}
+
+  {% if bloqueado %}
+    <div class="alert alert-warning">
+      El plan ya contiene pagos realizados.
+      Para conservar la trazabilidad, Gerencia no puede
+      cambiar importes ni vencimientos.
+    </div>
+  {% endif %}
+
+  {% if service_error %}
+    <div class="alert alert-danger">
+      {{ service_error }}
+    </div>
+  {% endif %}
+
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger">
+      {{ formset.non_form_errors }}
+    </div>
+  {% endif %}
+
+  <form method="post" id="payment-plan-form">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">
+          {% if factura.importe_factura < 0 %}Devoluciones{% else %}Vencimientos{% endif %}
+        </div>
+
+        {% if not bloqueado %}
+          <button
+            type="button"
+            id="add-payment-row"
+            class="btn btn-outline-primary btn-sm"
+          >
+            Añadir {% if factura.importe_factura < 0 %}devolución{% else %}vencimiento{% endif %}
+          </button>
+        {% endif %}
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 60px;">Nº</th>
+              <th style="width: 190px;">Fecha</th>
+              <th style="width: 180px;">Importe</th>
+              {# FACTURA_PLAN_FORMA_PAGO_V1B #}
+              <th style="width: 250px;">Forma de pago</th>
+              <th>Observaciones</th>
+              <th style="width: 100px;"></th>
+            </tr>
+          </thead>
+
+          <tbody id="payment-rows">
+            {% for form in formset %}
+              <tr class="payment-row">
+                <td class="payment-number">
+                  {{ forloop.counter }}
+                </td>
+
+                <td>
+                  {{ form.fecha_vencimiento }}
+                  {{ form.fecha_vencimiento.errors }}
+                </td>
+
+                <td>
+                  {{ form.importe_previsto }}
+                  {{ form.importe_previsto.errors }}
+                </td>
+
+                <td>
+                  {{ form.forma_pago }}
+                  {{ form.forma_pago.errors }}
+                </td>
+
+                <td>
+                  {{ form.observaciones }}
+                  {{ form.observaciones.errors }}
+                </td>
+
+                <td>
+                  <span class="d-none">
+                    {{ form.DELETE }}
+                  </span>
+
+                  {% if not bloqueado %}
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm remove-payment-row"
+                    >
+                      Quitar
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+          <tfoot>
+            <tr>
+              <th colspan="3" class="text-end">
+                Suma del {% if factura.importe_factura < 0 %}plan de devoluciones{% else %}plan{% endif %}:
+              </th>
+
+              <th>
+                <span id="payment-plan-total">0.00</span> €
+              </th>
+
+              <th colspan="2">
+                Debe coincidir exactamente con
+                {{ factura.importe_factura }} €.
+              </th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="card-footer bg-white d-flex justify-content-between gap-2">
+        <div>
+          {% if puede_eliminar %}
+            <button
+              type="submit"
+              name="_action"
+              value="delete_plan"
+              class="btn btn-outline-danger"
+              formnovalidate
+            >
+              Eliminar plan
+            </button>
+          {% endif %}
+        </div>
+
+        <div class="d-flex gap-2">
+          <a
+            href="/app/gestion/facturas/{{ factura.id }}/"
+            class="btn btn-outline-secondary"
+          >
+            Cancelar
+          </a>
+
+          {% if not bloqueado %}
+            <button
+              type="submit"
+              name="_action"
+              value="save"
+              class="btn btn-primary"
+            >
+              Autorizar plan de {% if factura.importe_factura < 0 %}devoluciones{% else %}pagos{% endif %}
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<template id="empty-payment-row">
+  <tr class="payment-row">
+    <td class="payment-number"></td>
+
+    <td>
+      {{ formset.empty_form.fecha_vencimiento }}
+    </td>
+
+    <td>
+      {{ formset.empty_form.importe_previsto }}
+    </td>
+
+    <td>
+      {{ formset.empty_form.forma_pago }}
+    </td>
+
+    <td>
+      {{ formset.empty_form.observaciones }}
+    </td>
+
+    <td>
+      <span class="d-none">
+        {{ formset.empty_form.DELETE }}
+      </span>
+
+      <button
+        type="button"
+        class="btn btn-outline-danger btn-sm remove-payment-row"
+      >
+        Quitar
+      </button>
+    </td>
+  </tr>
+</template>
+
+<script>
+(function () {
+  const rows = document.getElementById("payment-rows");
+  const totalForms = document.getElementById("id_pagos-TOTAL_FORMS");
+  const addButton = document.getElementById("add-payment-row");
+  const template = document.getElementById("empty-payment-row");
+  const totalOutput = document.getElementById("payment-plan-total");
+
+  if (!rows || !totalForms) return;
+
+  function visibleRows() {
+    return Array.from(
+      rows.querySelectorAll(".payment-row")
+    ).filter(function (row) {
+      return row.style.display !== "none";
+    });
+  }
+
+  function renumber() {
+    visibleRows().forEach(function (row, index) {
+      const cell = row.querySelector(".payment-number");
+      if (cell) cell.textContent = String(index + 1);
+    });
+  }
+
+  function recalcTotal() {
+    let total = 0;
+
+    visibleRows().forEach(function (row) {
+      const input = row.querySelector(
+        '[name$="-importe_previsto"]'
+      );
+
+      if (!input) return;
+
+      const value = Number(
+        String(input.value || "0").replace(",", ".")
+      );
+
+      if (!Number.isNaN(value)) {
+        total += value;
+      }
+    });
+
+    if (totalOutput) {
+      totalOutput.textContent = total.toFixed(2);
+    }
+  }
+
+  function bindRow(row) {
+    const removeButton = row.querySelector(
+      ".remove-payment-row"
+    );
+
+    const amountInput = row.querySelector(
+      '[name$="-importe_previsto"]'
+    );
+
+    if (amountInput) {
+      amountInput.addEventListener(
+        "input",
+        recalcTotal
+      );
+    }
+
+    if (removeButton) {
+      removeButton.addEventListener(
+        "click",
+        function () {
+          const deleteInput = row.querySelector(
+            '[name$="-DELETE"]'
+          );
+
+          if (deleteInput) {
+            deleteInput.checked = true;
+          }
+
+          row.style.display = "none";
+          renumber();
+          recalcTotal();
+        }
+      );
+    }
+  }
+
+  Array.from(
+    rows.querySelectorAll(".payment-row")
+  ).forEach(bindRow);
+
+  if (addButton && template) {
+    addButton.addEventListener("click", function () {
+      const index = Number(totalForms.value || "0");
+      const html = template.innerHTML.replace(
+        /__prefix__/g,
+        String(index)
+      );
+
+      const holder = document.createElement("tbody");
+      holder.innerHTML = html.trim();
+
+      const newRow = holder.firstElementChild;
+      rows.appendChild(newRow);
+
+      totalForms.value = String(index + 1);
+
+      bindRow(newRow);
+      renumber();
+      recalcTotal();
+    });
+  }
+
+  renumber();
+  recalcTotal();
+})();
+</script>
+{% endblock %}

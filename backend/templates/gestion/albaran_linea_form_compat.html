@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Nueva línea de albarán</h1>
+      <div class="text-muted">
+        Albarán {{ albaran.cod_albaran }} · {{ albaran.proveedor }} · Nº proveedor {{ albaran.num_albaran_proveedor }}
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ next_url }}">Volver</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <input type="hidden" name="articulo_compra_id" id="id_articulo_compra_id" value="{{ posted.articulo_compra_id|default:'' }}">
+
+    <div class="card">
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Artículo / servicio</label>
+
+          <div class="input-group">
+            <input
+              type="text"
+              name="articulo_busqueda"
+              id="id_articulo_busqueda"
+              class="form-control"
+              list="articulos_albaran_datalist"
+              value="{{ posted.articulo_busqueda|default:'' }}"
+              placeholder="Busca o crea un artículo/servicio. Ejemplo: cristal, tornillo, laco..."
+              autocomplete="off"
+            >
+            <button type="button" class="btn btn-outline-primary" id="id_btn_usar_manual">
+              + Crear / usar manual
+            </button>
+          </div>
+
+          <datalist id="articulos_albaran_datalist">
+            {# Las opciones se cargan por AJAX con Team y proveedor acotados. #}
+          </datalist>
+
+          <div id="id_articulo_selected_meta" class="form-text fw-semibold"></div>
+
+          <div class="form-text">
+            Escribe para buscar. Si eliges un artículo existente, se rellenan código, descripción, unidad de compra y precio.
+            Si no existe, escribe descripción manual y se creará/actualizará al guardar.
+          </div>
+        </div>
+
+          <div class="row g-3">
+            <div class="col-md-2">
+              <label class="form-label">Nº línea</label>
+              <input type="number" name="linea" class="form-control" value="{{ posted.linea|default:initial_linea }}">
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Código proveedor</label>
+              <input type="text" name="codigo" id="id_codigo" class="form-control" value="{{ posted.codigo|default:'' }}">
+            </div>
+
+            <div class="col-md-7">
+              <label class="form-label">Descripción</label>
+              <input
+                type="text"
+                name="descripcion"
+                id="id_descripcion"
+                class="form-control"
+                value="{{ posted.descripcion|default:'' }}"
+                placeholder="Descripción del artículo / servicio"
+              >
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Cantidad</label>
+              <input
+                type="text"
+                name="cantidad"
+                id="id_cantidad"
+                class="form-control text-end"
+                value="{{ posted.cantidad|default:'1' }}"
+              >
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Unidad de compra</label>
+              <select
+                name="unidad_compra"
+                id="id_unidad_compra"
+                class="form-select"
+              >
+                {% firstof posted.unidad_compra posted.unidad "UD" as unidad_actual %}
+                  <option value="">Selecciona unidad...</option>
+                  {% for unidad in unidades_compra %}
+                    <option
+                      value="{{ unidad }}"
+                      {% if unidad_actual|upper == unidad %}selected{% endif %}
+                    >
+                      {{ unidad }}
+                    </option>
+                  {% endfor %}
+                
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Precio unitario</label>
+              <input
+                type="text"
+                name="precio_unitario"
+                id="id_precio"
+                class="form-control text-end"
+                value="{{ posted.precio_unitario|default:'0' }}"
+              >
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Descuento %</label>
+              <input
+                type="text"
+                name="descuento"
+                id="id_descuento"
+                class="form-control text-end"
+                value="{{ posted.descuento|default:'0' }}"
+              >
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">
+                Importe descuento adicional (€)
+              </label>
+              <input
+                type="text"
+                name="importe_descuento"
+                id="id_importe_descuento"
+                class="form-control text-end"
+                value="{{ posted.importe_descuento|default:'0' }}"
+              >
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Importe línea</label>
+              <input
+                type="text"
+                name="importe_linea"
+                id="id_importe"
+                class="form-control text-end"
+                value="{{ posted.importe_linea|default:'' }}"
+                placeholder="Auto"
+              >
+              <div class="form-text">
+                Se calcula automáticamente si lo dejas vacío.
+                En albaranes no valorados puede quedar en 0,00.
+                {# GESTION_ALBARAN_LINEA_PERMITIR_PRECIO_CERO_HELP_V2 #}
+              </div>
+            </div>
+          </div>
+      </div>
+
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <a href="{{ next_url }}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Crear línea</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // GESTION_ALBARAN_LINEA_BUSCADOR_ARTICULO_JS_V2
+
+  const articuloInput = document.getElementById("id_articulo_busqueda");
+  const articuloId = document.getElementById("id_articulo_compra_id");
+  const datalist = document.getElementById("articulos_albaran_datalist");
+  const codigo = document.getElementById("id_codigo");
+  const descripcion = document.getElementById("id_descripcion");
+  const unidad = document.getElementById("id_unidad_compra");
+  const precio = document.getElementById("id_precio");
+  const cantidad = document.getElementById("id_cantidad");
+  const descuento = document.getElementById("id_descuento");
+  const descuentoAdicional = document.getElementById(
+    "id_importe_descuento"
+  );
+  const importe = document.getElementById("id_importe");
+  const btnManual = document.getElementById("id_btn_usar_manual");
+  const selectedMeta = document.getElementById("id_articulo_selected_meta");
+  const searchUrl = "{% url 'gestion:articulos_compra_search' %}";
+  const articuloTeamId = "{{ albaran.team_id }}";
+  const articuloProveedorId = "{{ albaran.proveedor_id|default:'' }}";
+  let searchTimer = null;
+  let lastSearchItems = [];
+
+  function dec(v) {
+    v = String(v || "0").trim();
+    if (v.includes(",")) {
+      v = v.replace(/\./g, "").replace(",", ".");
+    }
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function fmt(n) {
+    return n.toFixed(2).replace(".", ",");
+  }
+
+  function calc() {
+    if (!importe || importe.dataset.manual === "1") return;
+    const base = dec(cantidad.value) * dec(precio.value);
+    const dto = base * dec(descuento.value) / 100;
+    const adicional = descuentoAdicional
+      ? dec(descuentoAdicional.value)
+      : 0;
+    importe.value = fmt(base - dto - adicional);
+  }
+
+  function findOptionByValue(value) {
+    const normalized = String(value || "").trim().toUpperCase();
+    return Array.from(datalist.options || []).find(function (opt) {
+      return String(opt.value || "").trim().toUpperCase() === normalized;
+    });
+  }
+
+  function aplicarArticuloSeleccionado() {
+    if (!articuloInput || !datalist) return;
+
+    const opt = findOptionByValue(articuloInput.value);
+
+    if (!opt) {
+      articuloId.value = "";
+      return;
+    }
+
+    articuloId.value = opt.dataset.id || "";
+
+    if (selectedMeta) {
+      selectedMeta.textContent = [
+        opt.dataset.codigoVisible || opt.dataset.codigo || "",
+        opt.dataset.descripcion || opt.value || "",
+        opt.dataset.unidadCompra ? ("Compra: " + opt.dataset.unidadCompra) : "",
+        opt.dataset.unidadUso ? ("Uso: " + opt.dataset.unidadUso) : ""
+      ].filter(Boolean).join(" · ");
+    }
+
+    if (codigo && !codigo.value.trim()) {
+      codigo.value = opt.dataset.codigo || "";
+    }
+
+    if (descripcion && !descripcion.value.trim()) {
+      descripcion.value = opt.dataset.descripcion || opt.value || "";
+    }
+
+      if (unidad && (!unidad.value.trim() || unidad.value.trim() === "UD")) {
+        const unidadArticulo = String(
+          opt.dataset.unidad || "UD"
+        ).trim().toUpperCase();
+
+        const existeOpcion = Array.from(
+          unidad.options || []
+        ).some(function (option) {
+          return option.value === unidadArticulo;
+        });
+
+        if (unidadArticulo && !existeOpcion) {
+          unidad.add(
+            new Option(
+              unidadArticulo,
+              unidadArticulo
+            )
+          );
+        }
+
+        unidad.value = unidadArticulo;
+      }
+
+    if (precio && (!precio.value.trim() || dec(precio.value) === 0)) {
+      const p = opt.dataset.precio || "";
+      if (p) precio.value = String(p).replace(".", ",");
+    }
+
+    if (importe) {
+      importe.dataset.manual = "";
+    }
+
+    calc();
+  }
+
+  if (articuloInput) {
+    articuloInput.addEventListener("change", aplicarArticuloSeleccionado);
+    articuloInput.addEventListener("blur", aplicarArticuloSeleccionado);
+    articuloInput.addEventListener("input", function () {
+      const opt = findOptionByValue(articuloInput.value);
+      if (!opt && articuloId) {
+        articuloId.value = "";
+        if (selectedMeta) selectedMeta.textContent = "";
+      }
+
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(searchArticulos, 180);
+    });
+  }
+
+  function normalizeEquivalent(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .replace(/([A-Z])([0-9])/g, "$1 $2")
+      .replace(/([0-9])([A-Z])/g, "$1 $2")
+      .replace(/[^A-Z0-9]+/g, " ")
+      .trim()
+      .replace(/\s+/g, " ");
+  }
+
+  function renderSearchItems(items) {
+    lastSearchItems = Array.isArray(items) ? items : [];
+    datalist.innerHTML = "";
+    lastSearchItems.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item.label || item.nombre || "";
+      option.dataset.id = item.id || "";
+      option.dataset.codigo = item.codigo_proveedor || item.alias_codigo || "";
+      option.dataset.codigoVisible = item.codigo || "";
+      option.dataset.descripcion = item.descripcion || item.nombre || "";
+      option.dataset.unidad = item.unidad_compra || item.unidad || "";
+      option.dataset.unidadCompra = item.unidad_compra || item.unidad || "";
+      option.dataset.unidadUso = item.unidad_uso || "";
+      option.dataset.precio = item.precio_autofill ? (item.precio_value || "") : "";
+      datalist.appendChild(option);
+    });
+  }
+
+  function searchArticulos() {
+    if (!articuloInput || !datalist) return;
+    const q = articuloInput.value.trim();
+    if (q.length < 2 || findOptionByValue(q)) return;
+
+    const params = new URLSearchParams({
+      q: q,
+      team_id: articuloTeamId,
+      proveedor_id: articuloProveedorId,
+      context: "albaran"
+    });
+    fetch(searchUrl + "?" + params.toString(), {
+      headers: {"X-Requested-With": "XMLHttpRequest"},
+      credentials: "same-origin"
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("No se pudo buscar el catálogo.");
+        return response.json();
+      })
+      .then(function (data) {
+        renderSearchItems(data.results || []);
+      })
+      .catch(function () {
+        renderSearchItems([]);
+      });
+  }
+
+  if (btnManual) {
+    btnManual.addEventListener("click", function () {
+      const key = normalizeEquivalent(articuloInput && articuloInput.value);
+      const equivalent = lastSearchItems.find(function (item) {
+        return [item.nombre, item.descripcion, item.alias_codigo].some(function (value) {
+          return value && normalizeEquivalent(value) === key;
+        });
+      });
+      if (equivalent) {
+        alert("Ya existe: " + (equivalent.label || equivalent.nombre) + ". Selecciona ese artículo.");
+        return;
+      }
+      if (articuloId) articuloId.value = "";
+      if (descripcion && articuloInput && articuloInput.value.trim() && !descripcion.value.trim()) {
+        descripcion.value = articuloInput.value.trim();
+      }
+      descripcion && descripcion.focus();
+    });
+  }
+
+  [cantidad, precio, descuento, descuentoAdicional].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener("input", calc);
+    el.addEventListener("change", calc);
+  });
+
+  if (importe) {
+    importe.addEventListener("input", function () {
+      importe.dataset.manual = importe.value.trim() ? "1" : "0";
+    });
+  }
+
+  calc();
+});
+</script>
+
+{% include "gestion/_unidad_compra_v1a_js.html" %}
+{% endblock %}

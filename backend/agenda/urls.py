@@ -13,6 +13,7 @@ urlpatterns = [
     path("api/calendars/", views.api_calendars, name="api_calendars"),
     path("api/events/", views.api_events, name="api_events"),
     path("api/events/<int:pk>/", views.api_event_detail, name="api_event_detail"),
+    path("api/events/<int:pk>/action/", views.event_action, name="event_action"),
 
     # Import / Export
     path("importar/", views.import_view, name="import"),

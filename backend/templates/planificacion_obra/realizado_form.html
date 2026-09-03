@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // REALIZADO_FORM_SYNC_HORAS_FECHA_V2
+  const cantidad = document.getElementById("id_cantidad");
+  const horas = document.getElementById("id_horas_reales");
+  const precio = document.getElementById("id_precio_unidad");
+  const coste = document.getElementById("id_costo_recurso_real");
+  const inicio = document.getElementById("id_inicio_recurso_real");
+  const fin = document.getElementById("id_fin_recurso_real");
+
+  function parseNumber(value) {
+    if (value === null || value === undefined) return null;
+    value = String(value).trim().replace(",", ".");
+    if (!value) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function formatNumber(value) {
+    if (value === null || value === undefined || !Number.isFinite(value)) return "";
+    return value.toFixed(2);
+  }
+
+  function recalcularDesdeHoras(value) {
+    const h = parseNumber(value);
+    const p = parseNumber(precio ? precio.value : "");
+
+    if (h !== null) {
+      if (cantidad) cantidad.value = formatNumber(h);
+      if (horas) horas.value = formatNumber(h);
+    }
+
+    if (coste && h !== null && p !== null) {
+      coste.value = formatNumber(h * p);
+    }
+  }
+
+  if (cantidad) {
+    cantidad.addEventListener("input", function () {
+      recalcularDesdeHoras(cantidad.value);
+    }, true);
+  }
+
+  if (horas) {
+    horas.addEventListener("input", function () {
+      recalcularDesdeHoras(horas.value);
+    }, true);
+  }
+
+  if (precio) {
+    precio.addEventListener("input", function () {
+      recalcularDesdeHoras(horas && horas.value ? horas.value : (cantidad ? cantidad.value : ""));
+    }, true);
+  }
+
+  if (inicio && fin) {
+    inicio.addEventListener("change", function () {
+      if (inicio.value && !fin.value) {
+        fin.value = inicio.value;
+      }
+    });
+  }
+
+  recalcularDesdeHoras(horas && horas.value ? horas.value : (cantidad ? cantidad.value : ""));
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // REALIZADO_FORM_SOLO_HORAS_V1
+  const cantidad = document.getElementById("id_cantidad");
+  const horas = document.getElementById("id_horas_reales");
+  const precio = document.getElementById("id_precio_unidad");
+  const coste = document.getElementById("id_costo_recurso_real");
+
+  function parseNumber(value) {
+    if (value === null || value === undefined) return null;
+    value = String(value).trim().replace(",", ".");
+    if (!value) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function formatNumber(value) {
+    if (value === null || value === undefined || !Number.isFinite(value)) return "";
+    return value.toFixed(2);
+  }
+
+  function syncHoras() {
+    if (!horas) return;
+
+    const h = parseNumber(horas.value);
+    const p = parseNumber(precio ? precio.value : "");
+
+    if (cantidad && h !== null) {
+      cantidad.value = formatNumber(h);
+    }
+
+    if (coste && h !== null && p !== null) {
+      coste.value = formatNumber(h * p);
+    }
+  }
+
+  if (horas) horas.addEventListener("input", syncHoras, true);
+  if (precio) precio.addEventListener("input", syncHoras, true);
+
+  syncHoras();
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="mb-3">
+    <a href="{{ next_url }}" class="btn btn-outline-secondary btn-sm">← Volver</a>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h1 class="h3 mb-1">{{ titulo }}</h1>
+      <p class="text-muted mb-3">
+        Realizado #{{ realizado.pk }}
+        {% if realizado.tarea_obra %} · Tarea #{{ realizado.tarea_obra_id }}{% endif %}
+        {% if realizado.team %} · {{ realizado.team }}{% endif %}
+      </p>
+
+      <div class="alert alert-info">
+        Este registro puede venir de MS Access. Al guardar, se conserva el origen y se marca como editado desde Portal.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next_url }}">
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.empleado.id_for_label }}">Empleado</label>
+            {{ form.empleado }}
+            {% for error in form.empleado.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.unidad.id_for_label }}">Unidad</label>
+            {{ form.unidad }}
+            {% for error in form.unidad.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+          {{ form.cantidad.as_hidden }}
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.horas_reales.id_for_label }}">Horas</label>
+            {{ form.horas_reales }}
+            <div class="form-text">Este valor se guarda internamente como cantidad, horas y horas reales.</div>
+            {% for error in form.horas_reales.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+            {% for error in form.cantidad.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.inicio_recurso_real.id_for_label }}">Fecha inicio</label>
+            {{ form.inicio_recurso_real }}
+            {% for error in form.inicio_recurso_real.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.fin_recurso_real.id_for_label }}">Fecha fin</label>
+            {{ form.fin_recurso_real }}
+            {% for error in form.fin_recurso_real.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.precio_unidad.id_for_label }}">Precio hora</label>
+            {{ form.precio_unidad }}
+            {% for error in form.precio_unidad.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.costo_recurso_real.id_for_label }}">Importe real</label>
+            {{ form.costo_recurso_real }}
+            <div class="form-text">Horas × precio hora.</div>
+            {% for error in form.costo_recurso_real.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label" for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+            {{ form.observaciones }}
+            {% for error in form.observaciones.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{{ next_url }}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const empleado = document.getElementById("id_empleado");
+  const unidad = document.getElementById("id_unidad");
+  const cantidad = document.getElementById("id_cantidad");
+  const horas = document.getElementById("id_horas_reales");
+  const precio = document.getElementById("id_precio_unidad");
+  const coste = document.getElementById("id_costo_recurso_real");
+  const precios = {{ empleado_precios|default:"{}"|safe }};
+
+  function n(value) {
+    if (value === null || value === undefined) return null;
+    value = String(value).trim().replace(",", ".");
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function fmt(value) {
+    if (value === null || value === undefined || !Number.isFinite(value)) return "";
+    return value.toFixed(2);
+  }
+
+  function syncFromEmpleado() {
+    if (!empleado || !empleado.value) return;
+
+    if (unidad && !unidad.value) {
+      unidad.value = "HRS";
+    }
+
+    if (precio && (!precio.value || n(precio.value) === 0)) {
+      const p = precios[String(empleado.value)];
+      if (p !== undefined && p !== null) {
+        precio.value = fmt(Number(p));
+      }
+    }
+
+    calcular();
+  }
+
+  function calcular() {
+    if (!coste || !precio) return;
+
+    const h = horas && horas.value ? n(horas.value) : n(cantidad ? cantidad.value : "");
+    const p = n(precio.value);
+
+    if (h === null || p === null) return;
+
+    if (cantidad && (!cantidad.value || cantidad.value !== fmt(h))) {
+      cantidad.value = fmt(h);
+    }
+
+    if (horas && (!horas.value || horas.value !== fmt(h))) {
+      horas.value = fmt(h);
+    }
+
+    coste.value = fmt(h * p);
+  }
+
+  if (empleado) empleado.addEventListener("change", syncFromEmpleado);
+  if (cantidad) cantidad.addEventListener("input", calcular);
+  if (horas) horas.addEventListener("input", calcular);
+  if (precio) precio.addEventListener("input", calcular);
+
+  syncFromEmpleado();
+  calcular();
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // REALIZADO_FORM_SYNC_HORAS_FECHA_V2
+  const cantidad = document.getElementById("id_cantidad");
+  const horas = document.getElementById("id_horas_reales");
+  const precio = document.getElementById("id_precio_unidad");
+  const coste = document.getElementById("id_costo_recurso_real");
+  const inicio = document.getElementById("id_inicio_recurso_real");
+  const fin = document.getElementById("id_fin_recurso_real");
+
+  function parseNumber(value) {
+    if (value === null || value === undefined) return null;
+    value = String(value).trim().replace(",", ".");
+    if (!value) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function formatNumber(value) {
+    if (value === null || value === undefined || !Number.isFinite(value)) return "";
+    return value.toFixed(2);
+  }
+
+  function recalcularDesdeHoras(value) {
+    const h = parseNumber(value);
+    const p = parseNumber(precio ? precio.value : "");
+
+    if (h !== null) {
+      if (cantidad) cantidad.value = formatNumber(h);
+      if (horas) horas.value = formatNumber(h);
+    }
+
+    if (coste && h !== null && p !== null) {
+      coste.value = formatNumber(h * p);
+    }
+  }
+
+  if (cantidad) {
+    cantidad.addEventListener("input", function () {
+      recalcularDesdeHoras(cantidad.value);
+    }, true);
+  }
+
+  if (horas) {
+    horas.addEventListener("input", function () {
+      recalcularDesdeHoras(horas.value);
+    }, true);
+  }
+
+  if (precio) {
+    precio.addEventListener("input", function () {
+      recalcularDesdeHoras(horas && horas.value ? horas.value : (cantidad ? cantidad.value : ""));
+    }, true);
+  }
+
+  if (inicio && fin) {
+    inicio.addEventListener("change", function () {
+      if (inicio.value && !fin.value) {
+        fin.value = inicio.value;
+      }
+    });
+  }
+
+  recalcularDesdeHoras(horas && horas.value ? horas.value : (cantidad ? cantidad.value : ""));
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // REALIZADO_FORM_SOLO_HORAS_V1
+  const cantidad = document.getElementById("id_cantidad");
+  const horas = document.getElementById("id_horas_reales");
+  const precio = document.getElementById("id_precio_unidad");
+  const coste = document.getElementById("id_costo_recurso_real");
+
+  function parseNumber(value) {
+    if (value === null || value === undefined) return null;
+    value = String(value).trim().replace(",", ".");
+    if (!value) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function formatNumber(value) {
+    if (value === null || value === undefined || !Number.isFinite(value)) return "";
+    return value.toFixed(2);
+  }
+
+  function syncHoras() {
+    if (!horas) return;
+
+    const h = parseNumber(horas.value);
+    const p = parseNumber(precio ? precio.value : "");
+
+    if (cantidad && h !== null) {
+      cantidad.value = formatNumber(h);
+    }
+
+    if (coste && h !== null && p !== null) {
+      coste.value = formatNumber(h * p);
+    }
+  }
+
+  if (horas) horas.addEventListener("input", syncHoras, true);
+  if (precio) precio.addEventListener("input", syncHoras, true);
+
+  syncHoras();
+});
+</script>
+
+{% endblock %}
+
+
+<script>
+/* PLANIFICACION_RECURSO_REAL_JS_CALCULO_FIX */
+(function () {
+  function parseDecimal(value) {
+    if (value === null || value === undefined) return 0;
+    var cleaned = String(value).trim().replace(/\./g, "").replace(",", ".");
+    var n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function formatDecimal(value) {
+    if (!isFinite(value)) return "";
+    return value.toFixed(4).replace(".", ",");
+  }
+
+  function recalcRecursoReal() {
+    var cantidad = document.getElementById("id_cantidad");
+    var horas = document.getElementById("id_horas_reales");
+    var precio = document.getElementById("id_precio_unidad");
+    var coste = document.getElementById("id_costo_recurso_real");
+
+    if (!precio || !coste) return;
+
+    var horasVal = horas ? parseDecimal(horas.value) : 0;
+    var cantidadVal = cantidad ? parseDecimal(cantidad.value) : 0;
+    var precioVal = parseDecimal(precio.value);
+
+    var base = horasVal > 0 ? horasVal : cantidadVal;
+    var total = base * precioVal;
+
+    if (base > 0 && precioVal >= 0) {
+      coste.value = formatDecimal(total);
+    }
+  }
+
+  ["id_cantidad", "id_horas_reales", "id_precio_unidad"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", recalcRecursoReal);
+      el.addEventListener("change", recalcRecursoReal);
+    }
+  });
+})();
+</script>
+

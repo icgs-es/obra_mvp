@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}RRHH · {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3 d-flex gap-2">
+    {% if empleado %}
+      <a href="{% url 'rrhh:empleado_detail' empleado.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a ficha
+      </a>
+    {% else %}
+      <a href="{% url 'rrhh:empleados_list' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a empleados
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h4 mb-1">{{ titulo }}</h1>
+      <p class="text-muted mb-4">Alta y edición manual de la base general de RRHH.</p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <h2 class="h6 text-uppercase text-muted mt-3">Identificación</h2>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">{{ form.team.label }}</label>
+            {{ form.team }}
+            {{ form.team.errors }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">{{ form.nombre_completo.label }}</label>
+            {{ form.nombre_completo }}
+            {{ form.nombre_completo.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.nif_nie.label }}</label>
+            {{ form.nif_nie }}
+            {{ form.nif_nie.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.telefono.label }}</label>
+            {{ form.telefono }}
+            {{ form.telefono.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.email.label }}</label>
+            {{ form.email }}
+            {{ form.email.errors }}
+          </div>
+        </div>
+
+        <h2 class="h6 text-uppercase text-muted mt-3">Datos laborales</h2>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">{{ form.empresa_empleadora.label }}</label>
+            {{ form.empresa_empleadora }}
+            {{ form.empresa_empleadora.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.tipo_relacion.label }}</label>
+            {{ form.tipo_relacion }}
+            {{ form.tipo_relacion.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.area_principal.label }}</label>
+            {{ form.area_principal }}
+            {{ form.area_principal.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">{{ form.puesto.label }}</label>
+            {{ form.puesto }}
+            {{ form.puesto.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.profesion.label }}</label>
+            {{ form.profesion }}
+            {{ form.profesion.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.situacion.label }}</label>
+            {{ form.situacion }}
+            {{ form.situacion.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">{{ form.fecha_alta.label }}</label>
+            {{ form.fecha_alta }}
+            {{ form.fecha_alta.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.fecha_baja.label }}</label>
+            {{ form.fecha_baja }}
+            {{ form.fecha_baja.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.user.label }}</label>
+            {{ form.user }}
+            {{ form.user.errors }}
+          </div>
+        </div>
+
+        <h2 class="h6 text-uppercase text-muted mt-3">Costes</h2>
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label">{{ form.coste_hora.label }}</label>
+            {{ form.coste_hora }}
+            {{ form.coste_hora.errors }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.precio_bruto_hora.label }}</label>
+            {{ form.precio_bruto_hora }}
+            {{ form.precio_bruto_hora.errors }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.coste_bruto_nomina.label }}</label>
+            {{ form.coste_bruto_nomina }}
+            {{ form.coste_bruto_nomina.errors }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.coste_bruto_ss.label }}</label>
+            {{ form.coste_bruto_ss }}
+            {{ form.coste_bruto_ss.errors }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.sueldo.label }}</label>
+            {{ form.sueldo }}
+            {{ form.sueldo.errors }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.coeficiente.label }}</label>
+            {{ form.coeficiente }}
+            {{ form.coeficiente.errors }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.retencion.label }}</label>
+            {{ form.retencion }}
+            {{ form.retencion.errors }}
+          </div>
+        </div>
+
+        <h2 class="h6 text-uppercase text-muted mt-3">Uso en módulos</h2>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="form-check">
+              {{ form.es_fichable }}
+              <label class="form-check-label">{{ form.es_fichable.label }}</label>
+            </div>
+            {{ form.es_fichable.errors }}
+          </div>
+          <div class="col-md-4">
+            <div class="form-check">
+              {{ form.es_planificable_obra }}
+              <label class="form-check-label">{{ form.es_planificable_obra.label }}</label>
+            </div>
+            {{ form.es_planificable_obra.errors }}
+          </div>
+          <div class="col-md-4">
+            <div class="form-check">
+              {{ form.activo }}
+              <label class="form-check-label">{{ form.activo.label }}</label>
+            </div>
+            {{ form.activo.errors }}
+          </div>
+        </div>
+
+        <h2 class="h6 text-uppercase text-muted mt-3">Grupos de trabajo</h2>
+        <div class="border rounded p-3 mb-4 bg-light">
+          {{ form.grupos_trabajo }}
+          {{ form.grupos_trabajo.errors }}
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2"></i> Guardar
+          </button>
+          {% if empleado %}
+            <a href="{% url 'rrhh:empleado_detail' empleado.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+          {% else %}
+            <a href="{% url 'rrhh:empleados_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

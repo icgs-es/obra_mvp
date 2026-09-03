@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}Reubicar imputación{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+    <div>
+      <h1 class="h4 mb-1">Reubicar imputación</h1>
+      <p class="text-muted mb-0">
+        Corrección auditada del destino operativo.
+        El documento, recurso, cantidad, precio,
+        coste y fecha permanecen inalterados.
+      </p>
+    </div>
+
+    <a
+      href="{{ source_detail_url }}"
+      class="btn btn-outline-secondary"
+    >
+      ← Volver a la tarea
+    </a>
+  </div>
+
+  {% if errors %}
+    <div class="alert alert-danger">
+      <strong>No se puede continuar:</strong>
+
+      <ul class="mb-0 mt-2">
+        {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+
+    <div class="col-xl-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <strong>Origen documental inmutable</strong>
+        </div>
+
+        <div class="card-body">
+          <dl class="row mb-0 small">
+
+            <dt class="col-sm-4">Documento</dt>
+            <dd class="col-sm-8">
+              {% if document.origin %}
+                {{ document.origin }}
+                {{ document.code|default:"—" }}
+              {% else %}
+                Sin documento identificado
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4">Línea</dt>
+            <dd class="col-sm-8">
+              {% if real.num_linea_factura %}
+                {{ real.num_linea_factura }}
+              {% elif real.num_linea_albaran %}
+                {{ real.num_linea_albaran }}
+              {% elif document.line_id %}
+                ID {{ document.line_id }}
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4">Recurso</dt>
+            <dd class="col-sm-8">
+              {{ real.recurso.nombre|default:real.recurso }}
+            </dd>
+
+            <dt class="col-sm-4">Cantidad</dt>
+            <dd class="col-sm-8">
+              {{ real.cantidad|floatformat:2 }}
+              {{ real.unidad }}
+            </dd>
+
+            <dt class="col-sm-4">Precio</dt>
+            <dd class="col-sm-8">
+              {{ real.precio_unidad|floatformat:2 }} €
+            </dd>
+
+            <dt class="col-sm-4">Coste</dt>
+            <dd class="col-sm-8">
+              {{ real.costo_recurso_real|floatformat:2 }} €
+            </dd>
+
+            <dt class="col-sm-4">Fecha</dt>
+            <dd class="col-sm-8">
+              {{ real.inicio_recurso_real|date:"d/m/Y" }}
+            </dd>
+
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <strong>Destino actual</strong>
+        </div>
+
+        <div class="card-body">
+          <dl class="row mb-0 small">
+
+            <dt class="col-sm-4">Obra</dt>
+            <dd class="col-sm-8">
+              {{ source_task.obra }}
+            </dd>
+
+            <dt class="col-sm-4">Fase</dt>
+            <dd class="col-sm-8">
+              {{ source_task.legacy_cod_fase }}
+            </dd>
+
+            <dt class="col-sm-4">Vivienda</dt>
+            <dd class="col-sm-8">
+              {{ source_task.legacy_cod_vivienda }}
+            </dd>
+
+            <dt class="col-sm-4">Planta</dt>
+            <dd class="col-sm-8">
+              {{ source_task.legacy_planta }}
+            </dd>
+
+            <dt class="col-sm-4">Capítulo</dt>
+            <dd class="col-sm-8">
+              {{ source_task.capitulo.codigo }}
+              · {{ source_task.capitulo.nombre }}
+            </dd>
+
+            <dt class="col-sm-4">Partida</dt>
+            <dd class="col-sm-8">
+              {{ source_task.partida.codigo }}
+              · {{ source_task.partida.nombre }}
+            </dd>
+
+            <dt class="col-sm-4">Tarea</dt>
+            <dd class="col-sm-8">
+              #{{ source_task.id }}
+            </dd>
+
+          </dl>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>1. Alcance y destino</strong>
+    </div>
+
+    <div class="card-body">
+
+      <form method="post">
+        {% csrf_token %}
+
+        <input
+          type="hidden"
+          name="next"
+          value="{{ next_url }}"
+        >
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Alcance
+          </label>
+
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="scope"
+              id="scope-single"
+              value="{{ scope_single }}"
+              {% if selected_scope == scope_single %}checked{% endif %}
+            >
+
+            <label
+              class="form-check-label"
+              for="scope-single"
+            >
+              Solo esta imputación
+            </label>
+          </div>
+
+          {% if grouped_available %}
+            <div class="form-check mt-2">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="scope"
+                id="scope-document"
+                value="{{ scope_grouped }}"
+                {% if selected_scope == scope_grouped %}checked{% endif %}
+              >
+
+              <label
+                class="form-check-label"
+                for="scope-document"
+              >
+                Todas las {{ grouped_count }} líneas de
+                {{ document.origin }} {{ document.code }}
+                que están actualmente en esta tarea
+              </label>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label
+            for="target-task"
+            class="form-label fw-semibold"
+          >
+            Nueva tarea de destino
+          </label>
+
+          <select
+            id="target-task"
+            name="target_task"
+            class="form-select"
+            required
+          >
+            <option value="">
+              Selecciona vivienda y tarea de destino
+            </option>
+
+            {% for task in candidate_tasks %}
+              <option
+                value="{{ task.id }}"
+                {% if selected_target_id|stringformat:"s" == task.id|stringformat:"s" %}selected{% endif %}
+              >
+                Fase {{ task.legacy_cod_fase }}
+                · Vivienda {{ task.legacy_cod_vivienda }}
+                · {{ task.legacy_planta }}
+                · {{ task.partida.codigo }}
+                · Tarea #{{ task.id }}
+              </option>
+            {% endfor %}
+          </select>
+
+          <div class="form-text">
+            Solo se muestran tareas de la misma obra
+            y de la misma partida.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label
+            for="reason"
+            class="form-label fw-semibold"
+          >
+            Motivo de la corrección
+          </label>
+
+          <textarea
+            id="reason"
+            name="reason"
+            class="form-control"
+            rows="3"
+            minlength="8"
+            required
+            placeholder="Ejemplo: La factura se imputó por error a la vivienda 56 y corresponde a la vivienda 31."
+          >{{ reason }}</textarea>
+        </div>
+
+        <button
+          type="submit"
+          name="action"
+          value="preview"
+          class="btn btn-primary"
+        >
+          Previsualizar cambios
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {% if preview %}
+    <div class="card border-warning mb-3">
+      <div class="card-header bg-warning-subtle">
+        <strong>2. Previsualización obligatoria</strong>
+      </div>
+
+      <div class="card-body">
+
+        <div class="row g-3 mb-3">
+
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">
+                Líneas
+              </div>
+              <div class="fs-4 fw-semibold">
+                {{ preview.count }}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">
+                Importe
+              </div>
+              <div class="fs-4 fw-semibold">
+                {{ preview.total|floatformat:2 }} €
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">
+                Vivienda actual
+              </div>
+              <div class="fs-4 fw-semibold">
+                {{ preview.source.legacy_cod_vivienda }}
+              </div>
+              <div class="small text-muted">
+                Tarea #{{ preview.source.task_id }}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">
+                Vivienda nueva
+              </div>
+              <div class="fs-4 fw-semibold">
+                {{ preview.target.legacy_cod_vivienda }}
+              </div>
+              <div class="small text-muted">
+                Tarea #{{ preview.target.task_id }}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="table-responsive mb-3">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Línea</th>
+                <th>Recurso</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Coste</th>
+                <th>Movimiento</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for item in preview.items %}
+                <tr>
+                  <td>{{ item.id }}</td>
+
+                  <td>
+                    {% if item.num_linea_factura %}
+                      {{ item.num_linea_factura }}
+                    {% elif item.num_linea_albaran %}
+                      {{ item.num_linea_albaran }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {{ item.recurso.nombre }}
+                  </td>
+
+                  <td class="text-end">
+                    {{ item.cantidad|floatformat:2 }}
+                    {{ item.unidad }}
+                  </td>
+
+                  <td class="text-end">
+                    {{ item.costo_recurso_real|floatformat:2 }} €
+                  </td>
+
+                  <td>
+                    {{ item.movimiento_almacen_id|default:"—" }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-warning">
+          No se modificarán el documento, la línea,
+          el recurso, la cantidad, el precio, el coste,
+          la fecha ni el stock. Solo se corregirá
+          el destino estructural.
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+
+          <input
+            type="hidden"
+            name="next"
+            value="{{ next_url }}"
+          >
+
+          <input
+            type="hidden"
+            name="scope"
+            value="{{ selected_scope }}"
+          >
+
+          <input
+            type="hidden"
+            name="target_task"
+            value="{{ selected_target_id }}"
+          >
+
+          <input
+            type="hidden"
+            name="reason"
+            value="{{ reason }}"
+          >
+
+          <div class="mb-3">
+            <label
+              for="confirmation"
+              class="form-label fw-semibold"
+            >
+              Escribe REUBICAR para confirmar
+            </label>
+
+            <input
+              id="confirmation"
+              name="confirmation"
+              class="form-control"
+              autocomplete="off"
+              required
+            >
+          </div>
+
+          <button
+            type="submit"
+            name="action"
+            value="confirm"
+            class="btn btn-warning"
+          >
+            Confirmar reubicación
+          </button>
+
+          <a
+            href="{{ source_detail_url }}"
+            class="btn btn-outline-secondary"
+          >
+            Cancelar
+          </a>
+        </form>
+
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

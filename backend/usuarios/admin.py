@@ -25,8 +25,19 @@ class UserProfileAdminForm(forms.ModelForm):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     form = UserProfileAdminForm
-    list_display = ("user", "color_preview", "color")
-    search_fields = ("user__username", "user__email")
+    list_display = (
+        "user",
+        "empresa_documental_predeterminada",
+        "color_preview",
+        "color",
+    )
+    search_fields = (
+        "user__username",
+        "user__email",
+    )
+    list_filter = (
+        "empresa_documental_predeterminada",
+    )
 
     def color_preview(self, obj):
         return format_html(

@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Enviar líneas a partida / tarea</h1>
+      <div class="text-muted small">
+        {{ origen_tipo }} ·
+        {% if origen_tipo == "ALBARAN" %}
+          {{ documento.cod_albaran }} · {{ documento.proveedor }} · Nº proveedor {{ documento.num_albaran_proveedor }}
+        {% else %}
+          {{ documento.cod_factura }} · {{ documento.proveedor }} · Nº proveedor {{ documento.num_factura_proveedor }}
+        {% endif %}
+      </div>
+    </div>
+    <a href="{{ return_url }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  <form method="post" id="partidaForm" class="card border-0 shadow-sm">
+    {% csrf_token %}
+
+    <div class="card-body">
+      <div class="alert alert-warning small">
+        Selección gradual: primero obra, luego edificio/fase, vivienda, planta, capítulo y finalmente partida/tarea.
+        Por cada línea puedes asignar toda la cantidad o solo una parte.
+      </div>
+
+      <input type="hidden" name="tarea_obra_id" id="tarea_obra_id">
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Obra</label>
+          <select id="sel_obra" class="form-select" required></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Edificio / Fase</label>
+          <select id="sel_edificio" class="form-select" disabled required></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Vivienda</label>
+          <select id="sel_vivienda" class="form-select" disabled required></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Planta</label>
+          <select id="sel_planta" class="form-select" disabled required></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Fecha</label>
+          <input type="date" name="fecha_real" value="{{ fecha_hoy|date:'Y-m-d' }}" class="form-control">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Capítulo</label>
+          <select id="sel_capitulo" class="form-select" disabled required></select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Partida</label>
+          <select id="sel_partida" class="form-select" disabled required></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tarea final</label>
+          <select id="sel_tarea" class="form-select" disabled required></select>
+        </div>
+      </div>
+
+      <div id="selectedTaskBox" class="alert alert-info small d-none"></div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Línea</th>
+              <th>Artículo</th>
+              <th>Tipo</th>
+              <th class="text-end">Pendiente</th>
+              <th class="text-end">Cantidad a partida</th>
+              <th class="text-end">Precio real</th>
+              <th class="text-end">Coste real</th>
+              <th>Origen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lineas_view %}
+              {% with l=item.obj %}
+              <tr>
+                <td>
+                  <input type="checkbox"
+                         class="line-check"
+                         name="sel_{{ l.id }}"
+                         data-line="{{ l.id }}"
+                         {% if item.pendiente and item.recurso_ok and not item.servicio_o_porte %}checked{% endif %}
+                         {% if not item.pendiente or not item.recurso_ok %}disabled{% endif %}>
+                </td>
+                <td>{{ l.linea }}</td>
+                <td>
+                  {% if l.articulo_compra %}
+                    <strong>{{ l.articulo_compra.nombre }}</strong>
+                  {% else %}
+                    <span class="text-danger">Sin artículo</span>
+                  {% endif %}
+                  {% if item.cantidad_asignada %}
+                    <div class="small text-muted">Ya asignado: {{ item.cantidad_asignada }}</div>
+                  {% endif %}
+                  {% if item.servicio_o_porte %}
+                    <div class="text-warning small">Posible porte/servicio. Revisar.</div>
+                  {% endif %}
+                  {% if not item.recurso_ok %}
+                    <div class="text-danger small">Sin recurso catálogo.</div>
+                  {% endif %}
+                </td>
+                <td>
+                  <select name="tipo_recurso_{{ l.id }}" class="form-select form-select-sm">
+                    <option value="MATERIAL" {% if item.tipo_recurso == "MATERIAL" %}selected{% endif %}>MATERIAL</option>
+                    <option value="HERRAMIENTA" {% if item.tipo_recurso == "HERRAMIENTA" %}selected{% endif %}>HERRAMIENTA</option>
+                    <option value="E.P.I.S." {% if item.tipo_recurso == "E.P.I.S." %}selected{% endif %}>E.P.I.S.</option>
+                    <option value="OTRO" {% if item.tipo_recurso == "OTRO" %}selected{% endif %}>OTRO</option>
+                  </select>
+                </td>
+                <td class="text-end">{{ item.cantidad_pendiente }}</td>
+                <td>
+                  <input type="number" step="0.0001" min="0" max="{{ item.cantidad_pendiente_input }}"
+                         class="form-control form-control-sm text-end qty-input"
+                         name="cantidad_{{ l.id }}"
+                         data-line="{{ l.id }}"
+                         data-price="{{ item.precio_input }}"
+                         value="{{ item.cantidad_pendiente_input }}">
+                </td>
+                <td>
+                  <input type="number" step="0.0001" min="0"
+                         class="form-control form-control-sm text-end price-input"
+                         name="precio_{{ l.id }}"
+                         data-line="{{ l.id }}"
+                         value="{{ item.precio_input }}">
+                </td>
+                <td>
+                  <input type="number" step="0.01" min="0"
+                         class="form-control form-control-sm text-end cost-input"
+                         name="coste_{{ l.id }}"
+                         data-line="{{ l.id }}"
+                         value="{{ item.coste_input }}">
+                </td>
+                <td>
+                  {% if l.en_almacen %}
+                    <span class="badge bg-success">Desde almacén</span>
+                    <div class="small text-muted">Creará SALIDA</div>
+                  {% else %}
+                    <span class="badge bg-secondary">Directo a partida</span>
+                  {% endif %}
+                </td>
+              </tr>
+
+                {% if item.imputaciones %}
+                  <tr class="table-light">
+                    <td></td>
+                    <td colspan="8">
+                      <div class="small fw-semibold mb-2">Imputaciones actuales de esta línea</div>
+                      <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0 bg-white">
+                          <thead>
+                            <tr>
+                              <th>ID</th>
+                              <th>Destino</th>
+                              <th class="text-end">Cantidad</th>
+                              <th class="text-end">Precio</th>
+                              <th class="text-end">Coste</th>
+                              <th>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for imp in item.imputaciones %}
+                              <tr>
+                                <td>{{ imp.id }}</td>
+                                <td>
+                                  <div>{{ imp.unidad_label }}</div>
+                                  <div class="text-muted">{{ imp.partida_label }}</div>
+                                  <div class="text-muted">Tarea {{ imp.tarea_id }}</div>
+                                </td>
+                                <td style="max-width: 140px;">
+                                  <input type="number"
+                                         step="0.0001"
+                                         min="0.0001"
+                                         class="form-control form-control-sm text-end imp-qty-input"
+                                         data-imp="{{ imp.id }}"
+                                         name="imp_cantidad_{{ imp.id }}"
+                                         value="{{ imp.cantidad_input }}">
+                                </td>
+                                <td style="max-width: 140px;">
+                                  <input type="number"
+                                         step="0.0001"
+                                         min="0"
+                                         class="form-control form-control-sm text-end imp-price-input"
+                                         data-imp="{{ imp.id }}"
+                                         name="imp_precio_{{ imp.id }}"
+                                         value="{{ imp.precio_input }}">
+                                </td>
+                                <td style="max-width: 140px;">
+                                  <input type="number"
+                                         step="0.01"
+                                         min="0"
+                                         class="form-control form-control-sm text-end imp-cost-input"
+                                         data-imp="{{ imp.id }}"
+                                         name="imp_coste_{{ imp.id }}"
+                                         value="{{ imp.coste_input }}">
+                                </td>
+                                <td class="text-nowrap">
+                                  <button type="submit"
+                                          class="btn btn-outline-primary btn-sm"
+                                          formmethod="post"
+                                          formnovalidate
+                                          formaction="{% url 'gestion:albaran_linea_imputacion_update' documento.id l.id imp.id %}">
+                                    Guardar
+                                  </button>
+                                  <button type="submit"
+                                          class="btn btn-outline-danger btn-sm"
+                                          formmethod="post"
+                                          formnovalidate
+                                          onclick="return confirm('¿Eliminar esta imputación? Se recalculará el pendiente de la línea.')"
+                                          formaction="{% url 'gestion:albaran_linea_imputacion_delete' documento.id l.id imp.id %}">
+                                    Eliminar
+                                  </button>
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                {% endif %}
+
+              {% endwith %}
+            {% empty %}
+              <tr><td colspan="9" class="text-muted p-3">No hay líneas pendientes.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{{ return_url }}" class="btn btn-outline-secondary">Cancelar</a>
+      <button class="btn btn-primary" id="submitBtn" disabled>Asignar y continuar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const TASKS = {{ tareas_json|safe }};
+  const selects = {
+    obra: document.getElementById("sel_obra"),
+    edificio: document.getElementById("sel_edificio"),
+    vivienda: document.getElementById("sel_vivienda"),
+    planta: document.getElementById("sel_planta"),
+    capitulo: document.getElementById("sel_capitulo"),
+    partida: document.getElementById("sel_partida"),
+    tarea: document.getElementById("sel_tarea"),
+  };
+  // GESTION_ALBARAN_ASIGNACION_CONTINUA_MULTIVIVIENDA_V2
+  const hiddenTask = document.getElementById("tarea_obra_id");
+  const submitBtn = document.getElementById("submitBtn");
+  const box = document.getElementById("selectedTaskBox");
+  const form = document.getElementById("partidaForm");
+  const continuationKey =
+    "gestion-partida-continuar:" + window.location.pathname;
+
+  function uniq(items, keyFn, labelFn) {
+    const map = new Map();
+    items.forEach(t => {
+      const k = String(keyFn(t) || "");
+      if (!map.has(k)) map.set(k, labelFn(t) || k || "Sin valor");
+    });
+    return Array.from(map.entries()).map(([value, label]) => ({value, label}));
+  }
+
+  function fill(sel, options, placeholder) {
+    sel.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = placeholder;
+    sel.appendChild(opt0);
+    options.forEach(o => {
+      const opt = document.createElement("option");
+      opt.value = o.value;
+      opt.textContent = o.label;
+      sel.appendChild(opt);
+    });
+    sel.disabled = options.length === 0;
+  }
+
+  function currentFiltered(level) {
+    let arr = TASKS.slice();
+    if (selects.obra.value) arr = arr.filter(t => String(t.obra_id) === selects.obra.value);
+    if (level >= 2 && selects.edificio.value) arr = arr.filter(t => String(t.edificio_key) === selects.edificio.value);
+    if (level >= 3 && selects.vivienda.value) arr = arr.filter(t => String(t.vivienda_key) === selects.vivienda.value);
+    if (level >= 4 && selects.planta.value) arr = arr.filter(t => String(t.planta_key) === selects.planta.value);
+    if (level >= 5 && selects.capitulo.value) arr = arr.filter(t => String(t.capitulo_id) === selects.capitulo.value);
+    if (level >= 6 && selects.partida.value) arr = arr.filter(t => String(t.partida_id) === selects.partida.value);
+    return arr;
+  }
+
+  function resetFrom(name) {
+    const order = ["edificio","vivienda","planta","capitulo","partida","tarea"];
+    let hit = false;
+    order.forEach(k => {
+      if (k === name) hit = true;
+      if (hit) fill(selects[k], [], "Selecciona...");
+    });
+    hiddenTask.value = "";
+    submitBtn.disabled = true;
+    box.classList.add("d-none");
+    box.textContent = "";
+  }
+
+  function init() {
+    fill(
+      selects.obra,
+      uniq(TASKS, t => t.obra_id, t => t.obra),
+      "Selecciona obra..."
+    );
+  }
+
+  function saveContinuationInputs() {
+    if (!form) return;
+
+    const rows = {};
+
+    document.querySelectorAll(".line-check").forEach(check => {
+      const lineId = check.dataset.line;
+      const qty = document.querySelector(
+        '.qty-input[data-line="' + lineId + '"]'
+      );
+      const price = document.querySelector(
+        '.price-input[data-line="' + lineId + '"]'
+      );
+      const type = document.querySelector(
+        '[name="tipo_recurso_' + lineId + '"]'
+      );
+
+      rows[lineId] = {
+        checked: Boolean(check.checked),
+        quantity: qty ? qty.value : "",
+        price: price ? price.value : "",
+        type: type ? type.value : ""
+      };
+    });
+
+    sessionStorage.setItem(
+      continuationKey,
+      JSON.stringify(rows)
+    );
+  }
+
+  function restoreContinuationContext() {
+    const params = new URLSearchParams(window.location.search);
+    const previousTaskId = params.get("continuar_tarea");
+
+    if (!previousTaskId) return false;
+
+    const previousTask = TASKS.find(
+      task => String(task.id) === String(previousTaskId)
+    );
+
+    if (!previousTask) return false;
+
+    selects.obra.value = String(previousTask.obra_id || "");
+    selects.obra.dispatchEvent(new Event("change"));
+
+    selects.edificio.value = String(previousTask.edificio_key || "");
+    selects.edificio.dispatchEvent(new Event("change"));
+
+    // Se conserva obra y edificio; el usuario comienza en la siguiente vivienda.
+    selects.vivienda.focus();
+
+    return true;
+  }
+
+  function restoreContinuationInputs() {
+    const params = new URLSearchParams(window.location.search);
+
+    if (!params.get("continuar_tarea")) return;
+
+    let rows = {};
+
+    try {
+      rows = JSON.parse(
+        sessionStorage.getItem(continuationKey) || "{}"
+      );
+    } catch (error) {
+      rows = {};
+    }
+
+    Object.entries(rows).forEach(([lineId, saved]) => {
+      const check = document.querySelector(
+        '.line-check[data-line="' + lineId + '"]'
+      );
+      const qty = document.querySelector(
+        '.qty-input[data-line="' + lineId + '"]'
+      );
+      const price = document.querySelector(
+        '.price-input[data-line="' + lineId + '"]'
+      );
+      const type = document.querySelector(
+        '[name="tipo_recurso_' + lineId + '"]'
+      );
+
+      if (check && !check.disabled) {
+        check.checked = Boolean(saved.checked);
+      }
+
+      if (qty && saved.quantity !== undefined) {
+        const maximum = parseFloat(qty.max || "0");
+        const previous = parseFloat(saved.quantity || "0");
+
+        if (Number.isFinite(previous)) {
+          qty.value = (
+            Number.isFinite(maximum) && maximum >= 0
+              ? Math.min(previous, maximum)
+              : previous
+          ).toFixed(4);
+        }
+      }
+
+      if (price && saved.price !== undefined) {
+        price.value = saved.price;
+      }
+
+      if (type && saved.type) {
+        type.value = saved.type;
+      }
+
+      recalc(lineId);
+    });
+
+    // Limpiar la URL para que una recarga manual no repita el autocompletado.
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+  }
+
+  if (form) {
+    form.addEventListener("submit", saveContinuationInputs);
+  }
+
+  selects.obra.addEventListener("change", () => {
+    resetFrom("edificio");
+    const arr = currentFiltered(1);
+    fill(selects.edificio, uniq(arr, t => t.edificio_key, t => t.edificio), "Selecciona edificio/fase...");
+  });
+
+  selects.edificio.addEventListener("change", () => {
+    resetFrom("vivienda");
+    const arr = currentFiltered(2);
+    fill(selects.vivienda, uniq(arr, t => t.vivienda_key, t => t.vivienda), "Selecciona vivienda...");
+  });
+
+  selects.vivienda.addEventListener("change", () => {
+    resetFrom("planta");
+    const arr = currentFiltered(3);
+    fill(selects.planta, uniq(arr, t => t.planta_key, t => t.planta), "Selecciona planta...");
+  });
+
+  selects.planta.addEventListener("change", () => {
+    resetFrom("capitulo");
+    const arr = currentFiltered(4);
+    fill(selects.capitulo, uniq(arr, t => t.capitulo_id, t => t.capitulo), "Selecciona capítulo...");
+  });
+
+  selects.capitulo.addEventListener("change", () => {
+    resetFrom("partida");
+    const arr = currentFiltered(5);
+    fill(selects.partida, uniq(arr, t => t.partida_id, t => t.partida), "Selecciona partida...");
+  });
+
+  selects.partida.addEventListener("change", () => {
+    resetFrom("tarea");
+    const arr = currentFiltered(6);
+    fill(selects.tarea, arr.map(t => ({value: t.id, label: t.label})), "Selecciona tarea final...");
+  });
+
+  selects.tarea.addEventListener("change", () => {
+    hiddenTask.value = selects.tarea.value || "";
+    submitBtn.disabled = !hiddenTask.value;
+    const t = TASKS.find(x => String(x.id) === String(hiddenTask.value));
+    if (t) {
+      box.textContent = "Destino seleccionado: " + t.label;
+      box.classList.remove("d-none");
+    } else {
+      box.classList.add("d-none");
+    }
+  });
+
+  function recalc(lineId) {
+    const qty = document.querySelector('.qty-input[data-line="'+lineId+'"]');
+    const price = document.querySelector('.price-input[data-line="'+lineId+'"]');
+    const cost = document.querySelector('.cost-input[data-line="'+lineId+'"]');
+    if (!qty || !price || !cost) return;
+    const q = parseFloat(qty.value || "0");
+    const p = parseFloat(price.value || "0");
+    cost.value = (q * p).toFixed(2);
+  }
+
+  document.querySelectorAll(".qty-input,.price-input").forEach(inp => {
+    inp.addEventListener("input", () => recalc(inp.dataset.line));
+  });
+
+
+  function recalcImp(impId) {
+    const qty = document.querySelector('.imp-qty-input[data-imp="'+impId+'"]');
+    const price = document.querySelector('.imp-price-input[data-imp="'+impId+'"]');
+    const cost = document.querySelector('.imp-cost-input[data-imp="'+impId+'"]');
+    if (!qty || !price || !cost) return;
+    const q = parseFloat(qty.value || "0");
+    const p = parseFloat(price.value || "0");
+    cost.value = (q * p).toFixed(2);
+  }
+
+  document.querySelectorAll(".imp-qty-input,.imp-price-input").forEach(inp => {
+    inp.addEventListener("input", () => recalcImp(inp.dataset.imp));
+  });
+
+  init();
+  restoreContinuationContext();
+  restoreContinuationInputs();
+})();
+</script>
+{% endblock %}

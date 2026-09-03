@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+{% block title %}RRHH · Candidatura desde currículo{% endblock %}
+
+{% block content %}
+<style>
+  /* RRHH_CV_LAYOUT_TOP_VIEWER_V1_3 */
+  /* RRHH_CV_FAST_LOAD_DUPLICATE_DELETE_V1 */
+  .rrhh-cv-review-shell {
+    max-width: 1900px;
+    margin: 0 auto;
+  }
+
+  .rrhh-cv-compact .form-label {
+    margin-bottom: .25rem;
+    font-size: .86rem;
+    font-weight: 500;
+  }
+
+  .rrhh-cv-compact .form-control,
+  .rrhh-cv-compact .form-select {
+    font-size: .9rem;
+  }
+
+  .rrhh-cv-errorlist ul,
+  .rrhh-cv-errorlist .errorlist {
+    margin: .25rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--bs-danger);
+    font-size: .8rem;
+  }
+
+  .rrhh-cv-top-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .65rem;
+    padding: 1rem;
+    background: var(--bs-body-bg);
+  }
+
+  .rrhh-cv-viewer-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .65rem;
+    overflow: hidden;
+    background: var(--bs-body-bg);
+  }
+
+  .rrhh-cv-viewer-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+  }
+
+  .rrhh-cv-viewer {
+    width: 100%;
+    height: 82vh;
+    min-height: 840px;
+    border: 0;
+    display: block;
+    background: var(--bs-tertiary-bg);
+  }
+
+  @media (max-width: 1199.98px) {
+    .rrhh-cv-viewer {
+      height: 78vh;
+      min-height: 700px;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .rrhh-cv-viewer-toolbar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .rrhh-cv-viewer {
+      height: 72vh;
+      min-height: 560px;
+    }
+  }
+</style>
+
+<div class="container-fluid py-3 px-3 px-xl-4 rrhh-cv-review-shell">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <a
+      href="{% url 'rrhh:proceso_seleccion_detail' proceso.pk %}"
+      class="btn btn-sm btn-outline-secondary"
+    >
+      <i class="bi bi-arrow-left"></i> Volver al proceso
+    </a>
+
+    {% if result and token %}
+      {% url 'rrhh:candidatura_cv_preview' proceso.pk as cv_preview_url %}
+      <a
+        href="{{ cv_preview_url }}?token={{ token|urlencode }}"
+        target="_blank"
+        rel="noopener"
+        class="btn btn-sm btn-outline-primary"
+      >
+        <i class="bi bi-box-arrow-up-right"></i>
+        Abrir currículo en otra pestaña
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-3 p-xl-4">
+      <h1 class="h4 mb-1">Añadir candidatura desde currículo PDF</h1>
+      <p class="text-muted small mb-3">
+        {{ proceso.titulo }} · {{ proceso.team.name }}
+      </p>
+
+      <div class="alert alert-light border py-2 px-3 small mb-3">
+        <strong>Responsable:</strong>
+        {{ proceso.responsable|default:"Sin responsable asignado" }}
+        <span class="text-muted">
+          · se asignará automáticamente a la candidatura.
+        </span>
+      </div>
+
+      {% if not result %}
+        <p class="text-muted">
+          Selecciona un PDF externo. Portal INTASA leerá el texto y
+          aplicará OCR cuando sea necesario. No se creará nada hasta
+          que revises y confirmes los datos.
+        </p>
+
+        <form
+          method="post"
+          enctype="multipart/form-data"
+          class="row g-3"
+        >
+          {% csrf_token %}
+          <input type="hidden" name="_action" value="extract">
+
+          <div class="col-12">
+            <label class="form-label">Currículo PDF</label>
+            <input
+              type="file"
+              name="cv_pdf"
+              accept="application/pdf,.pdf"
+              class="form-control"
+              required
+            >
+            <div class="form-text">Máximo 15 MB.</div>
+          </div>
+
+          <div class="col-12">
+            <button class="btn btn-primary">
+              <i class="bi bi-file-earmark-text"></i>
+              Leer currículo
+            </button>
+          </div>
+        </form>
+      {% else %}
+        {% url 'rrhh:candidatura_cv_preview' proceso.pk as cv_preview_url %}
+
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+          <span class="badge bg-primary">OCR aplicado</span>
+          <span class="badge text-bg-light border">
+            {{ result.method|default:"lectura PDF" }}
+          </span>
+          {% for field in result.missing %}
+            <span class="badge text-bg-warning">
+              Revisar: {{ field }}
+            </span>
+          {% endfor %}
+        </div>
+
+        <div class="alert alert-info py-2 px-3 small mb-3">
+          Revisa y completa los datos arriba. El currículo queda visible
+          debajo a ancho completo. El botón principal guarda la candidatura
+          y deja la pantalla preparada para cargar el siguiente PDF.
+        </div>
+
+        {% if duplicate_matches %}
+          <div class="alert {% if strong_duplicate_matches %}alert-danger{% else %}alert-warning{% endif %} py-2 px-3 mb-3">
+            <div class="fw-semibold mb-1">
+              {% if hard_duplicate_matches %}
+                Este currículo ya está cargado
+              {% elif strong_duplicate_matches %}
+                Posible candidatura repetida
+              {% else %}
+                Coincidencias que conviene revisar
+              {% endif %}
+            </div>
+            <div class="small mb-2">
+              {% if hard_duplicate_matches %}
+                El PDF es idéntico a uno ya registrado en este proceso.
+                No se permitirá guardarlo de nuevo.
+              {% else %}
+                Se han encontrado coincidencias dentro de este mismo proceso.
+                Abre los registros existentes antes de decidir.
+              {% endif %}
+            </div>
+
+            <div class="list-group list-group-flush border rounded">
+              {% for match in duplicate_matches %}
+                <div class="list-group-item py-2 px-3">
+                  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                      <a
+                        href="{% url 'rrhh:candidatura_detail' match.candidatura.pk %}"
+                        target="_blank"
+                        class="fw-semibold text-decoration-none"
+                      >
+                        {{ match.candidatura.candidato.nombre_completo }}
+                      </a>
+                      <span class="text-muted small">
+                        · candidatura #{{ match.candidatura.pk }}
+                      </span>
+                      <div class="small mt-1">
+                        {% for reason in match.strong_reasons %}
+                          <span class="badge text-bg-danger me-1">
+                            {{ reason }}
+                          </span>
+                        {% endfor %}
+                        {% for reason in match.warning_reasons %}
+                          <span class="badge text-bg-warning me-1">
+                            {{ reason }}
+                          </span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    <div class="d-flex gap-1">
+                      <a
+                        href="{% url 'rrhh:candidatura_detail' match.candidatura.pk %}"
+                        target="_blank"
+                        class="btn btn-sm btn-outline-primary"
+                      >
+                        Ver candidatura
+                      </a>
+                      {% if match.candidatura.cv_disponible %}
+                        <a
+                          href="{% url 'rrhh:candidatura_cv' match.candidatura.pk %}"
+                          target="_blank"
+                          class="btn btn-sm btn-outline-danger"
+                        >
+                          Ver CV
+                        </a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <form
+          method="post"
+          novalidate
+          class="rrhh-cv-compact"
+          id="rrhh-cv-review-form"
+        >
+          {% csrf_token %}
+          <input type="hidden" name="_action" value="confirm">
+          <input type="hidden" name="token" value="{{ token }}">
+          <input type="hidden" name="estado" value="RECIBIDO">
+
+          <div class="rrhh-cv-top-card mb-3">
+            <div class="row g-2 align-items-start">
+              <div class="col-12">
+                <h2 class="h6 text-uppercase text-muted mb-2">
+                  Datos del candidato
+                </h2>
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label">Nombre completo</label>
+                <input
+                  type="text"
+                  name="nombre_completo"
+                  maxlength="220"
+                  class="form-control form-control-sm"
+                  value="{{ initial.nombre_completo|default:'' }}"
+                  required
+                >
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.nombre_completo }}
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6 col-lg-2">
+                <label class="form-label">Teléfono</label>
+                <input
+                  type="text"
+                  name="telefono"
+                  maxlength="60"
+                  class="form-control form-control-sm"
+                  value="{{ initial.telefono|default:'' }}"
+                >
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.telefono }}
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6 col-lg-3">
+                <label class="form-label">Correo electrónico</label>
+                <input
+                  type="email"
+                  name="email"
+                  maxlength="254"
+                  class="form-control form-control-sm"
+                  value="{{ initial.email|default:'' }}"
+                >
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.email }}
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6 col-lg-3">
+                <label class="form-label">Ciudad</label>
+                <input
+                  type="text"
+                  name="ciudad"
+                  maxlength="120"
+                  class="form-control form-control-sm"
+                  value="{{ initial.ciudad|default:'' }}"
+                >
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.ciudad }}
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label">Perfil profesional</label>
+                <input
+                  type="text"
+                  name="perfil_profesional"
+                  maxlength="220"
+                  class="form-control form-control-sm"
+                  value="{{ initial.perfil_profesional|default:'' }}"
+                >
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.perfil_profesional }}
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label">LinkedIn</label>
+                <input
+                  type="url"
+                  name="linkedin_url"
+                  maxlength="500"
+                  class="form-control form-control-sm"
+                  value="{{ initial.linkedin_url|default:'' }}"
+                >
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.linkedin_url }}
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4 col-lg-2">
+                <label class="form-label">Origen</label>
+                <select
+                  name="origen"
+                  class="form-select form-select-sm"
+                >
+                  {% for value, label in origen_choices %}
+                    <option
+                      value="{{ value }}"
+                      {% if initial.origen == value %}selected{% endif %}
+                    >
+                      {{ label }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.origen }}
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4 col-lg-2">
+                <label class="form-label">Fecha de solicitud</label>
+                <input
+                  type="date"
+                  name="fecha_solicitud"
+                  class="form-control form-control-sm"
+                  value="{{ initial.fecha_solicitud|default:today }}"
+                  required
+                >
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.fecha_solicitud }}
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4 col-lg-2">
+                <label class="form-label">Puntuación inicial</label>
+                <select
+                  name="puntuacion"
+                  class="form-select form-select-sm"
+                >
+                  <option value="">Sin valorar</option>
+                  {% for score in "12345" %}
+                    <option
+                      value="{{ score }}"
+                      {% if initial.puntuacion|stringformat:"s" == score %}selected{% endif %}
+                    >
+                      {{ score }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.puntuacion }}
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <label class="form-label">Observaciones generales</label>
+                <textarea
+                  name="observaciones_candidato"
+                  rows="2"
+                  class="form-control form-control-sm"
+                >{{ initial.observaciones_candidato|default:'' }}</textarea>
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.observaciones_candidato }}
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <label class="form-label">
+                  Observaciones de revisión
+                </label>
+                <textarea
+                  name="observaciones_revision"
+                  rows="2"
+                  class="form-control form-control-sm"
+                >{{ initial.observaciones_revision|default:'' }}</textarea>
+                <div class="rrhh-cv-errorlist">
+                  {{ form_errors.observaciones_revision }}
+                </div>
+              </div>
+
+              {% if result.text_preview %}
+                <div class="col-12">
+                  <details>
+                    <summary class="small text-muted">
+                      Ver texto reconocido por OCR
+                    </summary>
+                    <pre
+                      class="border rounded bg-light p-2 mt-2 small text-wrap"
+                      style="max-height:220px; overflow:auto;"
+                    >{{ result.text_preview }}</pre>
+                  </details>
+                </div>
+              {% endif %}
+
+              {% if overridable_duplicate_matches and not hard_duplicate_matches %}
+                <div class="col-12">
+                  <div class="form-check border rounded p-3 ps-5 bg-light">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="allow_duplicate"
+                      value="1"
+                      id="allow-duplicate"
+                      {% if allow_duplicate %}checked{% endif %}
+                    >
+                    <label class="form-check-label" for="allow-duplicate">
+                      He comprobado las candidaturas existentes y deseo
+                      continuar porque se trata de una candidatura distinta.
+                    </label>
+                  </div>
+                </div>
+              {% endif %}
+
+              <div class="col-12">
+                <div class="d-flex flex-wrap gap-2">
+                  <button
+                    class="btn btn-success"
+                    name="after_save"
+                    value="next"
+                  >
+                    <i class="bi bi-check2-circle"></i>
+                    Guardar y cargar otro CV
+                  </button>
+
+                  <button
+                    class="btn btn-outline-success"
+                    name="after_save"
+                    value="detail"
+                  >
+                    <i class="bi bi-eye"></i>
+                    Guardar y ver candidatura
+                  </button>
+
+                  <a
+                    href="{% url 'rrhh:candidatura_desde_cv' proceso.pk %}"
+                    class="btn btn-outline-secondary"
+                  >
+                    Descartar y analizar otro
+                  </a>
+
+                  <a
+                    href="{{ cv_preview_url }}?token={{ token|urlencode }}"
+                    target="_blank"
+                    rel="noopener"
+                    class="btn btn-outline-primary"
+                  >
+                    <i class="bi bi-box-arrow-up-right"></i>
+                    Abrir PDF en otra pestaña
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div class="rrhh-cv-viewer-card">
+          <div class="rrhh-cv-viewer-toolbar">
+            <div>
+              <h2 class="h6 mb-0">Currículo PDF</h2>
+              <div class="small text-muted">
+                Visor a ancho completo para facilitar la lectura y revisión.
+              </div>
+            </div>
+
+            <div class="small text-muted">
+              Si la barra de miniaturas del navegador te molesta, puedes usar
+              el botón <strong>Abrir PDF en otra pestaña</strong>.
+            </div>
+          </div>
+
+          <iframe
+            id="rrhh-cv-pdf-viewer"
+            class="rrhh-cv-viewer"
+            src="{{ cv_preview_url }}?token={{ token|urlencode }}"
+            title="Vista previa del currículo PDF"
+          >
+            Tu navegador no puede mostrar el PDF embebido.
+            <a
+              href="{{ cv_preview_url }}?token={{ token|urlencode }}"
+              target="_blank"
+              rel="noopener"
+            >
+              Abrir currículo PDF
+            </a>
+          </iframe>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

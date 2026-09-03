@@ -1,0 +1,923 @@
+{% extends "base.html" %}
+
+{% block title %}Planificación de recursos de obra{% endblock %}
+
+{% block content %}
+<style>
+/* RECURSOS_OBRA_COMPACT_UX_1_1 */
+
+.ro-page {
+  width: 100%;
+  max-width: 100%;
+  padding: 24px 28px;
+}
+
+.ro-card,
+.ro-toolbar,
+.ro-kpi {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+}
+
+.ro-toolbar {
+  padding: 18px;
+}
+
+.ro-kpi {
+  min-height: 84px;
+  padding: 14px 18px;
+}
+
+.ro-kpi .label {
+  color: #64748b;
+  font-size: .82rem;
+}
+
+.ro-kpi .value {
+  font-size: 1.65rem;
+  line-height: 1.1;
+}
+
+.ro-tabs .btn {
+  min-width: 154px;
+}
+
+.ro-table-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+
+.ro-table-compact {
+  width: 100%;
+  table-layout: fixed;
+  margin: 0;
+  font-size: .73rem;
+}
+
+.ro-table-compact th {
+  padding: 7px 6px;
+  background: #f8fafc;
+  color: #334155;
+  border-bottom: 1px solid #d8dee4;
+  font-size: .66rem;
+  line-height: 1;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ro-table-compact td {
+  height: 42px;
+  max-height: 42px;
+  padding: 4px 6px;
+  border-bottom: 1px solid #e5e7eb;
+  line-height: 1.12;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.ro-table-compact tbody tr:hover {
+  background: #f8fafc;
+}
+
+.ro-main,
+.ro-sub {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ro-main {
+  color: #111827;
+  font-weight: 600;
+}
+
+.ro-sub {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: .67rem;
+}
+
+.ro-number {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ro-date {
+  white-space: nowrap;
+}
+
+.ro-badge {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ro-empty {
+  padding: 30px !important;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Reales y previstos: 8 columnas */
+.ro-resource-table .col-date {
+  width: 8%;
+}
+
+.ro-resource-table .col-resource {
+  width: 22%;
+}
+
+.ro-resource-table .col-quantity {
+  width: 9%;
+}
+
+.ro-resource-table .col-price {
+  width: 9%;
+}
+
+.ro-resource-table .col-amount {
+  width: 10%;
+}
+
+.ro-resource-table .col-location {
+  width: 17%;
+}
+
+.ro-resource-table .col-work {
+  width: 18%;
+}
+
+.ro-resource-table .col-origin {
+  width: 7%;
+}
+
+/* Movimientos: 7 columnas */
+.ro-movement-table .col-date {
+  width: 8%;
+}
+
+.ro-movement-table .col-movement {
+  width: 15%;
+}
+
+.ro-movement-table .col-resource {
+  width: 23%;
+}
+
+.ro-movement-table .col-quantity {
+  width: 10%;
+}
+
+.ro-movement-table .col-location {
+  width: 18%;
+}
+
+.ro-movement-table .col-work {
+  width: 18%;
+}
+
+.ro-movement-table .col-state {
+  width: 8%;
+}
+
+@media (max-width: 1100px) {
+  .ro-page {
+    padding: 18px 12px;
+  }
+
+  .ro-table-compact {
+    font-size: .68rem;
+  }
+
+  .ro-table-compact th,
+  .ro-table-compact td {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ro-table-wrap {
+    overflow-x: auto;
+  }
+
+  .ro-table-compact {
+    min-width: 980px;
+  }
+}
+</style>
+
+<div class="ro-page">
+
+  {# PLANIFICACION_RECURSOS_TABS_DEFAULT_V1_1 #}
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+    <div>
+      <h1 class="h3 mb-1">Planificación de recursos de obra</h1>
+
+      <div
+        class="mb-3 d-flex gap-2 flex-wrap"
+        data-resource-module-tabs="recursos"
+      >
+        <a
+          href="{% url 'planificacion_obra:asignaciones_list' %}"
+          class="btn btn-outline-primary btn-sm"
+          data-resource-module-tab="personal"
+        >
+          Personal
+        </a>
+
+        <a
+          href="{% url 'planificacion_obra:recursos_obra_list' %}"
+          class="btn btn-primary btn-sm"
+          data-resource-module-tab="recursos"
+          aria-current="page"
+        >
+          Recursos de obra
+        </a>
+      </div>
+
+      <p class="text-muted mb-0">
+        Consulta de recursos reales, previstos y movimientos de almacén.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      <a
+        href="{% url 'planificacion_obra:index' %}"
+        class="btn btn-outline-secondary"
+      >
+        ← Volver al panel
+      </a>
+    </div>
+  </div>
+
+  <form method="get" class="ro-toolbar mb-4">
+
+    <div class="row g-3 align-items-end">
+
+      <div class="col-xl-2 col-md-3">
+        <label class="form-label">Desde</label>
+
+        <input
+          type="date"
+          name="fecha_desde"
+          value="{{ filtros.fecha_desde }}"
+          class="form-control"
+        >
+      </div>
+
+      <div class="col-xl-2 col-md-3">
+        <label class="form-label">Hasta</label>
+
+        <input
+          type="date"
+          name="fecha_hasta"
+          value="{{ filtros.fecha_hasta }}"
+          class="form-control"
+        >
+      </div>
+
+      <div class="col-xl-3 col-md-6">
+        <label class="form-label">Obra</label>
+
+        <select name="obra" id="recursos-filter-obra" class="form-select">
+          <option value="">Todas</option>
+
+          {% for obra in obras %}
+            <option
+              value="{{ obra.id }}"
+              {% if filtros.obra|stringformat:"s" == obra.id|stringformat:"s" %}selected{% endif %}
+            >
+              {{ obra.codigo }} · {{ obra.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-2 col-md-4">
+        <label class="form-label">Edificio / Fase</label>
+
+        <select name="edificio" id="recursos-filter-edificio" class="form-select">
+          <option value="">Todos</option>
+
+          {% for item in edificios %}
+            <option
+              value="{{ item.id }}"
+              {% if filtros.edificio|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}
+            >
+              {{ item.label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-1 col-md-4">
+        <label class="form-label">Vivienda</label>
+
+        <select name="vivienda" id="recursos-filter-vivienda" class="form-select">
+          <option value="">Todas</option>
+
+          {% for item in viviendas %}
+            <option
+              value="{{ item.id }}"
+              {% if filtros.vivienda|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}
+            >
+              {{ item.label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-2 col-md-4">
+        <label class="form-label">Planta</label>
+
+        <select name="planta" id="recursos-filter-planta" class="form-select">
+          <option value="">Todas</option>
+
+          {% for item in plantas %}
+            <option
+              value="{{ item.id }}"
+              {% if filtros.planta|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}
+            >
+              {{ item.label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-2 col-md-4">
+        <label class="form-label">Capítulo</label>
+
+        <select name="capitulo" id="recursos-filter-capitulo" class="form-select">
+          <option value="">Todos</option>
+
+          {% for item in capitulos %}
+            <option
+              value="{{ item.id }}"
+              {% if filtros.capitulo|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}
+            >
+              {{ item.codigo }} · {{ item.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-3 col-md-4">
+        <label class="form-label">Partida</label>
+
+        <select name="partida" id="recursos-filter-partida" class="form-select">
+          <option value="">Todas</option>
+
+          {% for item in partidas %}
+            <option
+              value="{{ item.id }}"
+              {% if filtros.partida|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}
+            >
+              {{ item.codigo }} · {{ item.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-2 col-md-4">
+        <label class="form-label">Tipo de recurso</label>
+
+        <select name="tipo" class="form-select">
+          <option value="">Todos</option>
+
+          {% for value in tipo_choices %}
+            <option
+              value="{{ value }}"
+              {% if filtros.tipo == value %}selected{% endif %}
+            >
+              {{ value }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-3 col-md-6">
+        <label class="form-label">Buscar recurso</label>
+
+        <input
+          type="search"
+          name="q_recurso"
+          value="{{ filtros.q_recurso }}"
+          class="form-control"
+          placeholder="Nombre o código"
+        >
+      </div>
+
+      <div class="col-xl-2 col-md-6 d-flex gap-2">
+        <button
+          type="submit"
+          name="tab"
+          value="{{ tab }}"
+          class="btn btn-primary"
+        >
+          🔍 Filtrar
+        </button>
+
+        <a
+          href="{% url 'planificacion_obra:recursos_obra_list' %}?tab={{ tab }}"
+          class="btn btn-outline-secondary"
+        >
+          Limpiar
+        </a>
+      </div>
+
+    </div>
+
+    <hr class="my-3">
+
+    <div class="ro-tabs d-flex gap-2 flex-wrap">
+      <button
+        type="submit"
+        name="tab"
+        value="real"
+        class="btn {% if tab == 'real' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+      >
+        Recursos reales
+      </button>
+
+      <button
+        type="submit"
+        name="tab"
+        value="previsto"
+        class="btn {% if tab == 'previsto' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+      >
+        Recursos previstos
+      </button>
+
+      <button
+        type="submit"
+        name="tab"
+        value="movimientos"
+        class="btn {% if tab == 'movimientos' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+      >
+        Movimientos de almacén
+      </button>
+    </div>
+
+  </form>
+
+  <div class="row g-3 mb-4">
+
+    <div class="col-lg-3 col-md-4">
+      <div class="ro-kpi">
+        <div class="label">{{ kpis.principal_label }}</div>
+        <div class="value">{{ kpis.principal_value }}</div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-4">
+      <div class="ro-kpi">
+        <div class="label">{{ kpis.secundario_label }}</div>
+        <div class="value">{{ kpis.secundario_value }}</div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-4">
+      <div class="ro-kpi">
+        <div class="label">{{ kpis.importe_label }}</div>
+
+        <div class="value">
+          {% if tab == "real" or tab == "previsto" %}
+            {{ kpis.importe_value|floatformat:2 }} €
+          {% else %}
+            {{ kpis.importe_value }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-4">
+      <div class="ro-kpi">
+        <div class="label">Mostrados</div>
+
+        <div class="value">
+          {{ total_mostrados }}
+          <span class="fs-6 text-muted">/ {{ total_registros }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="ro-card overflow-hidden">
+
+    <div class="d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+      <div>
+        {% if tab == "real" %}
+          <strong>Recursos reales imputados a tareas</strong>
+        {% elif tab == "previsto" %}
+          <strong>Recursos previstos en planificación</strong>
+        {% else %}
+          <strong>Movimientos de almacén</strong>
+        {% endif %}
+
+        <div class="small text-muted">
+          Máximo 500 registros por consulta.
+        </div>
+      </div>
+
+      <span class="badge bg-dark">
+        {{ total_mostrados }} de {{ total_registros }}
+      </span>
+    </div>
+
+    <div class="ro-table-wrap">
+
+      {% if tab == "movimientos" %}
+
+        <table
+          class="table table-sm table-hover ro-table-compact ro-movement-table"
+          data-layout="compact-movimientos"
+        >
+          <colgroup>
+            <col class="col-date">
+            <col class="col-movement">
+            <col class="col-resource">
+            <col class="col-quantity">
+            <col class="col-location">
+            <col class="col-work">
+            <col class="col-state">
+          </colgroup>
+
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Movimiento</th>
+              <th>Recurso</th>
+              <th class="text-end">Cantidad</th>
+              <th>Ubicación</th>
+              <th>Partida / documento</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td class="ro-date">
+                  {{ row.fecha|date:"d/m/Y" }}
+
+                  {% if row.hora %}
+                    <span class="ro-sub">
+                      {{ row.hora|time:"H:i" }}
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  <span class="ro-main">
+                    {% if row.tipo_movimiento == "ENTRADA" %}
+                      <span class="badge bg-success ro-badge">Entrada</span>
+                    {% elif row.tipo_movimiento == "SALIDA" %}
+                      <span class="badge bg-primary ro-badge">Salida</span>
+                    {% elif row.tipo_movimiento == "ROTURA" %}
+                      <span class="badge bg-danger ro-badge">Rotura</span>
+                    {% else %}
+                      <span class="badge bg-secondary ro-badge">
+                        {{ row.tipo_movimiento }}
+                      </span>
+                    {% endif %}
+                  </span>
+
+                  <span
+                    class="ro-sub"
+                    title="{{ row.almacen }}"
+                  >
+                    {{ row.almacen }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="ro-main"
+                    title="{{ row.recurso.nombre }}"
+                  >
+                    {{ row.recurso.nombre }}
+                  </span>
+
+                  <span class="ro-sub">
+                    Cód. {{ row.recurso.legacy_id }}
+                    · {{ row.recurso_tipo }}
+                  </span>
+                </td>
+
+                <td class="ro-number">
+                  {{ row.cantidad|floatformat:2 }}
+                  {{ row.unidad }}
+                </td>
+
+                <td>
+                  <span
+                    class="ro-main"
+                    title="{{ row.obra_label }}"
+                  >
+                    {{ row.obra_label }}
+                  </span>
+
+                  <span
+                    class="ro-sub"
+                    title="{{ row.fase_label }} · Viv. {{ row.vivienda }} · {{ row.planta }}"
+                  >
+                    {{ row.fase_label }}
+                    · Viv. {{ row.vivienda }}
+                    · {{ row.planta }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="ro-main"
+                    title="{{ row.partida_codigo }} · {{ row.partida_nombre }}"
+                  >
+                    {% if row.partida_codigo %}
+                      {{ row.partida_codigo }} ·
+                    {% endif %}
+                    {{ row.partida_nombre }}
+                  </span>
+
+                  <span class="ro-sub">
+                    {% if row.albaran %}
+                      Alb. {{ row.albaran }}
+                    {% elif row.factura %}
+                      Fra. {{ row.factura }}
+                    {% else %}
+                      Sin documento
+                    {% endif %}
+                  </span>
+                </td>
+
+                <td>
+                  {% if row.imputado %}
+                    <span class="badge bg-success ro-badge">
+                      Imputado
+                    </span>
+                  {% else %}
+                    <span class="badge bg-secondary ro-badge">
+                      Pendiente
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+
+            {% empty %}
+              <tr>
+                <td colspan="7" class="ro-empty">
+                  No hay movimientos para los filtros seleccionados.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      {% else %}
+
+        <table
+          class="table table-sm table-hover ro-table-compact ro-resource-table"
+          data-layout="compact-recursos"
+        >
+          <colgroup>
+            <col class="col-date">
+            <col class="col-resource">
+            <col class="col-quantity">
+            <col class="col-price">
+            <col class="col-amount">
+            <col class="col-location">
+            <col class="col-work">
+            <col class="col-origin">
+          </colgroup>
+
+          <thead>
+            <tr>
+              <th>
+                {% if tab == "previsto" %}
+                  Periodo
+                {% else %}
+                  Fecha
+                {% endif %}
+              </th>
+
+              <th>Recurso</th>
+              <th class="text-end">Cantidad</th>
+              <th class="text-end">Precio</th>
+              <th class="text-end">Importe</th>
+              <th>Ubicación</th>
+              <th>Capítulo / partida</th>
+              <th>Origen</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td class="ro-date">
+                  <span class="ro-main">
+                    {{ row.fecha|date:"d/m/Y"|default:"—" }}
+                  </span>
+
+                  {% if row.fecha_fin and row.fecha_fin != row.fecha %}
+                    <span class="ro-sub">
+                      hasta {{ row.fecha_fin|date:"d/m/Y" }}
+                    </span>
+                  {% elif tab == "previsto" %}
+                    <span class="ro-sub">
+                      {{ row.fecha_origen }}
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  <span
+                    class="ro-main"
+                    title="{{ row.recurso.nombre }}"
+                  >
+                    {{ row.recurso.nombre }}
+                  </span>
+
+                  <span class="ro-sub">
+                    Cód. {{ row.recurso.legacy_id }}
+                    · {{ row.recurso_tipo }}
+                  </span>
+                </td>
+
+                <td class="ro-number">
+                  {{ row.cantidad|floatformat:2 }}
+                  {{ row.unidad }}
+                </td>
+
+                <td class="ro-number">
+                  {{ row.precio|floatformat:2 }} €
+                </td>
+
+                <td class="ro-number">
+                  <strong>
+                    {{ row.importe|floatformat:2 }} €
+                  </strong>
+                </td>
+
+                <td>
+                  <span
+                    class="ro-main"
+                    title="{{ row.obra_label }}"
+                  >
+                    {{ row.obra_label }}
+                  </span>
+
+                  <span
+                    class="ro-sub"
+                    title="{{ row.fase_label }} · Viv. {{ row.vivienda }} · {{ row.planta }}"
+                  >
+                    {{ row.fase_label }}
+                    · Viv. {{ row.vivienda }}
+                    · {{ row.planta }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="ro-main"
+                    title="{{ row.capitulo_codigo }} · {{ row.capitulo_nombre }}"
+                  >
+                    {% if row.capitulo_codigo %}
+                      {{ row.capitulo_codigo }} ·
+                    {% endif %}
+                    {{ row.capitulo_nombre }}
+                  </span>
+
+                  <span
+                    class="ro-sub"
+                    title="{{ row.partida_codigo }} · {{ row.partida_nombre }}"
+                  >
+                    {% if row.partida_codigo %}
+                      {{ row.partida_codigo }} ·
+                    {% endif %}
+                    {{ row.partida_nombre }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="ro-main">
+                    {% if row.albaran %}
+                      Alb. {{ row.albaran }}
+                    {% elif row.factura %}
+                      Fra. {{ row.factura }}
+                    {% elif tab == "previsto" %}
+                      {{ row.fecha_origen }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </span>
+
+                  {% if row.tarea_url %}
+                    <span class="ro-sub">
+                      <a
+                        href="{{ row.tarea_url }}"
+                        title="{{ row.tarea_label }}"
+                      >
+                        👁 Ver tarea
+                      </a>
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+
+            {% empty %}
+              <tr>
+                <td colspan="8" class="ro-empty">
+                  No hay recursos para los filtros seleccionados.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+<!-- RECURSOS_OBRA_FILTROS_CASCADA_V1 -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const obra = document.getElementById("recursos-filter-obra");
+  const edificio = document.getElementById("recursos-filter-edificio");
+  const vivienda = document.getElementById("recursos-filter-vivienda");
+  const planta = document.getElementById("recursos-filter-planta");
+  const capitulo = document.getElementById("recursos-filter-capitulo");
+  const partida = document.getElementById("recursos-filter-partida");
+
+  if (!obra) return;
+
+  const form = obra.closest("form");
+  if (!form) return;
+
+  function resetSelect(select) {
+    if (select) {
+      select.selectedIndex = 0;
+    }
+  }
+
+  function reloadFilters() {
+    form.submit();
+  }
+
+  obra.addEventListener("change", function () {
+    resetSelect(edificio);
+    resetSelect(vivienda);
+    resetSelect(planta);
+    resetSelect(capitulo);
+    resetSelect(partida);
+    reloadFilters();
+  });
+
+  if (edificio) {
+    edificio.addEventListener("change", function () {
+      resetSelect(vivienda);
+      resetSelect(planta);
+      resetSelect(capitulo);
+      resetSelect(partida);
+      reloadFilters();
+    });
+  }
+
+  if (vivienda) {
+    vivienda.addEventListener("change", function () {
+      resetSelect(planta);
+      resetSelect(capitulo);
+      resetSelect(partida);
+      reloadFilters();
+    });
+  }
+
+  if (planta) {
+    planta.addEventListener("change", function () {
+      resetSelect(capitulo);
+      resetSelect(partida);
+      reloadFilters();
+    });
+  }
+
+  if (capitulo) {
+    capitulo.addEventListener("change", function () {
+      resetSelect(partida);
+      reloadFilters();
+    });
+  }
+});
+</script>
+
+
+{% endblock %}

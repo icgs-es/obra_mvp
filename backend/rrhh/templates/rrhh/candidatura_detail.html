@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}RRHH · {{ candidatura.candidato.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <a
+        href="{% url 'rrhh:proceso_seleccion_detail' candidatura.proceso.pk %}"
+        class="btn btn-sm btn-outline-secondary mb-3"
+      >
+        <i class="bi bi-arrow-left"></i> Volver al proceso
+      </a>
+      <h1 class="h3 mb-1">
+        {{ candidatura.candidato.nombre_completo }}
+      </h1>
+      <div class="text-muted">
+        {{ candidatura.proceso.titulo }} ·
+        {{ candidatura.proceso.team.name }}
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a
+        href="{% url 'rrhh:candidatura_desde_cv' candidatura.proceso.pk %}"
+        class="btn btn-success"
+      >
+        <i class="bi bi-file-earmark-plus"></i>
+        Cargar otro CV
+      </a>
+
+      {% if candidatura.cv_disponible %}
+        <a
+          href="{% url 'rrhh:candidatura_cv' candidatura.pk %}"
+          target="_blank"
+          class="btn btn-outline-danger"
+        >
+          <i class="bi bi-file-earmark-pdf"></i>
+          Ver currículo
+        </a>
+        <a
+          href="{% url 'rrhh:candidatura_cv_remove' candidatura.pk %}"
+          class="btn btn-outline-danger"
+        >
+          <i class="bi bi-file-earmark-x"></i>
+          Quitar PDF
+        </a>
+      {% endif %}
+
+      <a
+        href="{% url 'rrhh:candidatura_edit' candidatura.pk %}"
+        class="btn btn-primary"
+      >
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+
+      {% if request.user.is_superuser or perms.rrhh.delete_candidatura %}
+        <a
+          href="{% url 'rrhh:candidatura_delete' candidatura.pk %}"
+          class="btn btn-danger"
+        >
+          <i class="bi bi-trash"></i>
+          Eliminar candidatura
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Evaluación</strong>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="text-muted small">Estado</div>
+              <strong>{{ candidatura.get_estado_display }}</strong>
+            </div>
+            <div class="col-md-3">
+              <div class="text-muted small">Puntuación</div>
+              <strong>
+                {% if candidatura.puntuacion %}
+                  {{ candidatura.puntuacion }}/5
+                {% else %}
+                  —
+                {% endif %}
+              </strong>
+            </div>
+            <div class="col-md-3">
+              <div class="text-muted small">Origen</div>
+              <strong>{{ candidatura.get_origen_display }}</strong>
+            </div>
+            <div class="col-md-3">
+              <div class="text-muted small">Solicitud</div>
+              <strong>
+                {{ candidatura.fecha_solicitud|date:"d/m/Y" }}
+              </strong>
+            </div>
+            <div class="col-12">
+              <div class="text-muted small">
+                Observaciones de revisión
+              </div>
+              {{ candidatura.observaciones_revision|linebreaksbr|default:"—" }}
+            </div>
+            <div class="col-12">
+              <div class="text-muted small">
+                Observaciones de entrevista
+              </div>
+              {{ candidatura.observaciones_entrevista|linebreaksbr|default:"—" }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Seguimiento</strong>
+        </div>
+        <div class="card-body border-bottom">
+          <form
+            method="post"
+            action="{% url 'rrhh:candidatura_seguimiento_add' candidatura.pk %}"
+          >
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">
+                  {{ seguimiento_form.tipo.label }}
+                </label>
+                {{ seguimiento_form.tipo }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">
+                  {{ seguimiento_form.fecha.label }}
+                </label>
+                {{ seguimiento_form.fecha }}
+              </div>
+              <div class="col-md-2 d-flex align-items-end">
+                <div class="form-check mb-2">
+                  {{ seguimiento_form.completado }}
+                  <label class="form-check-label">
+                    Completado
+                  </label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">
+                  {{ seguimiento_form.notas.label }}
+                </label>
+                {{ seguimiento_form.notas }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">
+                  {{ seguimiento_form.resultado.label }}
+                </label>
+                {{ seguimiento_form.resultado }}
+              </div>
+              <div class="col-12">
+                <button class="btn btn-outline-primary">
+                  <i class="bi bi-plus-lg"></i>
+                  Añadir seguimiento
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="list-group list-group-flush">
+          {% for seguimiento in seguimientos %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between gap-3">
+                <div>
+                  <strong>{{ seguimiento.get_tipo_display }}</strong>
+                  {% if seguimiento.completado %}
+                    <span class="badge bg-success ms-1">
+                      Completado
+                    </span>
+                  {% endif %}
+                  <div>
+                    {{ seguimiento.notas|linebreaksbr|default:"—" }}
+                  </div>
+                  {% if seguimiento.resultado %}
+                    <div class="small text-muted mt-1">
+                      Resultado: {{ seguimiento.resultado }}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="text-end small text-muted">
+                  {{ seguimiento.fecha|date:"d/m/Y H:i" }}
+                  <br>
+                  {{ seguimiento.usuario|default:"Sistema" }}
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="list-group-item text-muted">
+              Sin seguimientos.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Datos del candidato</strong>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="text-muted small">Perfil</div>
+            <strong>
+              {{ candidatura.candidato.perfil_profesional|default:"—" }}
+            </strong>
+          </div>
+          <div class="mb-3">
+            <div class="text-muted small">Ciudad</div>
+            {{ candidatura.candidato.ciudad|default:"—" }}
+          </div>
+          <div class="mb-3">
+            <div class="text-muted small">Teléfono</div>
+            {{ candidatura.candidato.telefono|default:"—" }}
+          </div>
+          <div class="mb-3">
+            <div class="text-muted small">Correo</div>
+            {{ candidatura.candidato.email|default:"—" }}
+          </div>
+          <div class="mb-3">
+            <div class="text-muted small">LinkedIn</div>
+            {% if candidatura.candidato.linkedin_url %}
+              <a
+                href="{{ candidatura.candidato.linkedin_url }}"
+                target="_blank"
+              >
+                Abrir perfil
+              </a>
+            {% else %}
+              —
+            {% endif %}
+          </div>
+          <div>
+            <div class="text-muted small">
+              Observaciones generales
+            </div>
+            {{ candidatura.candidato.observaciones|linebreaksbr|default:"—" }}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <strong>Planificación</strong>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="text-muted small">Responsable</div>
+            {{ candidatura.responsable|default:"—" }}
+          </div>
+          <div class="mb-3">
+            <div class="text-muted small">Próximo contacto</div>
+            {{ candidatura.fecha_proximo_contacto|date:"d/m/Y H:i"|default:"—" }}
+          </div>
+          <div>
+            <div class="text-muted small">Entrevista</div>
+            {{ candidatura.fecha_entrevista|date:"d/m/Y H:i"|default:"—" }}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header bg-white">
+          <strong>Currículo</strong>
+        </div>
+        <div class="card-body">
+          {% if candidatura.cv_disponible %}
+            <div class="mb-2">
+              {{ candidatura.cv_nombre }}
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a
+                href="{% url 'rrhh:candidatura_cv' candidatura.pk %}"
+                target="_blank"
+                class="btn btn-sm btn-outline-danger"
+              >
+                <i class="bi bi-file-earmark-pdf"></i>
+                Abrir PDF
+              </a>
+              <a
+                href="{% url 'rrhh:candidatura_cv_remove' candidatura.pk %}"
+                class="btn btn-sm btn-outline-danger"
+              >
+                <i class="bi bi-file-earmark-x"></i>
+                Quitar PDF
+              </a>
+            </div>
+          {% else %}
+            <span class="text-muted">
+              Sin currículo vinculado.
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

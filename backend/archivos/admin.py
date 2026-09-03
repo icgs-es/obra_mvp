@@ -4,8 +4,8 @@ from .models import Carpeta, Archivo, ArchivoLog
 
 @admin.register(Carpeta)
 class CarpetaAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "parent", "visibilidad", "departamento", "owner", "created_at")
-    list_filter = ("visibilidad", "departamento")
+    list_display = ("nombre", "team", "parent", "visibilidad", "departamento", "owner", "created_at")
+    list_filter = ("team", "visibilidad", "departamento")
     search_fields = ("nombre", "departamento", "owner__username", "owner__first_name", "owner__last_name")
     autocomplete_fields = ("parent", "owner")
 
@@ -26,3 +26,62 @@ class ArchivoLogAdmin(admin.ModelAdmin):
     search_fields = ("archivo__nombre_original", "usuario__username")
     autocomplete_fields = ("archivo", "usuario")
     readonly_fields = ("fecha",)
+
+# ARCHIVOS_RBAC_P1A_ADMIN_V1
+from .models import ReglaAccesoRaizCloud
+
+
+@admin.register(ReglaAccesoRaizCloud)
+class ReglaAccesoRaizCloudAdmin(
+    admin.ModelAdmin
+):
+    list_display = (
+        "nombre_raiz",
+        "activa",
+        "visible_para_todos",
+        "grupos_autorizados",
+        "updated_at",
+    )
+
+    list_filter = (
+        "activa",
+        "visible_para_todos",
+        "grupos",
+    )
+
+    search_fields = (
+        "nombre_raiz",
+        "descripcion",
+        "grupos__name",
+    )
+
+    filter_horizontal = (
+        "grupos",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+    ordering = (
+        "nombre_raiz",
+    )
+
+    def grupos_autorizados(
+        self,
+        obj,
+    ):
+        return ", ".join(
+            obj.grupos
+            .order_by("name")
+            .values_list(
+                "name",
+                flat=True,
+            )
+        ) or "—"
+
+    grupos_autorizados.short_description = (
+        "Grupos autorizados"
+    )
+

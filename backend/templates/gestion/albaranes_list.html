@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% load gestion_money %}
+
+{% block content %}
+{# LISTADOS_SOLO_AMBITO_OCULTAR_CENTRO_COSTE_V1 #}
+<style>
+  .gestion-list table {
+    font-size: .875rem;
+  }
+  .gestion-list .col-proveedor {
+    max-width: 260px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gestion-list .col-actions {
+    width: 150px;
+  }
+  .gestion-actions {
+    display: inline-flex;
+    gap: .25rem;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+  .gestion-actions .btn {
+    padding: .15rem .45rem;
+    font-size: .75rem;
+    line-height: 1.25;
+  }
+  .gestion-list .gestion-top-actions .btn {
+    font-size: .82rem;
+    padding: .28rem .55rem;
+    line-height: 1.2;
+  }
+</style>
+
+<div class="container-fluid py-3 gestion-list">
+
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Albaranes de proveedores</h1>
+      <div class="text-muted small">Alta, edición y control de albaranes por empresa.</div>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% if modo_todas %}
+        <span class="badge bg-primary">TODAS LAS EMPRESAS</span>
+      {% elif team %}
+        <span class="badge bg-primary">{{ team.name }}</span>
+      {% endif %}
+      <a href="/app/gestion/" class="btn btn-outline-secondary btn-sm">Gestión</a>
+      <a href="/app/gestion/albaranes/informe/{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-dark btn-sm">Informe</a>
+      <a href="/app/gestion/albaranes/desde-pdf/?next={{ request.get_full_path|urlencode }}" class="btn btn-outline-primary btn-sm">Desde PDF</a>
+      <a href="/app/gestion/albaranes/nuevo/?next={{ request.get_full_path|urlencode }}" class="btn btn-primary btn-sm">Nuevo albarán</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if sin_team %}
+    <div class="alert alert-warning">No tienes empresa activa asignada.</div>
+  {% else %}
+
+  <form method="get" class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label small text-muted">Buscar</label>
+          <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Código, proveedor, CIF, descripción...">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label small text-muted">Asignado</label>
+          <select name="asignado" class="form-select form-select-sm">
+            {# ALBARANES_FILTRO_ASIGNACION_PARTIDAS_V1 #}
+            <option value="" {% if not asignado %}selected{% endif %}>Todos</option>
+            <option value="no" {% if asignado == "no" %}selected{% endif %}>No</option>
+            <option value="parcial" {% if asignado == "parcial" %}selected{% endif %}>Parcial</option>
+            <option value="si" {% if asignado == "si" %}selected{% endif %}>Sí</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label small text-muted">Auditoría</label>
+          <select name="aviso" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            <option value="OK" {% if aviso == "OK" %}selected{% endif %}>OK</option>
+            <option value="SIN_LINEAS" {% if aviso == "SIN_LINEAS" %}selected{% endif %}>Sin líneas</option>
+            <option value="DIFERENCIA_LINEAS" {% if aviso == "DIFERENCIA_LINEAS" %}selected{% endif %}>Diferencia líneas</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label small text-muted">PDF</label>
+          <select name="pdf" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            <option value="con" {% if pdf == "con" %}selected{% endif %}>Con PDF</option>
+            <option value="sin" {% if pdf == "sin" %}selected{% endif %}>Sin PDF</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-1 d-grid">
+          <button class="btn btn-primary btn-sm">Filtrar</button>
+        </div>
+      </div>
+
+        {# FILTROS_AMBITO_CENTRO_COSTE_ALBARANES_V3 #}
+        <div class="row g-2 align-items-end mt-1">
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted">Ámbito</label>
+            <select name="ambito_gestion" class="form-select form-select-sm">
+              {% for value,label in ambitos_gestion %}
+                <option value="{{ value }}" {% if ambito_gestion == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-6 col-md-2 d-grid">
+            <a href="/app/gestion/albaranes/" class="btn btn-outline-secondary btn-sm">Limpiar filtros</a>
+          </div>
+        </div>
+
+    </div>
+  </form>
+
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <div class="small text-muted">{{ total_resultados }} albaranes</div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Orden albaranes">
+      <a class="btn btn-outline-secondary {% if orden == '-cod_albaran' %}active{% endif %}"
+         href="?orden=-cod_albaran{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Código ↓</a>
+      <a class="btn btn-outline-secondary {% if orden == 'cod_albaran' %}active{% endif %}"
+         href="?orden=cod_albaran{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Código ↑</a>
+      <a class="btn btn-outline-secondary {% if orden == '-fecha_albaran' %}active{% endif %}"
+         href="?orden=-fecha_albaran{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Fecha ↓</a>
+      <a class="btn btn-outline-secondary {% if orden == 'fecha_albaran' %}active{% endif %}"
+         href="?orden=fecha_albaran{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Fecha ↑</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th>
+            {% if modo_todas %}<th>Empresa</th>{% endif %}
+            <th>Nº proveedor</th>
+            <th>Proveedor</th>
+              <th>Ámbito</th>
+            <th>Fecha</th>
+            <th>Asignado</th>
+            <th>Auditoría</th>
+            <th>PDF</th>
+            <th class="text-end">Importe</th>
+            <th class="text-end col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in page_obj %}
+          <tr>
+            <td class="fw-semibold">
+              <a href="/app/gestion/albaranes/{{ a.id }}/?next={{ request.get_full_path|urlencode }}" class="text-decoration-none">{{ a.cod_albaran }}</a>
+            </td>
+            {% if modo_todas %}
+              <td><span class="badge bg-light text-dark border">{{ a.team.name }}</span></td>
+            {% endif %}
+            <td>{{ a.num_albaran_proveedor|default:"—" }}</td>
+            <td class="col-proveedor">{{ a.proveedor|default:"—" }}</td>
+              <td>
+                {% if a.ambito_gestion == "SIN_CLASIFICAR" %}
+                  <span class="badge bg-warning text-dark">Sin clasificar</span>
+                {% elif a.ambito_gestion == "OBRA" %}
+                  <span class="badge bg-primary">Obra</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ a.ambito_gestion|default:"—" }}</span>
+                {% endif %}
+              </td>
+            <td>{{ a.fecha_albaran|date:"d/m/Y" }}</td>
+              <td>
+                {# ALBARANES_LIST_ESTADO_ASIGNACION_PARCIAL_V1 #}
+                {% if a.suma_lineas_cantidad and a.suma_lineas_asignada >= a.suma_lineas_cantidad %}
+                  <span class="badge bg-success">Sí</span>
+                {% elif a.suma_lineas_asignada %}
+                  <span class="badge bg-warning text-dark">Parcial</span>
+                {% else %}
+                  <span class="badge bg-secondary">No</span>
+                {% endif %}
+              </td>
+            <td>
+              {% if a.audit_estado == "OK" %}
+                <span class="badge bg-success">OK</span>
+              {% elif a.audit_estado == "SIN_LINEAS" %}
+                <span class="badge bg-secondary">Sin líneas</span>
+              {% elif a.audit_estado == "DIFERENCIA_LINEAS" %}
+                <span class="badge bg-warning text-dark">Diferencia</span>
+              {% else %}
+                <span class="badge bg-light text-muted border">{{ a.audit_estado|default:"—" }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if a.has_pdf %}
+                <span class="badge bg-info text-dark">PDF</span>
+              {% else %}
+                <span class="badge bg-light text-muted border">Sin PDF</span>
+              {% endif %}
+            </td>
+            <td class="text-end">{{ a.importe_albaran|money_es }}</td>
+            <td class="text-end col-actions">
+              <div class="gestion-actions">
+                <a href="/app/gestion/albaranes/{{ a.id }}/editar/?next={{ request.get_full_path|urlencode }}" class="btn btn-outline-primary btn-sm">Editar</a>
+              
+                {# ALBARAN_DELETE_PERMISSION_V2 #}
+                {% if request.user.is_superuser or perms.gestion.delete_albaranproveedorgestion %}
+                  <a
+                    href="{% url 'gestion:albaran_delete' a.id %}?next={{ request.get_full_path|urlencode }}"
+                    class="btn btn-outline-danger btn-sm"
+                  >
+                    Eliminar
+                  </a>
+                {% endif %}
+</div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if modo_todas %}11{% else %}10{% endif %}" class="text-muted p-3">No hay albaranes con estos filtros.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+      <div class="small text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+      <div class="btn-group btn-group-sm">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Siguiente</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

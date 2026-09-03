@@ -46,6 +46,66 @@
     <div class="card-body">
       <form method="post" novalidate>
         {% csrf_token %}
+{% if mode == "create" and not active_agenda_team %}
+<div style="margin-bottom: 1rem;">
+  <label
+    for="id_team"
+    style="display:block; font-weight:600; margin-bottom:0.35rem;"
+  >
+    Empresa
+  </label>
+
+  <select
+    name="team"
+    id="id_team"
+    required
+    style="width:100%; min-height:2.4rem; padding:0.45rem 0.65rem; border:1px solid #ced4da; border-radius:0.35rem; background:#fff;"
+  >
+    <option value="">
+      Selecciona una empresa
+    </option>
+
+    {% for company in available_agenda_teams %}
+      <option
+        value="{{ company.pk }}"
+        {% if selected_agenda_team_id == company.pk|stringformat:"s" %}selected{% endif %}
+      >
+        {{ company.name }}
+      </option>
+    {% endfor %}
+  </select>
+
+  <div style="margin-top:0.3rem; color:#6c757d; font-size:0.875rem;">
+    El evento quedará vinculado a la empresa seleccionada.
+  </div>
+</div>
+{% else %}
+<div style="margin-bottom: 1rem;">
+  <label
+    for="id_team_display"
+    style="display:block; font-weight:600; margin-bottom:0.35rem;"
+  >
+    Empresa
+  </label>
+
+  <input
+    type="text"
+    id="id_team_display"
+    readonly
+    value="{% if mode == "edit" and form.instance.team_id %}{{ form.instance.team.name }}{% elif active_agenda_team %}{{ active_agenda_team.name }}{% else %}Sin empresa asignada{% endif %}"
+    style="width:100%; min-height:2.4rem; padding:0.45rem 0.65rem; border:1px solid #ced4da; border-radius:0.35rem; background:#f8f9fa;"
+  >
+
+  <div style="margin-top:0.3rem; color:#6c757d; font-size:0.875rem;">
+    {% if mode == "edit" %}
+      Empresa actualmente vinculada al evento.
+    {% else %}
+      Empresa activa del portal.
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 
         {% if form.non_field_errors %}
           <div class="alert alert-danger">

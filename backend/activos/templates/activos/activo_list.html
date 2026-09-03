@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .saas-header-toolbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 1.5rem;
+  }
+
+  .saas-header-toolbar__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: #283046;
+    white-space: nowrap;
+  }
+
+  .saas-header-toolbar__filters {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .saas-toolbar-search {
+    min-width: 240px;
+    max-width: 320px;
+  }
+
+  .saas-toolbar-select {
+    min-width: 140px;
+  }
+
+  .saas-header-toolbar__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .saas-header-toolbar__filters > * {
+    flex: 0 0 auto;
+  }
+
+  .saas-header-toolbar__filters .form-control,
+  .saas-header-toolbar__filters .form-select {
+    width: auto !important;
+  }
+
+  .saas-toolbar-search {
+    width: 260px !important;
+  }
+
+  .saas-toolbar-select {
+    width: 170px !important;
+  }
+
+  @media (max-width: 1100px) {
+    .saas-header-toolbar {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+
+    .saas-header-toolbar__filters {
+      flex-wrap: wrap;
+    }
+
+    .saas-toolbar-search,
+    .saas-toolbar-select {
+      min-width: 180px;
+      max-width: 100%;
+    }
+
+    .saas-header-toolbar__actions {
+      justify-content: flex-start;
+    }
+  }
+</style>
+
+<div class="container-fluid">
+  <div class="saas-header-toolbar">
+    <div class="saas-header-toolbar__section saas-header-toolbar__title">
+      <span>Activos</span>
+      <span class="saas-header-toolbar__count">({{ total_resultados }})</span>
+    </div>
+
+    <form method="get" class="saas-header-toolbar__section saas-header-toolbar__filters d-flex flex-wrap gap-2 align-items-center">
+      <input
+        type="search"
+        name="q"
+        class="form-control form-control-sm saas-toolbar-search"
+        placeholder="Buscar..."
+        value="{{ filtros.q|default:'' }}"
+      >
+
+      <select name="tipo" class="form-select form-select-sm saas-toolbar-select">
+        <option value="">Tipo activo</option>
+        {% for t in tipo_choices %}
+          <option value="{{ t.0 }}" {% if filtros.tipo == t.0 %}selected{% endif %}>{{ t.1 }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="estado" class="form-select form-select-sm saas-toolbar-select">
+        <option value="">Estado</option>
+        {% for e in estado_choices %}
+          <option value="{{ e.0 }}" {% if filtros.estado == e.0 %}selected{% endif %}>{{ e.1 }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="gestor" class="form-select form-select-sm saas-toolbar-select">
+        <option value="">Gestor</option>
+        {% for g in gestor_choices %}
+          <option value="{{ g.0 }}" {% if filtros.gestor == g.0 %}selected{% endif %}>{{ g.1 }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+      <a href="{% url 'activos:list' %}" class="btn btn-sm btn-link saas-toolbar-clear ms-1">Limpiar</a>
+    </form>
+
+    <div class="saas-header-toolbar__section saas-header-toolbar__actions">
+      <a href="{% url 'activos:create' %}" class="btn btn-sm btn-primary">Nuevo activo</a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-8">
+      <div class="card">
+        <div class="card-body py-2 px-3" style="font-size: 0.93em">
+          <div class="table-responsive">
+            <table class="table table-striped table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+              <thead class="text-nowrap">
+                <tr>
+                  <th>Código externo</th>
+                  <th>Nombre</th>
+                  <th>Tipo activo</th>
+                  <th>Estado operativo</th>
+                  <th>Situación</th>
+                  <th>Origen</th>
+                  <th>Team</th>
+                  <th>Actualizado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="text-nowrap">
+                {% for activo in activos %}
+                <tr>
+                  <td>
+                    <!-- <a href="?activo={{ activo.id }}" class="text-decoration-none">
+                      {{ activo.codigo_externo }}
+                    </a> -->
+                    <a
+                      href="?activo={{ activo.id }}{% if filtros.q %}&q={{ filtros.q|urlencode }}{% endif %}{% if filtros.tipo %}&tipo={{ filtros.tipo|urlencode }}{% endif %}{% if filtros.estado %}&estado={{ filtros.estado|urlencode }}{% endif %}{% if filtros.gestor %}&gestor={{ filtros.gestor|urlencode }}{% endif %}"
+                      class="text-decoration-none"
+                    >
+                      {{ activo.codigo_externo }}
+                    </a>
+                  </td>
+                  <td>{{ activo.nombre|default:"-" }}</td>
+                  <td>{{ activo.get_tipo_activo_display|default:activo.tipo_activo }}</td>
+                  <td>{{ activo.get_estado_operativo_display|default:activo.estado_operativo|default:"-" }}</td>
+                  <td>{{ activo.situacion_activo|default:"-" }}</td>
+                  <td>{{ activo.origen_sistema|default:"-" }}</td>
+                  <td>{{ activo.team }}</td>
+                  <td>{{ activo.updated_at|date:"d/m/Y H:i" }}</td>
+                  <td style="white-space:nowrap;">
+                    <a href="{% url 'activos:detail' activo.id %}" class="text-decoration-none me-2" title="Ver">
+                      <span aria-hidden="true">&#128065;</span>
+                    </a>
+                    <a href="{% url 'activos:update' activo.id %}" class="text-decoration-none me-2" title="Editar">
+                      <span aria-hidden="true">&#9998;</span>
+                    </a>
+                    <a href="{% url 'activos:delete' activo.id %}" class="text-decoration-none text-danger" title="Eliminar">
+                      <span aria-hidden="true">&#128465;</span>
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="9">No hay activos disponibles.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="card">
+        <div class="card-body py-2 px-3" style="font-size: 0.93em">
+          {% if activo_seleccionado %}
+            <h6 class="card-title mb-2" style="font-size: 1.02rem;">Resumen del activo</h6>
+
+            <p class="mb-1 small"><strong>Código:</strong> {{ activo_seleccionado.codigo_externo }}</p>
+            <p class="mb-1 small"><strong>Nombre:</strong> {{ activo_seleccionado.nombre|default:"-" }}</p>
+            <p class="mb-1 small"><strong>Tipo activo:</strong> {{ activo_seleccionado.get_tipo_activo_display|default:activo_seleccionado.tipo_activo }}</p>
+            <p class="mb-1 small"><strong>Estado:</strong> {{ activo_seleccionado.get_estado_operativo_display|default:activo_seleccionado.estado_operativo|default:"-" }}</p>
+            <p class="mb-2 small"><strong>Situación:</strong> {{ activo_seleccionado.situacion_activo|default:"-" }}</p>
+            <p class="mb-1 small"><strong>Team:</strong> {{ activo_seleccionado.team }}</p>
+            <p class="mb-2 small"><strong>Actualizado:</strong> {{ activo_seleccionado.updated_at|date:"d/m/Y H:i" }}</p>
+
+            <hr>
+
+            <h6 class="mb-3">Actividades activas</h6>
+            {% if actividades_activas %}
+              <ul class="list-group list-group-flush mb-3">
+                {% for actividad in actividades_activas %}
+                  <li class="list-group-item px-0">
+                    <div><strong>{{ actividad.tipo_actividad|default:"Actividad" }}</strong></div>
+                    <div class="small text-muted">
+                      {{ actividad.estado|default:"-" }}
+                      {% if actividad.fecha %} · {{ actividad.fecha|date:"d/m/Y" }}{% endif %}
+                    </div>
+                    <div class="small">
+                      {{ actividad.usuario|default:"Sin asignar" }}
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted">No hay actividades activas.</p>
+            {% endif %}
+
+            <hr>
+
+            <h6 class="mb-3">Acciones rápidas</h6>
+            <div class="d-grid gap-2">
+              <a href="#" class="btn btn-primary btn-sm">Nuevo activo</a>
+              <a href="#" class="btn btn-outline-secondary btn-sm">Ver historial</a>
+              {% if activo_seleccionado %}
+              <a href="#" class="btn btn-outline-dark btn-sm">Editar activo</a>
+              {% endif %}
+            </div>
+          {% else %}
+            <h6 class="card-title mb-1" style="font-size: 1.02rem;">Detalle</h6>
+            <p class="text-muted mb-0 small">
+              Selecciona un activo de la tabla para ver su resumen, actividades activas y acciones rápidas.
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load archivos_navigation %}
+
+{% block title %}
+  {{ archivo.nombre_original }} — Office
+{% endblock %}
+
+{% block content %}
+
+{% document_return_url archivo as return_url %}
+{% document_detail_url archivo return_url as detail_url %}
+{% document_breadcrumbs archivo as document_crumbs %}
+
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+        <div class="min-w-0">
+
+          <nav aria-label="Ruta documental">
+            <ol class="breadcrumb small mb-1">
+
+              {% for crumb in document_crumbs %}
+                <li class="breadcrumb-item">
+                  <a href="{{ crumb.url }}">
+                    {{ crumb.name }}
+                  </a>
+                </li>
+              {% endfor %}
+
+              <li class="breadcrumb-item active"
+                  aria-current="page">
+                {{ archivo.nombre_original }}
+              </li>
+
+            </ol>
+          </nav>
+
+          <h1 class="h5 mb-1 text-break">
+            {{ archivo.nombre_original }}
+          </h1>
+
+          <div class="small text-muted">
+            Editor Office · INTASA Documents
+          </div>
+
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+          <a href="{{ return_url }}"
+             class="btn btn-outline-secondary">
+            ← Volver a carpeta
+          </a>
+
+          <a href="{{ detail_url }}"
+             class="btn btn-outline-primary">
+            Volver al documento
+          </a>
+
+          <button id="openOfficeFullWindow"
+                  type="button"
+                  class="btn btn-primary">
+            Abrir en ventana completa
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm overflow-hidden">
+
+    <div id="officeLoading"
+         class="p-4 text-center text-muted">
+      Cargando editor Office…
+    </div>
+
+    <iframe id="intasaOfficeFrame"
+            name="intasa-office-frame"
+            title="Editor de {{ archivo.nombre_original }}"
+            allow="clipboard-read; clipboard-write; fullscreen"
+            style="display:block; width:100%; height:80vh; border:0;">
+    </iframe>
+
+  </div>
+
+  <form id="office-launch-form"
+        method="post"
+        action="{{ office.action_url }}"
+        target="intasa-office-frame"
+        class="d-none">
+
+    <input type="hidden"
+           name="access_token"
+           value="{{ office.access_token }}">
+
+    <input type="hidden"
+           name="access_token_ttl"
+           value="{{ office.access_token_ttl }}">
+
+  </form>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const form = document.getElementById(
+    "office-launch-form"
+  );
+
+  const frame = document.getElementById(
+    "intasaOfficeFrame"
+  );
+
+  const loading = document.getElementById(
+    "officeLoading"
+  );
+
+  const fullButton = document.getElementById(
+    "openOfficeFullWindow"
+  );
+
+  function launchOffice(targetName) {
+    if (!form) {
+      return;
+    }
+
+    const originalTarget = form.target;
+
+    form.target = targetName;
+    form.submit();
+    form.target = originalTarget;
+  }
+
+  if (frame) {
+    frame.addEventListener(
+      "load",
+      function () {
+        if (loading) {
+          loading.classList.add("d-none");
+        }
+      }
+    );
+  }
+
+  window.addEventListener(
+    "DOMContentLoaded",
+    function () {
+      launchOffice(
+        "intasa-office-frame"
+      );
+    }
+  );
+
+  if (fullButton) {
+    fullButton.addEventListener(
+      "click",
+      function () {
+        launchOffice("_blank");
+      }
+    );
+  }
+})();
+</script>
+
+{% endblock %}

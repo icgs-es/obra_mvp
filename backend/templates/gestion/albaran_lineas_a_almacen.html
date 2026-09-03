@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Enviar líneas de albarán a almacén</h1>
+      <div class="text-muted small">
+        Albarán {{ albaran.cod_albaran }} · {{ albaran.proveedor }} · Nº proveedor {{ albaran.num_albaran_proveedor }}
+      </div>
+    </div>
+    <a href="/app/gestion/albaranes/{{ albaran.id }}/" class="btn btn-outline-secondary btn-sm">Volver a albarán</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="card border-0 shadow-sm">
+    {% csrf_token %}
+
+    <div class="card-body">
+      <div class="alert alert-warning small">
+        Selecciona solo las líneas que realmente entran a almacén.
+        La compra conserva su unidad económica. Cuando el artículo tiene una
+        conversión canónica configurada, cantidad y precio de uso se calculan
+        en el servidor y no se pueden alterar desde el navegador.
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-8">
+          <label class="form-label">Almacén destino</label>
+          <select name="almacen_id" class="form-select" required>
+            <option value="">Selecciona almacén...</option>
+            {% for a in almacenes %}
+              <option value="{{ a.id }}">{{ a }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Fecha movimiento (fecha del albarán)</label>
+          <input type="date" name="fecha_movimiento" value="{{ fecha_hoy|date:'Y-m-d' }}" class="form-control" readonly aria-readonly="true">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Línea</th>
+              <th>Artículo</th>
+              <th class="text-end">Cant. compra</th>
+              <th>Ud. compra</th>
+              <th class="text-end">Precio compra</th>
+              <th class="text-end">Importe compra</th>
+              <th class="text-end">Cant. uso</th>
+              <th>Ud. uso</th>
+              <th class="text-end">Precio uso</th>
+              <th class="text-end">Importe uso</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lineas_view %}
+              {% with l=item.obj %}
+              <tr class="js-linea-uso" data-linea-id="{{ l.id }}">
+                <td>
+                  <input type="checkbox"
+                         name="sel_{{ l.id }}"
+                         {% if item.pendiente and item.recurso_ok and not item.servicio_o_porte %}checked{% endif %}
+                         {% if not item.pendiente or not item.recurso_ok %}disabled{% endif %}>
+                </td>
+                <td>{{ l.linea }}</td>
+                <td>
+                  {% if l.articulo_compra %}
+                    <strong>{{ l.articulo_compra.nombre }}</strong>
+                  {% else %}
+                    <span class="text-danger">Sin artículo</span>
+                  {% endif %}
+                  {% if item.servicio_o_porte %}
+                    <div class="text-warning small">Posible servicio/porte. Revisar antes de seleccionar.</div>
+                  {% endif %}
+                  {% if not item.recurso_ok %}
+                    <div class="text-danger small">Sin recurso de catálogo vinculado.</div>
+                  {% endif %}
+                  {% if item.conversion_error %}
+                    <div class="text-danger small">{{ item.conversion_error }}</div>
+                  {% elif item.conversion_canonica and item.conversion_factor != '1' %}
+                    <div class="text-muted small">Conversión canónica: 1 {{ l.unidad }} = {{ item.conversion_factor }} {{ item.unidad_uso_default }}.</div>
+                  {% endif %}
+                </td>
+
+                <td class="text-end">{{ l.cantidad }}</td>
+                <td>{{ l.unidad }}</td>
+                <td class="text-end">{{ l.precio_unitario }}</td>
+                <td class="text-end">{{ l.importe_linea }}</td>
+
+                <td style="width: 135px;">
+                  <input type="text"
+                         inputmode="decimal"
+                         name="cantidad_uso_{{ l.id }}"
+                         value="{{ item.cantidad_uso_default }}"
+                         class="form-control form-control-sm text-end js-cantidad-uso"
+                         {% if not item.pendiente or not item.recurso_ok or item.conversion_canonica %}readonly aria-readonly="true"{% endif %}>
+                </td>
+
+                <td style="width: 150px;">
+                  <select name="unidad_uso_{{ l.id }}"
+                          class="form-select form-select-sm js-unidad-uso"
+                          {% if not item.pendiente or not item.recurso_ok or item.conversion_canonica %}disabled{% endif %}>
+                    {% for u in unidades_uso %}
+                      <option value="{{ u }}" {% if item.unidad_uso_default == u %}selected{% endif %}>{{ u }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+
+                <td style="width: 135px;">
+                  <input type="text"
+                         inputmode="decimal"
+                         name="precio_uso_{{ l.id }}"
+                         value="{{ item.precio_uso_default }}"
+                         class="form-control form-control-sm text-end js-precio-uso"
+                         {% if not item.pendiente or not item.recurso_ok or item.conversion_canonica %}readonly aria-readonly="true"{% endif %}>
+                </td>
+
+                <td style="width: 135px;">
+                  <input type="text"
+                         readonly
+                         name="importe_uso_preview_{{ l.id }}"
+                         value="{{ item.importe_uso_default }}"
+                         class="form-control form-control-sm text-end js-importe-uso bg-light">
+                </td>
+
+                <td>
+                  {% if l.en_almacen %}
+                    <span class="badge bg-success">En almacén</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Pendiente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endwith %}
+            {% empty %}
+              <tr><td colspan="12" class="text-muted p-3">El albarán no tiene líneas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="/app/gestion/albaranes/{{ albaran.id }}/" class="btn btn-outline-secondary">Cancelar</a>
+      <button class="btn btn-success">Crear entradas de almacén</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function() {
+  function parseDecimal(value) {
+    value = String(value || '').trim();
+    value = value.replace(/\s/g, '').replace(/€/g, '');
+    if (value.indexOf(',') !== -1 && value.indexOf('.') !== -1) {
+      if (value.lastIndexOf(',') > value.lastIndexOf('.')) {
+        value = value.replace(/\./g, '').replace(',', '.');
+      } else {
+        value = value.replace(/,/g, '');
+      }
+    } else {
+      value = value.replace(',', '.');
+    }
+    var n = parseFloat(value);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function formatMoney(value) {
+    return (Math.round(value * 100) / 100).toFixed(2);
+  }
+
+  function recalc(row) {
+    var cantidad = parseDecimal(row.querySelector('.js-cantidad-uso')?.value);
+    var precio = parseDecimal(row.querySelector('.js-precio-uso')?.value);
+    var importe = cantidad * precio;
+    var out = row.querySelector('.js-importe-uso');
+    if (out) {
+      out.value = formatMoney(importe);
+    }
+  }
+
+  document.querySelectorAll('.js-linea-uso').forEach(function(row) {
+    recalc(row);
+    ['input', 'change', 'keyup'].forEach(function(evt) {
+      row.querySelectorAll('.js-cantidad-uso, .js-precio-uso').forEach(function(el) {
+        el.addEventListener(evt, function() {
+          recalc(row);
+        });
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -2,258 +2,230 @@
 
 {% block content %}
 <div class="container-fluid py-3">
+
   <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-      <h1 class="h4 mb-1">Sincronización Access → Portal INTASA</h1>
-      <p class="text-muted mb-0">
-        Centro de verificación de importaciones Access: Partidas, Tareas y Recursos reales.
-      </p>
+      <h1 class="h4 mb-1">Sincronización Access · Planificación</h1>
+      <div class="text-muted small">
+        Proceso manual y controlado para importar novedades de planificación, tareas, recursos y almacén.
+      </div>
     </div>
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm" href="/app/planificacion-obra/planning/">
-        Planning
-      </a>
-      <a class="btn btn-outline-secondary btn-sm" href="/app/planificacion-obra/asignaciones/">
-        Planificación personal
-      </a>
+      <a class="btn btn-outline-secondary btn-sm" href="/app/planificacion-obra/">Planificación</a>
+      <a class="btn btn-outline-secondary btn-sm" href="/app/planificacion-obra/planning/">Planning</a>
     </div>
   </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
 
   {% if error %}
     <div class="alert alert-danger">
-      <strong>Error:</strong> {{ error }}
+      <strong>Error:</strong>
+      <pre class="mb-0 small" style="white-space: pre-wrap;">{{ error }}</pre>
     </div>
   {% endif %}
 
-
-  {% if sync_status %}
-  <div class="access-sync-status mb-3">
-    <div class="row g-2">
-      {% for card in sync_status.cards %}
-        <div class="col-6 col-md-3">
-          <div class="card shadow-sm h-100">
-            <div class="card-body py-2">
-              <div class="text-muted small text-uppercase">{{ card.label }}</div>
-              <div class="fw-bold fs-5">{{ card.value }}</div>
-              <div class="text-muted small">{{ card.hint }}</div>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-
-      <div class="col-12">
-        <div class="card shadow-sm">
+  <div class="row g-2 mb-3">
+    {% for card in sync_cards %}
+      <div class="col-6 col-lg">
+        <div class="card shadow-sm border-0 h-100">
           <div class="card-body py-2">
-            <div class="row g-2">
-              <div class="col-lg-4">
-                <div class="text-muted small text-uppercase">Última carpeta detectada</div>
-                {% if sync_status.latest_folder %}
-                  <div class="small text-truncate" title="{{ sync_status.latest_folder.path }}">
-                    <strong>{{ sync_status.latest_folder.name }}</strong>
-                  </div>
-                  <div class="text-muted small">{{ sync_status.latest_folder.mtime }}</div>
-                {% else %}
-                  <div class="text-muted small">No detectada</div>
-                {% endif %}
-              </div>
-
-              <div class="col-lg-4">
-                <div class="text-muted small text-uppercase">Último reporte generado</div>
-                {% if sync_status.latest_report %}
-                  <div class="small text-truncate" title="{{ sync_status.latest_report.path }}">
-                    <code>{{ sync_status.latest_report.name }}</code>
-                  </div>
-                  <div class="text-muted small">{{ sync_status.latest_report.mtime }} · {{ sync_status.latest_report.size }} bytes</div>
-                {% else %}
-                  <div class="text-muted small">Sin reporte detectado</div>
-                {% endif %}
-              </div>
-
-              <div class="col-lg-4">
-                <div class="text-muted small text-uppercase">Aplicación real</div>
-                {% if sync_status.apply_command %}
-                  <div class="text-muted small">Solo por script con backup automático:</div>
-                  <code class="small d-block text-truncate" title="{{ sync_status.apply_command }}">{{ sync_status.apply_command }}</code>
-                {% else %}
-                  <div class="text-muted small">Sin comando disponible</div>
-                {% endif %}
-              </div>
-            </div>
+            <div class="text-muted small text-uppercase">{{ card.label }}</div>
+            <div class="fw-bold fs-5">{{ card.value }}</div>
+            <div class="text-muted small">{{ card.hint }}</div>
           </div>
         </div>
       </div>
+    {% endfor %}
+  </div>
 
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-2 align-items-end">
+          <div class="col-lg-7">
+            <label class="form-label small text-muted">Carpeta origen</label>
+            <select name="folder" class="form-select form-select-sm">
+              {% for folder in folders %}
+                <option value="{{ folder.path }}" {% if folder.path == selected_folder %}selected{% endif %}>
+                  {{ folder.path }} · {{ folder.mtime }}
+                </option>
+              {% empty %}
+                <option value="">No hay carpetas access_sync_*</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-lg-2">
+            <label class="form-label small text-muted">Team</label>
+            <input type="text" name="team" value="{{ team }}" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-lg-1 d-grid">
+            <button name="action" value="analyze" class="btn btn-primary btn-sm" {% if not selected_folder_ready %}disabled{% endif %}>
+              Analizar
+            </button>
+          </div>
+
+          <div class="col-lg-2 d-grid">
+            <button name="action" value="commit"
+                    class="btn btn-danger btn-sm"
+                    onclick="return confirm('Vas a sincronizar datos reales. Se hará backup antes. No actualiza ni borra. ¿Continuar?');" {% if not selected_folder_ready %}disabled{% endif %}>
+              Sincronizar
+            </button>
+          </div>
+        </div>
+
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" value="1" id="confirm_commit" name="confirm_commit">
+          <label class="form-check-label small text-muted" for="confirm_commit">
+            Confirmo que quiero permitir sincronización real si pulso Sincronizar.
+          </label>
+        </div>
+
+        <div class="small text-muted mt-2">
+          Regla activa: <strong>insert-only</strong>. No actualiza existentes, no borra, no sobrescribe.
+          El análisis no modifica la base de datos. La sincronización crea backup automático.
+        </div>
+
+        {% if not selected_folder_ready %}
+          <div class="small text-danger mt-1">
+            La carpeta seleccionada no contiene todas las tablas de planificación. Selecciona una carpeta marcada como OK planificación.
+          </div>
+        {% endif %}
+      </form>
     </div>
   </div>
-  {% endif %}
 
   <div class="row g-3 mb-3">
     <div class="col-lg-8">
-      <div class="card shadow-sm h-100">
-        <div class="card-header bg-white">
-          <strong>Verificación segura</strong>
-        </div>
-        <div class="card-body">
-          <form method="post" class="row g-3">
-            {% csrf_token %}
-
-            <div class="col-md-7">
-              <label class="form-label">Carpeta de importación</label>
-              <select name="folder" class="form-select">
-                {% for folder in folders %}
-                  <option value="{{ folder.path }}" {% if folder.path == selected_folder %}selected{% endif %}>
-                    {{ folder.path }} · {{ folder.mtime }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="col-md-3">
-              <label class="form-label">Team</label>
-              <input type="text" name="team" value="{{ team }}" class="form-control">
-            </div>
-
-            <div class="col-md-2">
-              <label class="form-label">Team ID</label>
-              <input type="number" name="team_id" value="{{ team_id }}" class="form-control">
-            </div>
-
-            <div class="col-12 d-flex flex-wrap gap-2">
-              <button type="submit" name="action" value="dry_run_full" class="btn btn-primary">
-                Verificar todo
-              </button>
-
-              <button type="submit" name="action" value="dry_run_partidas_tareas" class="btn btn-outline-primary">
-                Verificar Partidas + Tareas
-              </button>
-
-              <button type="submit" name="action" value="dry_run_recursos_reales" class="btn btn-outline-primary">
-                Verificar Recursos reales
-              </button>
-            </div>
-          </form>
+      {% if file_status %}
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-semibold">Archivos esperados</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Estado</th>
+                <th>Tamaño</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in file_status %}
+                <tr>
+                  <td><code>{{ f.name }}</code></td>
+                  <td>
+                    {% if f.exists %}
+                      <span class="badge bg-success">OK</span>
+                    {% else %}
+                      <span class="badge bg-danger">Falta</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ f.size }} bytes</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
+      {% endif %}
     </div>
 
     <div class="col-lg-4">
-      <div class="card shadow-sm h-100">
-        <div class="card-header bg-white">
-          <strong>Aplicación real</strong>
-        </div>
-        <div class="card-body">
-          <p class="text-muted small mb-2">
-            La aplicación real se mantiene por script de servidor porque crea backup automático antes de modificar BD.
-          </p>
-
-          {% if latest_apply_command %}
-            <label class="form-label small">Comando seguro:</label>
-            <pre class="bg-light p-2 rounded small mb-0" style="white-space: pre-wrap;">{{ latest_apply_command }}</pre>
-          {% endif %}
-
-          {% if latest_partidas_report %}
-            <hr>
-            <p class="small mb-1"><strong>Último reporte Partidas + Tareas</strong></p>
-            <code class="small">{{ latest_partidas_report.name }}</code><br>
-            <span class="text-muted small">{{ latest_partidas_report.mtime }} · {{ latest_partidas_report.size }} bytes</span>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {% if file_status %}
-  <div class="card shadow-sm mb-3">
-    <div class="card-header bg-white">
-      <strong>Archivos esperados</strong>
-    </div>
-    <div class="table-responsive">
-      <table class="table table-sm align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Archivo</th>
-            <th>Estado</th>
-            <th>Tamaño</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for f in file_status %}
-            <tr>
-              <td><code>{{ f.name }}</code></td>
-              <td>
-                {% if f.exists %}
-                  <span class="badge bg-success">OK</span>
-                {% else %}
-                  <span class="badge bg-danger">Falta</span>
-                {% endif %}
-              </td>
-              <td>{{ f.size }} bytes</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  {% endif %}
-
-  {% if ran %}
-    <div class="alert alert-info">
-      Resultado de verificación en modo simulación. No se ha modificado la base de datos.
-    </div>
-  {% endif %}
-
-  {% for result in results %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <strong>{{ result.title }}</strong>
-        {% if result.success %}
-          <span class="badge bg-success">OK</span>
-        {% else %}
-          <span class="badge bg-danger">Error</span>
-        {% endif %}
-      </div>
-
-      {% if result.stats %}
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <tbody>
-            {% for k, v in result.stats.items %}
-              <tr>
-                <th style="width: 320px;">{{ k }}</th>
-                <td>{{ v }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% endif %}
-
-      {% if result.report_file %}
-        <div class="card-body border-top">
-          <small class="text-muted">Reporte JSON generado:</small><br>
-          <code>{{ result.report_file }}</code>
-        </div>
-      {% endif %}
-
-      {% if result.samples %}
-        <div class="card-body border-top">
-          <strong class="small">Muestras</strong>
-          {% for name, items in result.samples.items %}
-            {% if items %}
-              <h6 class="mt-3">{{ name }}</h6>
-              <pre class="bg-light p-2 rounded small" style="white-space: pre-wrap;">{{ items }}</pre>
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-semibold">Últimos reportes web</div>
+        <div class="card-body small">
+          <div class="mb-2">
+            <div class="text-muted text-uppercase">Último análisis</div>
+            {% if latest_dry_report %}
+              <code>{{ latest_dry_report.name }}</code><br>
+              <span class="text-muted">{{ latest_dry_report.mtime }} · {{ latest_dry_report.size }} bytes</span>
+            {% else %}
+              <span class="text-muted">Sin reporte.</span>
             {% endif %}
-          {% endfor %}
+          </div>
+          <hr>
+          <div>
+            <div class="text-muted text-uppercase">Última sincronización</div>
+            {% if latest_commit_report %}
+              <code>{{ latest_commit_report.name }}</code><br>
+              <span class="text-muted">{{ latest_commit_report.mtime }} · {{ latest_commit_report.size }} bytes</span>
+            {% else %}
+              <span class="text-muted">Sin reporte.</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if result %}
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>Resultado · {{ result.mode }}</strong>
+        <span class="badge bg-success">OK</span>
+      </div>
+
+      {% if result.backup_dir %}
+        <div class="alert alert-info m-3 py-2 small">
+          Backup creado: <code>{{ result.backup_dir }}</code>
+        </div>
+      {% endif %}
+
+      {% if result.tables %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Tabla</th>
+                <th>Faltantes detectados</th>
+                <th>Extras en BD sin acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for table, data in result.tables.items %}
+                <tr>
+                  <td><code>{{ table }}</code></td>
+                  <td><strong>{{ data.missing_count }}</strong></td>
+                  <td>{{ data.extra_in_bd_count_no_action|default:"—" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      {% if result.created %}
+        <div class="card-body border-top">
+          <h6>Creados</h6>
+          <pre class="small bg-light border rounded p-2" style="white-space: pre-wrap;">{{ result.created }}</pre>
         </div>
       {% endif %}
 
       <div class="card-body border-top">
-        <details>
-          <summary class="small text-muted">Ver salida técnica completa</summary>
-          <pre class="bg-light p-2 rounded small mt-2" style="white-space: pre-wrap;">{{ result.output }}</pre>
-        </details>
+        <div class="small text-muted mb-1">Reporte JSON:</div>
+        <code>{{ result.report_file }}</code>
+      </div>
+
+      <div class="card-body border-top">
+        <h6>Log técnico</h6>
+        <pre class="small bg-dark text-light rounded p-3" style="white-space: pre-wrap; max-height: 620px; overflow:auto;">{{ result.output }}</pre>
       </div>
     </div>
-  {% endfor %}
+  {% else %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body text-muted small">
+        Selecciona carpeta y pulsa <strong>Analizar</strong>. No se modificará la base de datos.
+      </div>
+    </div>
+  {% endif %}
+
 </div>
 {% endblock %}

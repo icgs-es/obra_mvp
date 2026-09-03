@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Planificación de personal{% endblock %}
+{% block title %}Planificación de recursos de obra{% endblock %}
 
 {% block content %}
 <style>
@@ -241,18 +241,183 @@
     display: none !important;
   }
 
-  </style>
+  
+  /* Final: horas + importe en planificación de personal */
+  .pi-table th:nth-child(1), .pi-table td:nth-child(1) { width: 7%; }
+  .pi-table th:nth-child(2), .pi-table td:nth-child(2) { width: 5%; text-align: right; }
+  .pi-table th:nth-child(3), .pi-table td:nth-child(3) { width: 15%; }
+  .pi-table th:nth-child(4), .pi-table td:nth-child(4) { width: 10%; }
+  .pi-table th:nth-child(5), .pi-table td:nth-child(5) { width: 6%; }
+  .pi-table th:nth-child(6), .pi-table td:nth-child(6) { width: 6%; }
+  .pi-table th:nth-child(7), .pi-table td:nth-child(7) { width: 12%; }
+  .pi-table th:nth-child(8), .pi-table td:nth-child(8) { width: 21%; }
+  .pi-table th:nth-child(9), .pi-table td:nth-child(9) { width: 8%; text-align: right; }
+  .pi-table th:nth-child(10), .pi-table td:nth-child(10) { width: 6%; }
+  .pi-table th:nth-child(11), .pi-table td:nth-child(11) { width: 4%; }
+
+
+/* ASIGNACIONES_PRODUCCION_VIVIENDA_FILTERS_CSS_V1 */
+.pi-filters .form-label {
+  font-size: .82rem;
+  color: #334155;
+  margin-bottom: 4px;
+}
+.pi-filters .btn {
+  min-height: 38px;
+}
+
+
+/* ASIGNACIONES_PERSONAL_PRINT_REPORT_CSS_V1 */
+.pi-print-title {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10px !important;
+  }
+
+  nav,
+  header,
+  .navbar,
+  .topbar,
+  .sidebar,
+  .messages,
+  .alert,
+  .btn,
+  .pi-no-print,
+  .pi-toolbar,
+  .pi-actions,
+  .pi-actions *,
+  .pi-origin {
+    display: none !important;
+  }
+
+  .pi-page {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .pi-print-title {
+    display: block !important;
+    margin-bottom: 8px;
+  }
+
+  .pi-print-title h1 {
+    font-size: 18px !important;
+    margin: 0 0 4px 0 !important;
+  }
+
+  .pi-print-title .meta {
+    font-size: 10px !important;
+    color: #444 !important;
+  }
+
+  .pi-kpi {
+    border: 1px solid #999 !important;
+    border-radius: 0 !important;
+    padding: 6px 8px !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+  }
+
+  .pi-kpi .label {
+    font-size: 9px !important;
+  }
+
+  .pi-kpi .value {
+    font-size: 15px !important;
+  }
+
+  .pi-card {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .table-responsive {
+    overflow: visible !important;
+  }
+
+  .pi-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: 8px !important;
+  }
+
+  .pi-table th,
+  .pi-table td {
+    border: 1px solid #bbb !important;
+    padding: 3px 4px !important;
+    color: #000 !important;
+    background: #fff !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .pi-table th {
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    background: #f1f1f1 !important;
+  }
+
+  .pi-table th:last-child,
+  .pi-table td:last-child {
+    display: none !important;
+  }
+
+  .badge {
+    border: 1px solid #777 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+}
+
+
+</style>
 
 <div class="pi-page">
 
 
   <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-      <h1 class="h3 mb-1">Planificación de personal</h1>
-<div class="mb-3">
-<a href="/app/planificacion-obra/planning/" class="btn btn-outline-primary btn-sm">
-  Planning de Obra
-</a>
+      <h1 class="h3 mb-1">Planificación de recursos de obra</h1>
+{# PLANIFICACION_RECURSOS_TABS_DEFAULT_V1_1 #}
+<div
+  class="mb-3 d-flex gap-2 flex-wrap"
+  data-resource-module-tabs="personal"
+>
+  <a
+    href="{% url 'planificacion_obra:asignaciones_list' %}"
+    class="btn btn-primary btn-sm"
+    data-resource-module-tab="personal"
+    aria-current="page"
+  >
+    Personal
+  </a>
+
+  <a
+    href="{% url 'planificacion_obra:recursos_obra_list' %}"
+    class="btn btn-outline-primary btn-sm"
+    data-resource-module-tab="recursos"
+  >
+    Recursos de obra
+  </a>
 </div>
 
       <p class="text-muted mb-0">
@@ -266,6 +431,7 @@
         Calendario
       </a>
 
+
       <a href="{% url 'planificacion_obra:asignacion_create' %}" class="btn btn-primary">
         + Nueva asignación
       </a>
@@ -277,47 +443,99 @@
   </div>
 
   <div class="pi-toolbar mb-4">
-    <form method="get" class="row g-3 align-items-end pi-filters">
-      <div class="col-md-2">
-        <label class="form-label">Fecha</label>
-        <input type="date" name="fecha" value="{{ request.GET.fecha }}" class="form-control">
-      </div>
+    
+<form method="get" class="pi-filters pi-toolbar mb-4">
+  <!-- ASIGNACIONES_PRODUCCION_VIVIENDA_FILTERS_TEMPLATE_V1 -->
+  <div class="row g-3 align-items-end">
+    <div class="col-md-2">
+      <label class="form-label">Desde</label>
+      <input type="date" name="fecha_desde" value="{{ filtros.fecha_desde }}" class="form-control">
+    </div>
 
-      <div class="col-md-3">
-        <label class="form-label">Obra</label>
-        <select name="obra" class="form-select">
-          <option value="">Todas</option>
-          {% for obra in obras %}
-            <option value="{{ obra.pk }}" {% if request.GET.obra == obra.pk|stringformat:"s" %}selected{% endif %}>{{ obra }}</option>
-          {% endfor %}
-        </select>
-      </div>
+    <div class="col-md-2">
+      <label class="form-label">Hasta</label>
+      <input type="date" name="fecha_hasta" value="{{ filtros.fecha_hasta }}" class="form-control">
+    </div>
 
-      <div class="col-md-3">
-        <label class="form-label">Empleado</label>
-        <select name="empleado" class="form-select">
-          <option value="">Todos</option>
-          {% for empleado in empleados %}
-            <option value="{{ empleado.pk }}" {% if request.GET.empleado == empleado.pk|stringformat:"s" %}selected{% endif %}>{{ empleado }}</option>
-          {% endfor %}
-        </select>
-      </div>
+    <div class="col-md-3">
+      <label class="form-label">Obra</label>
+      <select name="obra" id="personal-filter-obra" class="form-select">
+        <option value="">Todas</option>
+        {% for obra in obras %}
+          <option value="{{ obra.id }}" {% if filtros.obra|stringformat:"s" == obra.id|stringformat:"s" %}selected{% endif %}>
+            {{ obra.codigo }} · {{ obra.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
 
-      <div class="col-md-2">
-        <label class="form-label">Estado</label>
-        <select name="estado" class="form-select">
-          <option value="">Todos</option>
-          {% for value,label in estados %}
-            <option value="{{ value }}" {% if request.GET.estado == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
+    <div class="col-md-2">
+      <label class="form-label">Edificio / Fase</label>
+      <select name="edificio" id="personal-filter-edificio" class="form-select">
+        <option value="">Todos</option>
+        {% for item in edificios %}
+          <option value="{{ item.id }}" {% if filtros.edificio|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}>
+            {{ item.label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
 
-      <div class="col-md-2 d-flex gap-2">
-        <button type="submit" class="btn btn-primary w-100">🔍 Filtrar</button>
-        <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary">Limpiar</a>
-      </div>
-    </form>
+    <div class="col-md-1">
+      <label class="form-label">Vivienda</label>
+      <select name="vivienda" id="personal-filter-vivienda" class="form-select">
+        <option value="">Todas</option>
+        {% for item in viviendas %}
+          <option value="{{ item.id }}" {% if filtros.vivienda|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}>
+            {{ item.label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Planta</label>
+      <select name="planta" id="personal-filter-planta" class="form-select">
+        <option value="">Todas</option>
+        {% for item in plantas %}
+          <option value="{{ item.id }}" {% if filtros.planta|stringformat:"s" == item.id|stringformat:"s" %}selected{% endif %}>
+            {{ item.label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Empleado</label>
+      <select name="empleado" class="form-select">
+        <option value="">Todos</option>
+        {% for empleado in empleados %}
+          <option value="{{ empleado.id }}" {% if filtros.empleado|stringformat:"s" == empleado.id|stringformat:"s" %}selected{% endif %}>
+            {{ empleado }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Estado</label>
+      <select name="estado" class="form-select">
+        <option value="">Todos</option>
+        {% for value,label in estado_choices %}
+          <option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-primary w-100">🔍 Filtrar</button>
+      <a href="{% url 'planificacion_obra:asignaciones_list' %}" class="btn btn-outline-secondary">Limpiar</a>
+    </div>
+  </div>
+</form>
+
   </div>
 
   <div class="row g-3 mb-4">
@@ -350,13 +568,16 @@
         <thead>
           <tr>
             <th>Fecha</th>
-            <th>Horario</th>
+            <th>Horas</th>
             <th>Empleado</th>
             <th>Obra</th>
             <th>Vivienda</th>
             <th>Planta</th>
             <th>Capítulo</th>
             <th>Partida</th>
+            {# ASIGNACIONES_LIST_AVANCE_COLUMN_V1_1 #}
+            <th class="text-end">Avance</th>
+            <th>Importe</th>
             <th>Estado</th>
 <th class="pi-actions">Acciones</th>
           </tr>
@@ -367,13 +588,7 @@
             <tr class="{% if item.estado == 'REALIZADO' %}table-success{% endif %}">
               <td>{{ item.fecha_inicio|date:"d/m/Y" }}</td>
 
-              <td>
-                {% if item.hora_inicio %}
-                  {{ item.hora_inicio|time:"H:i" }} - {{ item.hora_fin|time:"H:i" }}
-                {% else %}
-                  {% if item.horas %}{{ item.horas|floatformat:1 }} h{% else %}-{% endif %}
-                {% endif %}
-              </td>
+              <td class="text-end">{{ item.horas_display|default:"-" }}</td>
 
               <td title="{{ item.empleado }}">
                 <span class="pi-cell-truncate pi-employee">{{ item.empleado }}</span>
@@ -396,6 +611,12 @@
                 {% endif %}
               </td>
 
+              <td class="text-end fw-semibold text-nowrap">
+                {{ item.avance_actual|default:"0"|floatformat:2 }} %
+              </td>
+
+              <td class="text-end">{{ item.importe_display|default:"-" }}</td>
+
               <td class="pi-status text-nowrap" title="{{ item.origen_label }}">
                 {% if item.estado == "REALIZADO" %}
                   <span class="badge text-bg-success">{{ item.estado_label }}</span>
@@ -409,6 +630,7 @@
                 {% if item.editable %}
                   <a href="{% url 'planificacion_obra:asignacion_detail' item.pk %}" title="Abrir">👁</a>
                   <a href="{% url 'planificacion_obra:asignacion_update' item.pk %}" title="Editar">✎</a>
+                  <a href="{% url 'planificacion_obra:asignacion_repetir' item.pk %}" title="Repetir">🔁</a>
                   <a href="{% url 'planificacion_obra:asignacion_delete' item.pk %}" title="Eliminar">🗑</a>
                 {% else %}
                   <a href="{% url 'planificacion_obra:realizado_detail' item.pk %}?next={{ request.get_full_path|urlencode }}"
@@ -416,12 +638,17 @@
                      title="Ver realizado">
                     👁
                   </a>
+                  <a href="{% url 'planificacion_obra:realizado_update' item.pk %}?next={{ request.get_full_path|urlencode }}"
+                     class="text-decoration-none ms-1"
+                     title="Editar realizado importado">
+                    ✎
+                  </a>
                 {% endif %}
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="10" class="text-muted text-center py-4">
+              <td colspan="12" class="text-muted text-center py-4">
                 No hay asignaciones para los filtros seleccionados.
               </td>
             </tr>
@@ -432,4 +659,115 @@
   </div>
 
 </div>
+
+
+
+
+<!-- ASIGNACIONES_PERSONAL_CASCADA_LOCAL_PLANNING_OBRA_V1 -->
+{{ estructura_personal_json|json_script:"asignaciones-estructura-data" }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const obra = document.getElementById("personal-filter-obra");
+  const edificio = document.getElementById("personal-filter-edificio");
+  const vivienda = document.getElementById("personal-filter-vivienda");
+  const planta = document.getElementById("personal-filter-planta");
+  const dataEl = document.getElementById("asignaciones-estructura-data");
+
+  if (!obra || !edificio || !vivienda || !planta || !dataEl) return;
+
+  let data = {};
+  try {
+    data = JSON.parse(dataEl.textContent || "{}");
+  } catch (e) {
+    data = {};
+  }
+
+  function updateSelect(select, items, defaultText, keepCurrent) {
+    const current = keepCurrent ? String(select.value || "") : "";
+    select.innerHTML = "";
+
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = defaultText;
+    select.appendChild(empty);
+
+    let found = false;
+
+    (items || []).forEach(function (item) {
+      const opt = document.createElement("option");
+      opt.value = String(item.id || "");
+      opt.textContent = item.label || item.text || item.id || "";
+      if (current && String(item.id) === current) {
+        opt.selected = true;
+        found = true;
+      }
+      select.appendChild(opt);
+    });
+
+    if (!found && current) {
+      select.value = "";
+    }
+  }
+
+  function refreshFromEdificio(keepVivienda, keepPlanta) {
+    const fase = String(edificio.value || "");
+    const viviendas = data.viviendasByFase && data.viviendasByFase[fase] ? data.viviendasByFase[fase] : [];
+    updateSelect(vivienda, viviendas, "Todas", keepVivienda);
+    refreshFromVivienda(keepPlanta);
+  }
+
+  function refreshFromVivienda(keepPlanta) {
+    const fase = String(edificio.value || "");
+    const viv = String(vivienda.value || "");
+    const key = fase + "::" + viv;
+    const plantas = data.plantasByFaseVivienda && data.plantasByFaseVivienda[key] ? data.plantasByFaseVivienda[key] : [];
+    updateSelect(planta, plantas, "Todas", keepPlanta);
+  }
+
+  // Si hay obra cargada, reconstruir edificio con valores del mapa local.
+  if (obra.value && data.edificios) {
+    updateSelect(edificio, data.edificios, "Todos", true);
+    refreshFromEdificio(true, true);
+  }
+
+  obra.addEventListener("change", function () {
+    // ASIGNACIONES_PERSONAL_OBRA_CHANGE_SUBMIT_COMO_PLANNING_V1
+    // Al cambiar la obra, recargar la estructura dependiente.
+    // para reconstruir Edificio/Fase, Vivienda y Planta desde backend.
+    edificio.value = "";
+    vivienda.value = "";
+    planta.value = "";
+
+    const form = obra.closest("form");
+    if (form) {
+      form.submit();
+    }
+  });
+
+  edificio.addEventListener("change", function () {
+    refreshFromEdificio(false, false);
+  });
+
+  vivienda.addEventListener("change", function () {
+    refreshFromVivienda(false);
+  });
+});
+</script>
+
+
+
+<!-- ASIGNACIONES_PERSONAL_PRINT_REPORT_JS_V1 -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const btn = document.getElementById("asignaciones-print-report-btn");
+  if (!btn) return;
+
+  btn.addEventListener("click", function () {
+    window.print();
+  });
+});
+</script>
+
+
+
 {% endblock %}

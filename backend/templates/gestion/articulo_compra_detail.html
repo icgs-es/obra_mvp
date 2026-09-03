@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load gestion_money %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ articulo.nombre }}</h1>
+      <div class="text-muted small">Artículo interno de compra · {{ articulo.team }}</div>
+    </div>
+    <a href="/app/gestion/articulos/" class="btn btn-outline-secondary btn-sm">Volver a artículos</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Datos</div>
+        <div class="card-body small">
+          <div><span class="text-muted">Tipo:</span> {{ articulo.tipo|default:"—" }}</div>
+          <div><span class="text-muted">Unidad:</span> {{ articulo.unidad|default:"—" }}</div>
+          <div><span class="text-muted">Activo:</span> {% if articulo.activo %}Sí{% else %}No{% endif %}</div>
+          <div><span class="text-muted">Recurso planificación:</span> {{ articulo.recurso_catalogo_id|default:"—" }}</div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">Alias por proveedor</div>
+        <div class="list-group list-group-flush">
+          {% for x in alias %}
+            <div class="list-group-item">
+              <div class="fw-semibold">{{ x.proveedor }}</div>
+              <div>Código: <span class="font-monospace">{{ x.codigo_proveedor }}</span></div>
+              <div class="small text-muted">{{ x.descripcion_proveedor }}</div>
+              <div class="small">Último precio: {{ x.ultimo_precio|default:"—" }}</div>
+              <a href="/app/gestion/articulos/alias/{{ x.id }}/reasignar/" class="btn btn-outline-primary btn-sm mt-2">Reasignar alias</a>
+            </div>
+          {% empty %}
+            <div class="list-group-item text-muted">Sin alias.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Últimas líneas de albarán</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Albarán</th>
+                <th>Proveedor</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lineas_albaran %}
+              <tr>
+                <td><a href="/app/gestion/albaranes/{{ l.albaran.id }}/">{{ l.albaran.cod_albaran }}</a></td>
+                <td>{{ l.albaran.proveedor }}</td>
+                <td class="text-end">{{ l.cantidad|floatformat:4 }}</td>
+                <td class="text-end">{{ l.precio_unitario|floatformat:4 }} €</td>
+                <td class="text-end fw-semibold">{{ l.importe_linea|money_es }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted p-3">Sin líneas de albarán.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">Últimas líneas de factura</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Factura</th>
+                <th>Proveedor</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lineas_factura %}
+              <tr>
+                <td><a href="/app/gestion/facturas/{{ l.factura.id }}/">{{ l.factura.cod_factura }}</a></td>
+                <td>{{ l.factura.proveedor }}</td>
+                <td class="text-end">{{ l.cantidad|floatformat:4 }}</td>
+                <td class="text-end">{{ l.precio_unitario|floatformat:4 }} €</td>
+                <td class="text-end fw-semibold">{{ l.importe_linea|money_es }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted p-3">Sin líneas de factura.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

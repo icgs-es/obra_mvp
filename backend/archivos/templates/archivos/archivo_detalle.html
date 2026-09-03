@@ -1,139 +1,380 @@
 {% extends "base.html" %}
+{% load archivos_media %}
+{% load archivos_navigation %}
 
-{% block title %}Archivo — {{ archivo.nombre_original }}{% endblock %}
+{% block title %}
+  {{ archivo.nombre_logico|default:archivo.nombre_original }}
+  — INTASA Documents
+{% endblock %}
 
 {% block content %}
-<div class="container my-3">
+
+{% document_return_url archivo as return_url %}
+{% document_editor_url archivo return_url as editor_url %}
+{% document_breadcrumbs archivo as document_crumbs %}
+{% cloud_parent archivo.storage_key as remote_parent %}
+
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+        <div class="min-w-0">
+
+          <nav aria-label="Ruta documental">
+            <ol class="breadcrumb small mb-1">
+
+              {% for crumb in document_crumbs %}
+                <li class="breadcrumb-item">
+                  <a href="{{ crumb.url }}">
+                    {{ crumb.name }}
+                  </a>
+                </li>
+              {% endfor %}
+
+              <li class="breadcrumb-item active"
+                  aria-current="page">
+                {{ archivo.nombre_original }}
+              </li>
+
+            </ol>
+          </nav>
+
+          <h1 class="h5 mb-1 text-break">
+            {{ archivo.nombre_logico|default:archivo.nombre_original }}
+          </h1>
+
+          <div class="small text-muted">
+            INTASA Documents
+          </div>
+
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+          <a href="{{ return_url }}"
+             class="btn btn-outline-secondary">
+            ← Volver a carpeta
+          </a>
+
+          {% if archivo.online_edit_supported %}
+            <a href="{{ editor_url }}"
+               class="btn btn-success">
+              Editar online
+            </a>
+          {% endif %}
+
+          <a href="{% url 'archivos:archivo_descargar' archivo.pk %}"
+             class="btn btn-primary">
+            Descargar
+          </a>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <div class="row g-3">
 
-    <!-- Panel lateral con info -->
-    <div class="col-12 col-lg-4">
+    <div class="col-12 col-xl-3">
+
       <div class="card shadow-sm h-100">
         <div class="card-body">
-          <h1 class="h5 mb-3">{{ archivo.nombre_original }}</h1>
 
-          <dl class="small mb-0">
-            <dt>Carpeta</dt>
-            <dd>{{ carpeta.get_ruta_display }}</dd>
+          <h2 class="h6 mb-3">
+            Información
+          </h2>
 
-            <dt>Tamaño</dt>
-            <dd>{{ archivo.tamano_mb|floatformat:2 }} MB</dd>
+          <dl class="mb-0">
 
-            <dt>Subido por</dt>
-            <dd>
-              {% if archivo.subido_por %}
-                 {{ archivo.subido_por.username }}
+            <dt class="small">
+              Carpeta
+            </dt>
+
+            <dd class="small text-break mb-3">
+              {% if remote_parent %}
+                /{{ remote_parent }}
               {% else %}
-                 —
+                /Archivos
               {% endif %}
             </dd>
 
-            <dt>Fecha</dt>
-            <dd>{{ archivo.created_at|date:"d/m/Y H:i" }}</dd>
+            <dt class="small">
+              Almacenamiento
+            </dt>
 
-            <dt>Tipo</dt>
-            <dd>{{ archivo.mimetype }}</dd>
+            <dd class="small mb-3">
+              INTASA Documents
+            </dd>
+
+            <dt class="small">
+              Tamaño
+            </dt>
+
+            <dd class="small mb-3">
+              {{ archivo.tamano_bytes|human_size }}
+            </dd>
+
+            <dt class="small">
+              Tipo
+            </dt>
+
+            <dd class="small text-break mb-3">
+              {{ archivo.mime_type|default:"application/octet-stream" }}
+            </dd>
+
+            <dt class="small">
+              Registrado por
+            </dt>
+
+            <dd class="small mb-3">
+              {% if archivo.subido_por %}
+                {{ archivo.subido_por }}
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+
+            <dt class="small">
+              Fecha
+            </dt>
+
+            <dd class="small mb-3">
+              {{ archivo.created_at|date:"d/m/Y H:i" }}
+            </dd>
+
+            <dt class="small">
+              Versión
+            </dt>
+
+            <dd class="small mb-0">
+              {{ archivo.version|default:"1" }}
+            </dd>
+
           </dl>
 
-          <div class="mt-3">
-            <a href="{{ archivo.fichero.url }}" target="_blank"
-               class="btn btn-primary btn-sm w-100 mb-2">
-               Descargar archivo
-            </a>
-
-            <a href="{{ next_url }}" class="btn btn-outline-secondary w-100">
-              Volver
-            </a>
-          </div>
         </div>
       </div>
+
     </div>
 
-    <!-- Área de previsualización + Histórico -->
-    <div class="col-12 col-lg-8">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
+    <div class="col-12 col-xl-9">
 
-          <!-- Tabs -->
-          <ul class="nav nav-tabs mb-3" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="tab-preview" data-bs-toggle="tab"
-                      data-bs-target="#tabPreview" type="button" role="tab"
-                      aria-controls="tabPreview" aria-selected="true">
+      <div class="card shadow-sm">
+
+        <div class="card-header bg-white p-0">
+
+          <ul class="nav nav-tabs px-3 pt-2"
+              role="tablist">
+
+            <li class="nav-item"
+                role="presentation">
+
+              <button class="nav-link active"
+                      id="tab-preview"
+                      data-bs-toggle="tab"
+                      data-bs-target="#tabPreview"
+                      type="button"
+                      role="tab"
+                      aria-controls="tabPreview"
+                      aria-selected="true">
                 Previsualización
               </button>
+
             </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="tab-historico" data-bs-toggle="tab"
-                      data-bs-target="#tabHistorico" type="button" role="tab"
-                      aria-controls="tabHistorico" aria-selected="false">
+
+            <li class="nav-item"
+                role="presentation">
+
+              <button class="nav-link"
+                      id="tab-history"
+                      data-bs-toggle="tab"
+                      data-bs-target="#tabHistory"
+                      type="button"
+                      role="tab"
+                      aria-controls="tabHistory"
+                      aria-selected="false">
                 Histórico
               </button>
+
             </li>
+
           </ul>
 
+        </div>
+
+        <div class="card-body p-3">
+
           <div class="tab-content">
-            <!-- Tab: Previsualización -->
-            <div class="tab-pane fade show active" id="tabPreview" role="tabpanel" aria-labelledby="tab-preview">
+
+            <div class="tab-pane fade show active"
+                 id="tabPreview"
+                 role="tabpanel"
+                 aria-labelledby="tab-preview">
+
               {% if archivo.es_imagen %}
-                <img src="{{ archivo.fichero.url }}" class="img-fluid rounded">
+
+                <div class="text-center bg-light rounded p-2">
+                  <img src="{% url 'archivos:preview' archivo.pk %}"
+                       alt="{{ archivo.nombre_original }}"
+                       class="img-fluid rounded"
+                       style="max-height:75vh;">
+                </div>
+
               {% elif archivo.es_pdf %}
-                <iframe src="{{ archivo.fichero.url }}" style="width:100%; height:70vh; border:none;"></iframe>
+
+                <iframe src="{% url 'archivos:preview' archivo.pk %}"
+                        title="{{ archivo.nombre_original }}"
+                        style="display:block; width:100%; height:75vh; border:0;"
+                        class="rounded bg-light">
+                </iframe>
+
+              {% elif archivo|es_video %}
+
+                <div class="bg-dark rounded overflow-hidden">
+
+                  <video controls
+                         preload="metadata"
+                         playsinline
+                         style="display:block; width:100%; max-height:75vh; background:#000;"
+                         src="{% url 'archivos:media_stream' archivo.pk %}">
+                    Tu navegador no puede reproducir este vídeo.
+                  </video>
+
+                </div>
+
+                <div class="small text-muted mt-2">
+                  Reproducción directa desde INTASA Documents.
+                </div>
+
+              {% elif archivo.online_edit_supported %}
+
+                <div class="border rounded bg-light p-5 text-center">
+
+                  <h3 class="h5 mb-2">
+                    Documento Office
+                  </h3>
+
+                  <p class="text-muted mb-4">
+                    Este documento puede visualizarse y editarse
+                    online desde INTASA Platform.
+                  </p>
+
+                  <a href="{{ editor_url }}"
+                     class="btn btn-success">
+                    Abrir en Office
+                  </a>
+
+                </div>
+
               {% else %}
-                <p class="text-muted">
-                  No hay previsualización disponible para este tipo de archivo.
-                </p>
+
+                <div class="border rounded bg-light p-5 text-center">
+
+                  <p class="text-muted mb-3">
+                    No hay previsualización integrada
+                    para este tipo de archivo.
+                  </p>
+
+                  <a href="{% url 'archivos:archivo_descargar' archivo.pk %}"
+                     class="btn btn-primary">
+                    Descargar archivo
+                  </a>
+
+                </div>
+
               {% endif %}
+
             </div>
 
-            <!-- Tab: Histórico -->
-            <div class="tab-pane fade" id="tabHistorico" role="tabpanel" aria-labelledby="tab-historico">
-              {% with logs=archivo.logs.all %}
-                {% if logs %}
-                  <div class="table-responsive mt-2">
-                    <table class="table table-sm align-middle mb-0">
-                      <thead class="table-light">
-                        <tr class="small text-muted">
-                          <th style="width: 160px;">Fecha</th>
-                          <th style="width: 140px;">Acción</th>
-                          <th style="width: 180px;">Usuario</th>
-                          <th>Detalle</th>
+            <div class="tab-pane fade"
+                 id="tabHistory"
+                 role="tabpanel"
+                 aria-labelledby="tab-history">
+
+              {% if versiones %}
+
+                <div class="table-responsive">
+
+                  <table class="table table-sm align-middle">
+
+                    <thead>
+                      <tr>
+                        <th>Versión</th>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+
+                      {% for version in versiones %}
+                        <tr>
+                          <td>
+                            {{ version.version|default:"—" }}
+                          </td>
+                          <td>
+                            {{ version.created_at|date:"d/m/Y H:i" }}
+                          </td>
+                          <td>
+                            {{ version.subido_por|default:"—" }}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {% for log in logs|slice:":20" %}
-                          <tr class="small">
-                            <td>{{ log.fecha|date:"d/m/Y H:i" }}</td>
-                            <td>{{ log.get_accion_display }}</td>
-                            <td>
-                              {% if log.usuario %}
-                                {{ log.usuario.get_full_name|default:log.usuario.username }}
-                              {% else %}
-                                —
-                              {% endif %}
-                            </td>
-                            <td>{{ log.detalle }}</td>
-                          </tr>
-                        {% endfor %}
-                      </tbody>
-                    </table>
-                    <p class="text-muted small mt-2 mb-0">
-                      Mostrando las 20 últimas acciones.
-                    </p>
-                  </div>
-                {% else %}
-                  <p class="text-muted small mt-2 mb-0">
-                    No hay acciones registradas todavía para este archivo.
-                  </p>
-                {% endif %}
-              {% endwith %}
+                      {% endfor %}
+
+                    </tbody>
+
+                  </table>
+
+                </div>
+
+              {% elif historial %}
+
+                <div class="table-responsive">
+
+                  <table class="table table-sm align-middle">
+
+                    <tbody>
+                      {% for version in historial %}
+                        <tr>
+                          <td>
+                            {{ version.version|default:"—" }}
+                          </td>
+                          <td>
+                            {{ version.created_at|date:"d/m/Y H:i" }}
+                          </td>
+                          <td>
+                            {{ version.subido_por|default:"—" }}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+
+                  </table>
+
+                </div>
+
+              {% else %}
+
+                <div class="text-muted py-4">
+                  No hay versiones históricas registradas.
+                </div>
+
+              {% endif %}
+
             </div>
+
           </div>
 
         </div>
       </div>
+
     </div>
 
   </div>
+
 </div>
 {% endblock %}

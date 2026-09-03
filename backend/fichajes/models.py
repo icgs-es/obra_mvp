@@ -29,6 +29,15 @@ class Fichaje(models.Model):
         on_delete=models.CASCADE,
         related_name="fichajes",
     )
+    team = models.ForeignKey(
+        "usuarios.Team",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="fichajes",
+        help_text="Empresa/Team a la que pertenece este fichaje.",
+    )
+
     tipo = models.CharField(max_length=12, choices=TIPO_CHOICES)
     timestamp = models.DateTimeField(
         auto_now_add=True,

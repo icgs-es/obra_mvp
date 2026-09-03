@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Editar movimiento de almacén{% endblock %}
+{% block content %}
+<style>
+  .mov-form{max-width:980px;margin:20px auto;padding:0 12px;}
+  .cardx{background:#fff;border:1px solid #dbe3ef;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.07);}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:12px;}
+  label{font-weight:800;font-size:.82rem;color:#475569;text-transform:uppercase;margin-bottom:4px;}
+  input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;}
+  .btnx{display:inline-flex;align-items:center;justify-content:center;border:1px solid #cbd5e1;border-radius:10px;padding:9px 12px;font-weight:800;text-decoration:none;background:#fff;color:#0f172a;}
+  .primary{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+  .warn{background:#fff7ed;color:#9a3412;border-color:#fdba74;margin-bottom:12px;padding:10px;border-radius:12px;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+</style>
+
+<div class="mov-form">
+  <a class="btnx" href="{% url 'obra_movil:almacen_movimientos' %}?q={{ mov.pk }}">← Volver</a>
+  <h1>Editar movimiento #{{ mov.legacy_id_movimiento|default:mov.pk }}</h1>
+
+  {% if blocked_reason %}
+    <div class="warn">{{ blocked_reason }}</div>
+  {% endif %}
+
+  <div class="cardx" style="margin-bottom:12px;">
+    <p><strong>Origen:</strong> {{ origin_label }}</p>
+    <p><strong>Tipo:</strong> {{ mov.tipo_movimiento }}</p>
+    <p><strong>Almacén:</strong> {{ mov.almacen|default:"—" }}</p>
+    <p><strong>Recurso:</strong> {{ mov.recurso|default:"—" }}</p>
+  </div>
+
+  {% if can_edit %}<form method="post" class="cardx">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <div class="grid">
+      <div>
+        <label>Fecha</label>
+        <input type="date" name="fecha_movimiento" value="{{ form_values.fecha_movimiento }}" required>
+      </div>
+      <div>
+        <label>Hora</label>
+        <input type="time" name="hora_movimiento" value="{{ form_values.hora_movimiento }}">
+      </div>
+      <div>
+        <label>Cantidad</label>
+        <input name="cantidad" value="{{ form_values.cantidad }}" required min="0" step="0.0001" inputmode="decimal">
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label>Observaciones</label>
+      <textarea name="observaciones" rows="3">{{ form_values.observaciones }}</textarea>
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <button class="btnx primary" type="submit">Guardar cambios</button>
+      <a class="btnx" href="{% url 'obra_movil:almacen_movimientos' %}?q={{ mov.pk }}">Cancelar</a>
+    </div>
+  </form>{% endif %}
+</div>
+{% endblock %}

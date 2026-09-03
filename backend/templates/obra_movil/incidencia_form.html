@@ -1,0 +1,123 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- OBRA_MOVIL_INCIDENCIA_FORM_V1 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi bi-exclamation-triangle"></i>
+    </span>
+    <div>
+      <h1 class="h3 mb-1">Nueva incidencia</h1>
+      <p class="mb-0 opacity-75">Registrar problema o aviso desde obra.</p>
+    </div>
+  </div>
+</section>
+
+<form method="post" class="card border-0 shadow-sm rounded-4 obra-mobile-form" novalidate>
+  {% csrf_token %}
+  <div class="card-body">
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger rounded-4">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.obra.id_for_label }}">{{ form.obra.label }}</label>
+      {{ form.obra }}
+      {% if form.obra.errors %}<div class="text-danger small mt-1">{{ form.obra.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.unidad_obra.id_for_label }}">{{ form.unidad_obra.label }}</label>
+      {{ form.unidad_obra }}
+      {% if form.unidad_obra.errors %}<div class="text-danger small mt-1">{{ form.unidad_obra.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.tarea_obra.id_for_label }}">{{ form.tarea_obra.label }}</label>
+      {{ form.tarea_obra }}
+      {% if form.tarea_obra.errors %}<div class="text-danger small mt-1">{{ form.tarea_obra.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.empleado.id_for_label }}">{{ form.empleado.label }}</label>
+      {{ form.empleado }}
+      {% if form.empleado.errors %}<div class="text-danger small mt-1">{{ form.empleado.errors }}</div>{% endif %}
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.tipo.id_for_label }}">{{ form.tipo.label }}</label>
+        {{ form.tipo }}
+        {% if form.tipo.errors %}<div class="text-danger small mt-1">{{ form.tipo.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.prioridad.id_for_label }}">{{ form.prioridad.label }}</label>
+        {{ form.prioridad }}
+        {% if form.prioridad.errors %}<div class="text-danger small mt-1">{{ form.prioridad.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
+        {{ form.estado }}
+        {% if form.estado.errors %}<div class="text-danger small mt-1">{{ form.estado.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.fecha.id_for_label }}">{{ form.fecha.label }}</label>
+        {{ form.fecha }}
+        {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
+      {{ form.titulo }}
+      {% if form.titulo.errors %}<div class="text-danger small mt-1">{{ form.titulo.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+      {{ form.descripcion }}
+      {% if form.descripcion.errors %}<div class="text-danger small mt-1">{{ form.descripcion.errors }}</div>{% endif %}
+    </div>
+
+    <details class="mb-3">
+      <summary class="fw-semibold mb-2">Resolución / cierre</summary>
+      <div class="mb-3 mt-3">
+        <label class="form-label fw-semibold" for="{{ form.resolucion.id_for_label }}">{{ form.resolucion.label }}</label>
+        {{ form.resolucion }}
+        {% if form.resolucion.errors %}<div class="text-danger small mt-1">{{ form.resolucion.errors }}</div>{% endif %}
+      </div>
+    </details>
+
+    <div class="d-grid gap-2">
+      <button class="btn btn-primary btn-lg rounded-4" type="submit">
+        <i class="bi bi-check2-circle me-1"></i> Guardar incidencia
+      </button>
+      <a class="btn btn-light btn-lg rounded-4" href="{% url 'obra_movil:incidencias_home' %}">
+        Cancelar
+      </a>
+    </div>
+  </div>
+</form>
+
+<style>
+  /* OBRA_MOVIL_INCIDENCIA_FORM_STYLE_V1 */
+  .obra-mobile-form select,
+  .obra-mobile-form input,
+  .obra-mobile-form textarea {
+    border-radius: 1rem;
+  }
+  details {
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 1rem;
+    padding: .85rem;
+    background: #f8fafc;
+  }
+</style>
+{% endblock %}

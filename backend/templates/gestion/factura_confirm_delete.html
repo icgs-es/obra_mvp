@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Suprimir factura {{ factura.cod_factura }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Suprimir factura {{ factura.cod_factura }}</h1>
+      <div class="text-muted small">
+        {{ factura.proveedor }} · Nº proveedor: {{ factura.num_factura_proveedor|default:"—" }}
+      </div>
+    </div>
+    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header fw-semibold">Comprobaciones de seguridad</div>
+    <div class="card-body">
+      <div class="row g-2 small">
+        <div class="col-md-4"><strong>Empresa:</strong> {{ factura.team }}</div>
+        <div class="col-md-4"><strong>Factura:</strong> {{ factura.cod_factura }}</div>
+        <div class="col-md-4"><strong>Última serie:</strong> {{ ultima.cod_factura|default:"—" }}</div>
+        <div class="col-md-4"><strong>Líneas:</strong> {{ lineas_count }}</div>
+        <div class="col-md-4"><strong>Adjuntos:</strong> {{ adjuntos_count }}</div>
+        <div class="col-md-4"><strong>Albaranes vinculados:</strong> {{ vinculos_count }}</div>
+        <div class="col-md-4"><strong>Auditoría técnica:</strong> {{ audit_count }}</div>
+        <div class="col-md-4"><strong>Total:</strong> {{ factura.importe_factura }} €</div>
+        <div class="col-md-4"><strong>Pagado:</strong> {{ factura.importe_pagado }} €</div>
+      </div>
+
+      {% if bloqueos %}
+        <div class="alert alert-danger mt-3 mb-0">
+          <div class="fw-semibold mb-1">No se puede suprimir esta factura.</div>
+          <ul class="mb-0">
+            {% for b in bloqueos %}
+              <li>{{ b }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="alert alert-warning mt-3 mb-0">
+          Esta operación suprimirá definitivamente la factura y sus registros técnicos de auditoría.
+          Solo está permitida porque es la última factura de la serie y no tiene líneas, adjuntos ni vínculos.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if puede_suprimir %}
+  <form method="post" class="card shadow-sm border-danger">
+    {% csrf_token %}
+    <div class="card-header bg-danger text-white fw-semibold">Confirmar supresión</div>
+    <div class="card-body">
+      <label class="form-label">
+        Escribe exactamente: <code>SUPRIMIR {{ factura.cod_factura }}</code>
+      </label>
+      <input type="text" name="confirmar" class="form-control" autocomplete="off">
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+      <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-danger">Suprimir factura</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

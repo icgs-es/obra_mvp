@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Eliminar línea de albarán</h1>
+      <div class="text-muted">
+        Albarán {{ albaran.cod_albaran }} · Nº proveedor {{ albaran.num_albaran_proveedor }}
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ next_url }}">Volver</a>
+  </div>
+
+  {% if bloqueos %}
+    <div class="alert alert-warning">
+      <strong>Advertencias:</strong>
+      <ul class="mb-0">
+        {% for b in bloqueos %}
+          <li>{{ b }}</li>
+        {% endfor %}
+      </ul>
+      {% if puede_eliminar %}
+        <div class="mt-2">Como superusuario puedes confirmar la eliminación igualmente.</div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-body">
+      <p>Vas a eliminar esta línea:</p>
+
+      <table class="table table-sm">
+        <tr><th>Línea</th><td>{{ linea.linea }}</td></tr>
+        <tr><th>Artículo</th><td>{{ linea.articulo_compra }}</td></tr>
+        <tr><th>Cantidad</th><td>{{ linea.cantidad }}</td></tr>
+        <tr><th>Precio</th><td>{{ linea.precio_unitario }} €</td></tr>
+        <tr><th>Importe</th><td>{{ linea.importe_linea }} €</td></tr>
+        <tr><th>En partida</th><td>{% if linea.en_partida %}Sí{% else %}No{% endif %}</td></tr>
+        <tr><th>En almacén</th><td>{% if linea.en_almacen %}Sí{% else %}No{% endif %}</td></tr>
+        <tr><th>Facturado</th><td>{% if linea.facturado %}Sí{% else %}No{% endif %}</td></tr>
+      </table>
+
+      {% if puede_eliminar %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next_url }}">
+          <input type="hidden" name="confirmar" value="1">
+          <button type="submit" class="btn btn-danger">Sí, eliminar línea</button>
+          <a href="{{ next_url }}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+      {% else %}
+        <a href="{{ next_url }}" class="btn btn-outline-secondary">Volver</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

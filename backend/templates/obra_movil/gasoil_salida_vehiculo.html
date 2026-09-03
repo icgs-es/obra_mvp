@@ -1,0 +1,124 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block content %}
+<style>
+  .gas-wrap{max-width:760px;margin:12px auto 96px;padding:0 12px;}
+  .gas-hero{background:linear-gradient(135deg,#0f1f46,#1d4ed8);color:#fff;border-radius:20px;padding:22px 20px;margin-bottom:14px;box-shadow:0 14px 28px rgba(15,31,70,.18);}
+  .gas-hero h1{margin:0;font-size:28px;font-weight:900;letter-spacing:.2px;}
+  .gas-hero p{margin:6px 0 0;opacity:.9;font-weight:600;}
+  .gas-card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 10px 22px rgba(15,23,42,.06);}
+  .gas-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .gas-kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px;}
+  .gas-kpi .k{font-size:12px;text-transform:uppercase;color:#64748b;font-weight:900;}
+  .gas-kpi .v{font-size:18px;font-weight:900;color:#0f172a;margin-top:3px;}
+  .gas-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .gas-field{margin-bottom:14px;}
+  .gas-field label{display:block;font-size:14px;font-weight:900;color:#111827;margin-bottom:7px;}
+  .gas-field input,.gas-field textarea{width:100%;border:1px solid #cbd5e1;border-radius:14px;padding:13px 14px;font-size:18px;background:#fff;}
+  .gas-field input:focus,.gas-field textarea:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  .gas-readonly{width:100%;border:1px solid #cbd5e1;border-radius:14px;padding:13px 14px;font-size:18px;background:#f8fafc;color:#0f172a;font-weight:800;}
+  .gas-actions{position:sticky;bottom:12px;margin-top:18px;}
+  .gas-btn{width:100%;border:0;border-radius:16px;background:#1677ff;color:#fff;font-size:19px;font-weight:900;padding:15px 18px;box-shadow:0 10px 22px rgba(22,119,255,.25);}
+  .gas-back{display:inline-flex;margin-bottom:10px;text-decoration:none;font-weight:900;color:#2563eb;}
+  .gas-error{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:14px;padding:12px 14px;font-weight:800;}
+  .gas-help{font-size:13px;color:#64748b;margin-top:5px;font-weight:600;}
+  @media (max-width:640px){.gas-row,.gas-kpis{grid-template-columns:1fr}.gas-hero h1{font-size:25px}}
+</style>
+
+<div class="gas-wrap">
+  <a class="gas-back" href="/app/obra-movil/">← Volver a Obra móvil</a>
+
+  <section class="gas-hero">
+    <h1>Salida GASOIL</h1>
+    <p>Solo salida · litros · vehículo · kilometraje · quién entrega</p>
+  </section>
+
+  {% if error_base %}
+    <div class="gas-error">{{ error_base }}</div>
+  {% else %}
+    <section class="gas-card">
+      <div class="gas-kpis">
+        <div class="gas-kpi">
+          <div class="k">Recurso</div>
+          <div class="v">167 · GASOIL</div>
+        </div>
+        <div class="gas-kpi">
+          <div class="k">Stock actual</div>
+          <div class="v">{{ stock_actual|floatformat:2|default:"0,00" }} LTRS</div>
+        </div>
+      </div>
+
+      <div class="gas-row">
+        <div class="gas-field">
+          <label>Tipo</label>
+          <div class="gas-readonly">SALIDA</div>
+        </div>
+        <div class="gas-field">
+          <label>Unidad</label>
+          <div class="gas-readonly">LTRS</div>
+        </div>
+      </div>
+
+      <div class="gas-field">
+        <label>Almacén</label>
+        <div class="gas-readonly">A10 · DEPÓSITO GASÓLEO</div>
+      </div>
+    </section>
+
+    <form method="post" class="gas-card" autocomplete="off">
+      {% csrf_token %}
+
+      <div class="gas-row">
+        <div class="gas-field">
+          <label for="fecha_movimiento">Fecha</label>
+          <input id="fecha_movimiento" name="fecha_movimiento" type="date" value="{{ form_values.fecha_movimiento }}" required>
+        </div>
+        <div class="gas-field">
+          <label for="hora_movimiento">Hora</label>
+          <input id="hora_movimiento" name="hora_movimiento" type="time" value="{{ form_values.hora_movimiento }}" required>
+        </div>
+      </div>
+
+      <div class="gas-field">
+        <label for="cantidad">Cantidad</label>
+        <input id="cantidad" name="cantidad" type="text" inputmode="decimal" value="{{ form_values.cantidad }}" placeholder="Ej. 35" required autofocus>
+        <div class="gas-help">Unidad fija: LTRS</div>
+      </div>
+
+      <div class="gas-field">
+        <label for="quien_entrega">Quién entrega</label>
+        <input id="quien_entrega" name="quien_entrega" list="entregadores_gasoil" value="{{ form_values.quien_entrega }}" placeholder="Seleccionar o escribir" required>
+        <datalist id="entregadores_gasoil">
+          {% for r in entregadores %}
+            <option value="{{ r }}">
+          {% endfor %}
+        </datalist>
+      </div>
+
+      <div class="gas-field">
+        <label for="vehiculo">Vehículo / matrícula</label>
+        <input id="vehiculo" name="vehiculo" list="vehiculos_gasoil" value="{{ form_values.vehiculo }}" placeholder="Ej. CITROEN - 4112 LWY" required>
+        <datalist id="vehiculos_gasoil">
+          {% for v in vehiculos %}
+            <option value="{{ v }}">
+          {% endfor %}
+        </datalist>
+      </div>
+
+      <div class="gas-field">
+        <label for="kilometraje">Kilometraje</label>
+        <input id="kilometraje" name="kilometraje" type="text" inputmode="decimal" value="{{ form_values.kilometraje }}" placeholder="Ej. 71737" required>
+      </div>
+
+      <div class="gas-field">
+        <label for="observaciones_extra">Observaciones</label>
+        <textarea id="observaciones_extra" name="observaciones_extra" rows="2" placeholder="Opcional">{{ form_values.observaciones_extra }}</textarea>
+      </div>
+
+      <div class="gas-actions">
+        <button class="gas-btn" type="submit">Guardar salida GASOIL</button>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

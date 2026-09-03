@@ -1,6 +1,123 @@
 {% extends "base.html" %}
 
-{% block title %}{% if modo_ajuste_realizado %}Ajustar fecha real{% elif asignacion %}Editar asignación{% else %}Nueva asignación de personal{% endif %}{% endblock %}
+{% block title %}{% if modo_ajuste_realizado %}Ajustar fecha real{% elif asignacion %}Editar asignación{% else %}Nueva asignación de personal{% endif %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // ASIGNACION_EMPLEADO_SELECT_POPULATE_V1
+  const empleadoSelect = document.getElementById("id_empleado");
+  const empleadoOptions = {{ empleado_options_json|default:"[]"|safe }};
+
+  if (!empleadoSelect || !Array.isArray(empleadoOptions) || !empleadoOptions.length) {
+    return;
+  }
+
+  const previousValue = empleadoSelect.value || "";
+
+  const empleadoTextById = new Map(
+    empleadoOptions.map(function (item) {
+      return [String(item.id), item.text];
+    })
+  );
+
+  // Si Django renderizó opciones con nombre RRHH, las renombramos con EmpleadoObra.nombre.
+  Array.from(empleadoSelect.options || []).forEach(function (opt) {
+    if (opt.value && empleadoTextById.has(String(opt.value))) {
+      opt.textContent = empleadoTextById.get(String(opt.value));
+    }
+  });
+
+  const realOptions = Array.from(empleadoSelect.options || []).filter(function (opt) {
+    return opt.value;
+  });
+
+  // Si Django/algún widget dejó el select vacío, lo reconstruimos desde el queryset real del formulario.
+  if (realOptions.length === 0) {
+    empleadoSelect.innerHTML = "";
+
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "---------";
+    empleadoSelect.appendChild(blank);
+
+    empleadoOptions.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = String(item.id);
+      option.textContent = item.text;
+
+      if (previousValue && String(item.id) === String(previousValue)) {
+        option.selected = true;
+      }
+
+      empleadoSelect.appendChild(option);
+    });
+
+    empleadoSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    return;
+  }
+
+  // Si no está vacío, añadimos cualquier opción nueva que falte.
+  const existing = new Set(
+    Array.from(empleadoSelect.options || []).map(function (opt) {
+      return String(opt.value);
+    })
+  );
+
+  let added = false;
+  empleadoOptions.forEach(function (item) {
+    if (existing.has(String(item.id))) {
+      return;
+    }
+
+    const option = document.createElement("option");
+    option.value = String(item.id);
+    option.textContent = item.text;
+    empleadoSelect.appendChild(option);
+    added = true;
+  });
+
+  if (added) {
+    empleadoSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // ASIGNACION_EMPLEADO_SELECT_FORCE_EMPLEADOOBRA_LABELS_V1
+  const empleadoSelect = document.getElementById("id_empleado");
+  const empleadoOptions = {{ empleado_options_json|default:"[]"|safe }};
+
+  if (!empleadoSelect || !Array.isArray(empleadoOptions) || !empleadoOptions.length) {
+    return;
+  }
+
+  const previousValue = empleadoSelect.value || "";
+
+  empleadoSelect.innerHTML = "";
+
+  const blank = document.createElement("option");
+  blank.value = "";
+  blank.textContent = "---------";
+  empleadoSelect.appendChild(blank);
+
+  empleadoOptions.forEach(function (item) {
+    const option = document.createElement("option");
+    option.value = String(item.id);
+    option.textContent = item.text;
+
+    if (previousValue && String(item.id) === String(previousValue)) {
+      option.selected = true;
+    }
+
+    empleadoSelect.appendChild(option);
+  });
+
+  empleadoSelect.dispatchEvent(new Event("change", { bubbles: true }));
+});
+</script>
+
+{% endblock %}
 
 {% block content %}
 
@@ -52,6 +169,13 @@
 .assignment-form .row {
   align-items: start;
 }
+
+.assignment-cost-preview input[readonly] {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #0f172a;
+}
+
 </style>
 
 <div class="container-fluid py-4 assignment-page">
@@ -64,7 +188,9 @@
     <div class="card-body p-4">
 
       <h1 class="h3 mb-1">
-        {% if modo_ajuste_realizado %}
+        {% if modo_repetir %}
+          Repetir asignación de personal
+        {% elif modo_ajuste_realizado %}
           Ajustar fecha real de asignación
         {% elif asignacion %}
           Editar asignación de personal
@@ -73,7 +199,9 @@
         {% endif %}
       </h1>
       <p class="text-muted mb-4">
-        {% if modo_ajuste_realizado %}
+        {% if modo_repetir %}
+          Copia una asignación existente. Cambia solo fecha y horario; las horas, el importe y el estado se recalculan automáticamente.
+        {% elif modo_ajuste_realizado %}
           Esta asignación es futura. Ajusta solo la fecha y horario reales antes de marcarla como realizada.
         {% else %}
           Distribuye personal disponible sobre una obra, unidad, tarea o partida.
@@ -86,6 +214,16 @@
         {% if form.non_field_errors %}
           <div class="alert alert-danger">
             {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        {% if modo_repetir and asignacion_origen %}
+          <div class="alert alert-info">
+            <strong>Asignación origen:</strong>
+            {{ asignacion_origen.fecha_inicio|date:"d/m/Y" }}
+            · {{ asignacion_origen.empleado }}
+            · {{ asignacion_origen.pi_display_obra }}
+            · {{ asignacion_origen.pi_display_vivienda_corta }}
           </div>
         {% endif %}
 
@@ -174,7 +312,7 @@
             {{ form.tarea_obra }}
             {{ form.tarea_obra.errors }}
             <div class="form-text">
-              Opcional. Si no eliges tarea y no existe una compatible, se creará una tarea operativa mínima.
+              Obligatoria. Selecciona la tarea concreta cuyo avance se actualizará.
             </div>
           </div>
         </div>
@@ -184,6 +322,61 @@
           {{ form.unidad_obra }}
         </div>
 
+        {% endif %}
+
+        {# ASIGNACION_AVANCE_PRODUCCION_UI_V1_1 #}
+        {% if not modo_ajuste_realizado %}
+        <h2 class="section-title mt-4 mb-3">
+          Avance y producción
+        </h2>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label"
+                   for="{{ form.porcentaje_completado.id_for_label }}">
+              % completado actual *
+            </label>
+
+            {{ form.porcentaje_completado }}
+            {{ form.porcentaje_completado.errors }}
+
+            <div class="form-text">
+              Porcentaje acumulado actual de la tarea.
+              Sustituye al anterior y no puede disminuir.
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label"
+                   for="{{ form.cantidad_ejecutada.id_for_label }}">
+              Cantidad ejecutada
+            </label>
+
+            {{ form.cantidad_ejecutada }}
+            {{ form.cantidad_ejecutada.errors }}
+
+            <div class="form-text">
+              Opcional. Se utilizará para comparaciones
+              de producción y rendimiento.
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            {# ASIGNACION_UNIDAD_PRODUCCION_MANUAL_UI_V1 #}
+            <label class="form-label"
+                   for="{{ form.unidad_ejecutada.id_for_label }}">
+              Unidad de producción
+            </label>
+
+            {{ form.unidad_ejecutada }}
+            {{ form.unidad_ejecutada.errors }}
+
+            <div class="form-text">
+              Selecciona metros lineales, metros cuadrados
+              o metros cúbicos cuando indiques una cantidad.
+            </div>
+          </div>
+        </div>
         {% endif %}
 
         <h2 class="section-title mt-4 mb-3">Fechas y horario</h2>
@@ -231,6 +424,26 @@
         </div>
 
         {% if not modo_ajuste_realizado %}
+        <div class="row g-3 mb-4 assignment-cost-preview">
+          <div class="col-md-4">
+            <label class="form-label">Horas calculadas</label>
+            <input type="text" id="id_horas_calculadas_preview" value="0,00" readonly>
+            <div class="form-text">Calculadas desde fecha/hora inicio y fin.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Precio hora empleado</label>
+            <input type="text" id="id_precio_hora_preview" value="0,00 €" readonly>
+            <div class="form-text">Tomado de la ficha de personal de obra.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Coste previsto</label>
+            <input type="text" id="id_coste_previsto_preview" value="0,00 €" readonly>
+            <div class="form-text">Horas × precio hora.</div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if not modo_ajuste_realizado %}
         <h2 class="section-title mt-4 mb-3">Estado y notas</h2>
 
         <div class="row g-3 mb-4">
@@ -238,6 +451,9 @@
             <label class="form-label" for="{{ form.estado.id_for_label }}">Estado</label>
             {{ form.estado }}
             {{ form.estado.errors }}
+            <div class="form-text">
+              El estado se sugiere automáticamente según fecha/hora fin, pero puedes cambiarlo antes de guardar.
+            </div>
           </div>
 
           </div>
@@ -267,6 +483,7 @@
   </div>
 </div>
 
+<script id="empleado-precios-json" type="application/json">{{ empleado_precios_json|default:"{}"|safe }}</script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const endpointUrl = "/app/planificacion-obra/asignaciones/opciones/";
@@ -278,10 +495,197 @@ document.addEventListener("DOMContentLoaded", function () {
   const capitulo = document.getElementById("id_capitulo");
   const partida = document.getElementById("id_partida");
   const tarea = document.getElementById("id_tarea_obra");
+
+  const empleadoPrecios = JSON.parse(document.getElementById("empleado-precios-json")?.textContent || "{}");
+
+  const empleadoSelect = document.getElementById("id_empleado");
+  const fechaInicioInput = document.getElementById("id_fecha_inicio");
+  const horaInicioInput = document.getElementById("id_hora_inicio");
+  const fechaFinInput = document.getElementById("id_fecha_fin");
+  const horaFinInput = document.getElementById("id_hora_fin");
+
+  const horasPreview = document.getElementById("id_horas_calculadas_preview");
+  const precioPreview = document.getElementById("id_precio_hora_preview");
+  const costePreview = document.getElementById("id_coste_previsto_preview");
+  const estadoSelect = document.getElementById("id_estado");
+  let estadoManualOverride = false;
+
+  function formatNumberES(value, decimals = 2) {
+    if (!isFinite(value)) value = 0;
+    return value.toLocaleString("es-ES", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  }
+
+  function normalizeDateForPreview(dateValue) {
+    if (!dateValue) return "";
+
+    const raw = String(dateValue).trim();
+
+    // HTML date normal: yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+
+    // Formato visual/local: dd/mm/yyyy
+    const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) {
+      const dd = String(m[1]).padStart(2, "0");
+      const mm = String(m[2]).padStart(2, "0");
+      const yyyy = m[3];
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    return raw;
+  }
+
+  function normalizeTimeForPreview(timeValue) {
+    if (!timeValue) return "";
+    const raw = String(timeValue).trim();
+
+    // HH:MM o HH:MM:SS
+    const m = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!m) return raw;
+
+    const hh = String(m[1]).padStart(2, "0");
+    const mm = m[2];
+    return `${hh}:${mm}`;
+  }
+
+  function readInputValueForPreview(el) {
+    if (!el) return "";
+    return String(el.value || el.getAttribute("value") || "").trim();
+  }
+
+  function parseDatePartsForPreview(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+
+    // yyyy-mm-dd
+    let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) {
+      return {
+        y: Number(m[1]),
+        m: Number(m[2]),
+        d: Number(m[3])
+      };
+    }
+
+    // dd/mm/yyyy
+    m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) {
+      return {
+        y: Number(m[3]),
+        m: Number(m[2]),
+        d: Number(m[1])
+      };
+    }
+
+    return null;
+  }
+
+  function parseTimePartsForPreview(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+
+    const m = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!m) return null;
+
+    return {
+      h: Number(m[1]),
+      min: Number(m[2])
+    };
+  }
+
+  function parseDateTime(dateValue, timeValue) {
+    const d = parseDatePartsForPreview(dateValue);
+    const t = parseTimePartsForPreview(timeValue);
+
+    if (!d || !t) return null;
+    if (!d.y || !d.m || !d.d) return null;
+
+    const dt = new Date(d.y, d.m - 1, d.d, t.h, t.min, 0, 0);
+    if (isNaN(dt.getTime())) return null;
+
+    return dt;
+  }
+
+
+  function actualizarEstadoAutomaticoAsignacion(fin) {
+    if (!estadoSelect || estadoManualOverride) return;
+    if (!fin) return;
+
+    const now = new Date();
+
+    if (fin.getTime() <= now.getTime()) {
+      estadoSelect.value = "REALIZADO";
+    } else {
+      estadoSelect.value = "PENDIENTE";
+    }
+  }
+
+  function calcularPreviewCosteAsignacion() {
+    if (!horasPreview || !precioPreview || !costePreview) return;
+
+    const inicio = parseDateTime(
+      readInputValueForPreview(fechaInicioInput),
+      readInputValueForPreview(horaInicioInput)
+    );
+    const fin = parseDateTime(
+      readInputValueForPreview(fechaFinInput),
+      readInputValueForPreview(horaFinInput)
+    );
+
+    let horas = 0;
+    if (inicio && fin && fin > inicio) {
+      horas = (fin.getTime() - inicio.getTime()) / 3600000;
+    }
+
+    const empleadoId = empleadoSelect?.value || "";
+    const precio = Number((empleadoPrecios[empleadoId] || {}).precio_hora || 0);
+    const coste = horas * precio;
+
+    actualizarEstadoAutomaticoAsignacion(fin);
+
+    horasPreview.value = `${formatNumberES(horas, 2)} h`;
+    precioPreview.value = `${formatNumberES(precio, 2)} €`;
+    costePreview.value = `${formatNumberES(coste, 2)} €`;
+  }
+
+  if (estadoSelect) {
+    estadoSelect.addEventListener("change", function () {
+      estadoManualOverride = true;
+    });
+  }
+
+  [empleadoSelect, fechaInicioInput, horaInicioInput, fechaFinInput, horaFinInput].forEach((el) => {
+    if (!el) return;
+    ["change", "input", "keyup", "blur"].forEach((eventName) => {
+      el.addEventListener(eventName, calcularPreviewCosteAsignacion);
+    });
+  });
+
+  calcularPreviewCosteAsignacion();
+  setTimeout(calcularPreviewCosteAsignacion, 100);
+  setTimeout(calcularPreviewCosteAsignacion, 500);
+
   const unidadObra = document.getElementById("id_unidad_obra");
   const btnCargar = document.getElementById("btn-cargar-estructura");
 
+  const modoRepetirAsignacion = {% if modo_repetir %}true{% else %}false{% endif %};
+  let estructuraTouchedByUser = false;
+
   if (!obra) return;
+
+  [obra, fase, vivienda, planta, capitulo, partida, tarea].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener("change", function (event) {
+      if (event && event.isTrusted) {
+        estructuraTouchedByUser = true;
+      }
+    }, true);
+  });
 
   function clearSelect(select) {
     if (!select) return;
@@ -295,7 +699,16 @@ document.addEventListener("DOMContentLoaded", function () {
   function populateSelect(select, items) {
     if (!select) return;
 
-    const previousValue = select.value || "";
+    const previousValue =
+      select.value ||
+      (((modoRepetirAsignacion || isExistingAssignment) && !estructuraTouchedByUser && select.dataset)
+        ? (select.dataset.initialValue || "")
+        : "");
+    const previousText = (
+      select.options && select.selectedIndex >= 0 && select.options[select.selectedIndex]
+    )
+      ? select.options[select.selectedIndex].textContent
+      : previousValue;
 
     clearSelect(select);
 
@@ -315,7 +728,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     if (previousValue && !foundPrevious) {
-      select.value = "";
+      if ((modoRepetirAsignacion || isExistingAssignment) && !estructuraTouchedByUser) {
+        const option = document.createElement("option");
+        option.value = previousValue;
+        option.textContent = previousText || previousValue;
+        option.selected = true;
+        select.appendChild(option);
+      } else {
+        select.value = "";
+      }
     }
   }
 
@@ -443,30 +864,83 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  const isExistingAssignment = "{{ asignacion.pk|default:'' }}";
+
+  // ASIGNACION_EDIT_ESTRUCTURA_COMPLETA_V1
+  const initialStructureValues = {
+    fase: fase ? (fase.value || "") : "",
+    vivienda: vivienda ? (vivienda.value || "") : "",
+    planta: planta ? (planta.value || "") : "",
+    capitulo: capitulo ? (capitulo.value || "") : "",
+    partida: partida ? (partida.value || "") : "",
+    tarea: tarea ? (tarea.value || "") : ""
+  };
+
+  [
+    [fase, initialStructureValues.fase],
+    [vivienda, initialStructureValues.vivienda],
+    [planta, initialStructureValues.planta],
+    [capitulo, initialStructureValues.capitulo],
+    [partida, initialStructureValues.partida],
+    [tarea, initialStructureValues.tarea]
+  ].forEach(function (pair) {
+    const select = pair[0];
+    const value = pair[1];
+    if (select && !select.dataset.initialValue) {
+      select.dataset.initialValue = value || "";
+    }
+  });
+
+  function restoreInitialValue(select, value) {
+    if (!select || !value) return;
+
+    const exists = Array.from(select.options || []).some(function (opt) {
+      return String(opt.value) === String(value);
+    });
+
+    if (exists) {
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  async function loadFullStructureForEdit() {
+    if (!obra || !obra.value) return;
+
+    await loadOptions(1);
+
+    restoreInitialValue(fase, initialStructureValues.fase);
+    await loadOptions(2);
+
+    restoreInitialValue(vivienda, initialStructureValues.vivienda);
+    syncUnidadObra();
+    await loadOptions(3);
+
+    restoreInitialValue(planta, initialStructureValues.planta);
+    await loadOptions(4);
+
+    restoreInitialValue(capitulo, initialStructureValues.capitulo);
+    await loadOptions(5);
+
+    restoreInitialValue(partida, initialStructureValues.partida);
+    await loadOptions(6);
+
+    restoreInitialValue(tarea, initialStructureValues.tarea);
+    syncUnidadObra();
+  }
+
   if (btnCargar) {
     btnCargar.addEventListener("click", function () {
-      if (partida && partida.value) {
-        loadOptions(6);
-      } else if (capitulo && capitulo.value) {
-        loadOptions(5);
-      } else if (planta && planta.value) {
-        loadOptions(4);
-      } else if (vivienda && vivienda.value) {
-        loadOptions(3);
-      } else if (fase && fase.value) {
-        loadOptions(2);
-      } else {
-        loadOptions(1);
-      }
+      loadFullStructureForEdit();
     });
   }
 
-  // En edición, Django ya renderiza toda la jerarquía precargada.
-  // No ejecutamos carga automática inicial porque vacía los selects dependientes.
-  const isExistingAssignment = "{{ asignacion.pk|default:'' }}";
-
-  if (obra.value && !isExistingAssignment) {
-    loadOptions(1);
+  if (obra.value) {
+    if (isExistingAssignment) {
+      loadFullStructureForEdit();
+    } else {
+      loadOptions(1);
+    }
   }
 });
 </script>
@@ -491,6 +965,191 @@ document.addEventListener("DOMContentLoaded", function () {
 
     lastFechaInicio = nuevaFecha;
   });
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // ASIGNACION_EMPLEADO_SELECT_POPULATE_V1
+  const empleadoSelect = document.getElementById("id_empleado");
+  const empleadoOptions = {{ empleado_options_json|default:"[]"|safe }};
+
+  if (!empleadoSelect || !Array.isArray(empleadoOptions) || !empleadoOptions.length) {
+    return;
+  }
+
+  const previousValue = empleadoSelect.value || "";
+
+  const empleadoTextById = new Map(
+    empleadoOptions.map(function (item) {
+      return [String(item.id), item.text];
+    })
+  );
+
+  // Si Django renderizó opciones con nombre RRHH, las renombramos con EmpleadoObra.nombre.
+  Array.from(empleadoSelect.options || []).forEach(function (opt) {
+    if (opt.value && empleadoTextById.has(String(opt.value))) {
+      opt.textContent = empleadoTextById.get(String(opt.value));
+    }
+  });
+
+  const realOptions = Array.from(empleadoSelect.options || []).filter(function (opt) {
+    return opt.value;
+  });
+
+  // Si Django/algún widget dejó el select vacío, lo reconstruimos desde el queryset real del formulario.
+  if (realOptions.length === 0) {
+    empleadoSelect.innerHTML = "";
+
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "---------";
+    empleadoSelect.appendChild(blank);
+
+    empleadoOptions.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = String(item.id);
+      option.textContent = item.text;
+
+      if (previousValue && String(item.id) === String(previousValue)) {
+        option.selected = true;
+      }
+
+      empleadoSelect.appendChild(option);
+    });
+
+    empleadoSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    return;
+  }
+
+  // Si no está vacío, añadimos cualquier opción nueva que falte.
+  const existing = new Set(
+    Array.from(empleadoSelect.options || []).map(function (opt) {
+      return String(opt.value);
+    })
+  );
+
+  let added = false;
+  empleadoOptions.forEach(function (item) {
+    if (existing.has(String(item.id))) {
+      return;
+    }
+
+    const option = document.createElement("option");
+    option.value = String(item.id);
+    option.textContent = item.text;
+    empleadoSelect.appendChild(option);
+    added = true;
+  });
+
+  if (added) {
+    empleadoSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // ASIGNACION_EMPLEADO_SELECT_FORCE_EMPLEADOOBRA_LABELS_V1
+  const empleadoSelect = document.getElementById("id_empleado");
+  const empleadoOptions = {{ empleado_options_json|default:"[]"|safe }};
+
+  if (!empleadoSelect || !Array.isArray(empleadoOptions) || !empleadoOptions.length) {
+    return;
+  }
+
+  const previousValue = empleadoSelect.value || "";
+
+  empleadoSelect.innerHTML = "";
+
+  const blank = document.createElement("option");
+  blank.value = "";
+  blank.textContent = "---------";
+  empleadoSelect.appendChild(blank);
+
+  empleadoOptions.forEach(function (item) {
+    const option = document.createElement("option");
+    option.value = String(item.id);
+    option.textContent = item.text;
+
+    if (previousValue && String(item.id) === String(previousValue)) {
+      option.selected = true;
+    }
+
+    empleadoSelect.appendChild(option);
+  });
+
+  empleadoSelect.dispatchEvent(new Event("change", { bubbles: true }));
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // ASIGNACION_AVANCE_TAREA_FETCH_V1_1
+  const tareaSelect =
+    document.getElementById("id_tarea_obra");
+
+  const porcentajeInput =
+    document.getElementById(
+      "id_porcentaje_completado"
+    );
+
+  if (!tareaSelect || !porcentajeInput) {
+    return;
+  }
+
+  async function cargarAvanceTarea() {
+    const tareaId = String(
+      tareaSelect.value || ""
+    ).trim();
+
+    if (!tareaId) {
+      porcentajeInput.value = "0";
+      porcentajeInput.min = "0";
+
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/app/planificacion-obra/asignaciones/tarea-avance/${tareaId}/`,
+        {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        }
+      );
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      const actual =
+        data.porcentaje_completado || "0";
+
+      porcentajeInput.value = actual;
+      porcentajeInput.min = actual;
+
+    } catch (error) {
+      console.warn(
+        "No se pudo cargar el avance de la tarea.",
+        error
+      );
+    }
+  }
+
+  tareaSelect.addEventListener(
+    "change",
+    cargarAvanceTarea
+  );
+
+  if (tareaSelect.value) {
+    cargarAvanceTarea();
+  }
 });
 </script>
 

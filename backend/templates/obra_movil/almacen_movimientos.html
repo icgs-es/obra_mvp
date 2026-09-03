@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Movimientos de almacén{% endblock %}
+
+{% block content %}
+<!-- ALM_MOV_UX1A_COMPACTO_OK -->
+<!-- ALM_MOV_UX1B_BUSQUEDA_ALBARAN_OK -->
+<style>
+  .alm3-wrap{max-width:1600px;margin:0 auto;padding:18px 10px 50px;}
+  .alm3-head{background:linear-gradient(135deg,#14306d,#1d72f3);color:white;border-radius:18px;padding:18px 20px;box-shadow:0 12px 28px rgba(15,23,42,.16);margin-bottom:12px;}
+  .alm3-head h1{margin:0;font-size:1.55rem;font-weight:900;}
+  .alm3-head p{margin:4px 0 0;opacity:.9;}
+  .alm3-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .alm3-card{background:#fff;border:1px solid #dbe3ef;border-radius:16px;box-shadow:0 8px 20px rgba(15,23,42,.07);margin-bottom:12px;}
+  .alm3-card-body{padding:13px;}
+  .alm3-filters{display:grid;grid-template-columns:1.5fr repeat(4,minmax(120px,1fr)) auto;gap:8px;align-items:end;}
+  .alm3-filters-2{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin-top:8px;}
+  .alm3-field label{font-size:.72rem;font-weight:900;color:#64748b;text-transform:uppercase;margin-bottom:3px;}
+  .alm3-field input,.alm3-field select{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:8px 9px;font-size:.88rem;}
+  .alm3-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:34px;padding:7px 10px;border-radius:9px;border:1px solid #cbd5e1;text-decoration:none;font-weight:800;background:#fff;color:#0f172a;white-space:nowrap;}
+  .alm3-btn-primary{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+  .alm3-btn-danger{background:#fff1f2;color:#be123c;border-color:#fecdd3;}
+  .alm3-btn-warning{background:#fff7ed;color:#9a3412;border-color:#fdba74;}
+  .alm3-btn-sm{min-height:26px;padding:3px 7px;font-size:.72rem;}
+  .alm3-pill{border:1px solid #dbe3ef;border-radius:999px;padding:6px 10px;background:#f8fafc;font-size:.84rem;font-weight:800;text-decoration:none;color:#0f172a;}
+  .alm3-pill-danger{background:#fff7ed;color:#9a3412;border-color:#fed7aa;}
+  .alm3-table-wrap{overflow-x:auto;}
+  .alm3-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:.78rem;}
+  .alm3-table th,.alm3-table td{border-bottom:1px solid #e2e8f0;padding:6px 7px;vertical-align:middle;white-space:nowrap;}
+  .alm3-table th{background:#f8fafc;color:#475569;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;z-index:1;}
+  .alm3-resource{max-width:280px;overflow:hidden;text-overflow:ellipsis;}
+  .alm3-almacen{max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+  .alm3-obs{max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+  .alm3-origin{width:120px;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:normal;}
+  .alm3-actions{width:170px;white-space:nowrap!important;text-align:right;}
+  .alm3-actions .alm3-toolbar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;}
+  .alm3-table th:nth-child(1){width:72px}.alm3-table th:nth-child(2){width:108px}.alm3-table th:nth-child(3){width:92px}.alm3-table th:nth-child(4){width:22%}.alm3-table th:nth-child(5){width:80px}.alm3-table th:nth-child(6){width:80px}.alm3-table th:nth-child(7){width:110px}.alm3-table th:nth-child(8){width:100px}.alm3-table th:nth-child(9){width:22%}.alm3-table th:nth-child(10){width:120px}.alm3-table th:nth-child(11){width:170px}
+  .alm3-muted{color:#64748b;}
+  .alm3-badge{display:inline-flex;border-radius:999px;padding:3px 7px;font-size:.68rem;font-weight:900;color:#fff;}
+  .b-salida{background:#dc2626;}
+  .b-entrada{background:#2563eb;}
+  .b-control{background:#64748b;}
+  .b-rotura{background:#7c2d12;}
+  .alm3-state{display:inline-flex;border-radius:999px;padding:3px 7px;font-size:.68rem;font-weight:900;background:#ecfdf5;color:#047857;border:1px solid #86efac;}
+  .alm3-state-pending{background:#fef3c7;color:#92400e;border-color:#fbbf24;}
+  .alm3-pagination{display:flex;gap:8px;justify-content:center;margin-top:12px;}
+  @media(max-width:980px){.alm3-filters,.alm3-filters-2{grid-template-columns:1fr}.alm3-table{font-size:.74rem}}
+  @media(max-width:680px){.alm3-table-wrap{overflow:visible}.alm3-table,.alm3-table tbody,.alm3-table tr,.alm3-table td{display:block;width:100%;}.alm3-table thead{display:none}.alm3-table tr{border:1px solid #dbe3ef;border-radius:12px;margin:8px 0;padding:7px;background:#fff}.alm3-table td{border:0;padding:4px 2px;white-space:normal;overflow-wrap:anywhere}.alm3-table td::before{content:attr(data-label);display:inline-block;min-width:92px;margin-right:6px;color:#64748b;font-size:.66rem;font-weight:900;text-transform:uppercase;vertical-align:top}.alm3-table td.alm3-actions{width:100%;min-width:0;padding-top:8px;border-top:1px solid #e2e8f0;margin-top:4px}.alm3-table td.alm3-actions::before{display:block;margin-bottom:4px}.alm3-actions .alm3-btn{min-height:44px;font-size:.8rem}}
+</style>
+
+<div class="alm3-wrap">
+  <a href="/app/obra-movil/" class="alm3-btn alm3-btn-sm mb-2">← Obra móvil</a>
+
+  <div class="alm3-head">
+    <h1>Movimientos de almacén</h1>
+    <p>Vista compacta · nuevo · editar · eliminar · enviar a partida.</p>
+  </div>
+
+  <div class="alm3-toolbar">
+    <span class="alm3-pill">Total: {{ total }}</span>
+    <a class="alm3-pill alm3-pill-danger" href="{% url 'obra_movil:almacen_movimientos' %}?estado=PENDIENTE">Pendientes: {{ pendientes_count }}</a>
+    <a class="alm3-btn alm3-btn-primary" href="{% url 'obra_movil:almacen_rapido' %}">+ Nuevo movimiento</a>
+    <a class="alm3-btn" href="{% url 'obra_movil:stock_rapido' %}">Stock rápido</a>
+    <a class="alm3-btn" href="{% url 'obra_movil:gasoil_salida_vehiculo' %}">GASOIL</a>
+  </div>
+
+  <div class="alm3-card">
+    <div class="alm3-card-body">
+      <form method="get">
+        <div class="alm3-filters">
+          <div class="alm3-field">
+            <label>Buscar</label>
+            <input type="text" name="q" value="{{ filtros.q }}" placeholder="Recurso, código, albarán, persona, almacén...">
+          </div>
+          <div class="alm3-field">
+            <label>Estado</label>
+            <select name="estado">
+              <option value="">Todos</option>
+              <option value="PENDIENTE" {% if filtros.estado == "PENDIENTE" or filtros.estado == "PENDIENTE_PERSONA" %}selected{% endif %}>Pendiente</option>
+              <option value="IMPUTADO" {% if filtros.estado == "IMPUTADO" %}selected{% endif %}>Imputado</option>
+            </select>
+          </div>
+          <div class="alm3-field">
+            <label>Tipo</label>
+            <select name="tipo">
+              <option value="">Todos</option>
+              {% for tipo in tipos %}
+                <option value="{{ tipo }}" {% if filtros.tipo == tipo %}selected{% endif %}>{{ tipo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="alm3-field">
+            <label>Almacén</label>
+            <select name="almacen">
+              <option value="">Todos</option>
+              {% for almacen in almacenes %}
+                <option value="{{ almacen.pk }}" {% if filtros.almacen == almacen.pk|stringformat:"s" %}selected{% endif %}>{{ almacen }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="alm3-field">
+            <label>Obra</label>
+            <select name="obra">
+              <option value="">Todas</option>
+              {% for obra in obras %}
+                <option value="{{ obra.pk }}" {% if filtros.obra == obra.pk|stringformat:"s" %}selected{% endif %}>{{ obra }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="alm3-toolbar" style="margin:0;">
+            <button class="alm3-btn alm3-btn-primary" type="submit">Filtrar</button>
+            <a class="alm3-btn" href="{% url 'obra_movil:almacen_movimientos' %}">Limpiar</a>
+          </div>
+        </div>
+
+        <div class="alm3-filters-2">
+          <div class="alm3-field">
+            <label>Destino</label>
+            <select name="destino">
+              <option value="">Todos</option>
+              <option value="PERSONA" {% if filtros.destino == "PERSONA" %}selected{% endif %}>Persona</option>
+              <option value="PARTIDA" {% if filtros.destino == "PARTIDA" %}selected{% endif %}>Partida</option>
+              <option value="ALMACEN" {% if filtros.destino == "ALMACEN" %}selected{% endif %}>Almacén</option>
+            </select>
+          </div>
+          <div class="alm3-field">
+            <label>Persona</label>
+            <select name="empleado">
+              <option value="">Todas</option>
+              {% for empleado in empleados %}
+                <option value="{{ empleado.pk }}" {% if filtros.empleado == empleado.pk|stringformat:"s" %}selected{% endif %}>{{ empleado.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="alm3-field">
+            <label>Desde</label>
+            <input type="date" name="fecha_desde" value="{{ filtros.fecha_desde }}">
+          </div>
+          <div class="alm3-field">
+            <label>Hasta</label>
+            <input type="date" name="fecha_hasta" value="{{ filtros.fecha_hasta }}">
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="alm3-card">
+    <div class="alm3-table-wrap">
+      <table class="alm3-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha/hora</th>
+            <th>Tipo</th>
+            <th>Recurso</th>
+            <th>Cant.</th>
+            <th>Quedan</th>
+            <th>Destino</th>
+            <th>Albarán</th>
+            <th>Obs.</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mov in movimientos %}
+            <tr>
+              <td data-label="ID">#{{ mov.legacy_id_movimiento|default:mov.pk }}<br><span class="alm3-muted">pk {{ mov.pk }}</span></td>
+              <td data-label="Fecha/hora">{{ mov.fecha_movimiento|date:"d/m/Y" }} {% if mov.hora_movimiento %}{{ mov.hora_movimiento|time:"H:i" }}{% endif %}</td>
+              <td data-label="Tipo">
+                <span class="alm3-badge {% if mov.tipo_movimiento == 'SALIDA' %}b-salida{% elif mov.tipo_movimiento == 'ENTRADA' %}b-entrada{% elif mov.tipo_movimiento == 'ROTURA' %}b-rotura{% else %}b-control{% endif %}">
+                  {{ mov.tipo_movimiento }}
+                </span>
+              </td>
+              <td data-label="Recurso" class="alm3-resource" title="{% if mov.recurso %}{{ mov.recurso.nombre }}{% endif %}">
+                {% if mov.recurso %}
+                  <strong>{{ mov.recurso.nombre }}</strong><br><span class="alm3-muted">{{ mov.legacy_cod_recurso }} · {{ mov.recurso.tipo }}</span>
+                {% else %}—{% endif %}
+              </td>
+              <td data-label="Cantidad">{{ mov.cantidad|floatformat:2 }} {{ mov.unidad }}</td>
+              <td data-label="Quedan"><strong>{{ mov.quedan|floatformat:2|default:"—" }}</strong></td>
+              <td data-label="Destino">{{ mov.ux3_destino_label }}</td>
+              <td data-label="Albarán">{{ mov.cod_albaran|default:"—" }}</td>
+              <td class="alm3-obs" data-label="Obs." title="{{ mov.observaciones }}">{{ mov.observaciones|default:"—" }}</td>
+              <td class="alm3-origin" data-label="Estado">
+                <span class="alm3-state {% if mov.origin_code != 'MANUAL' %}alm3-state-pending{% endif %}" title="{{ mov.blocked_reason|default:mov.origin_label }}">{% if mov.origin_code == 'MANUAL' %}Manual{% elif mov.origin_code == 'ALBARAN' %}Albarán{% elif mov.origin_code == 'FACTURA' %}Factura{% elif mov.origin_code == 'PARTIDA' or mov.origin_code == 'TAREA_REAL' %}Partida{% else %}Ambiguo{% endif %}</span>
+              </td>
+              <td class="alm3-actions" data-label="Acciones"><div class="alm3-toolbar" style="margin:0;gap:4px;">{% if mov.ux3_pendiente_persona %}<a class="alm3-btn alm3-btn-warning alm3-btn-sm" href="{% url 'obra_movil:almacen_movimiento_imputar' mov.pk %}">Partida</a>{% endif %}{% if mov.can_edit %}<a class="alm3-btn alm3-btn-sm" href="{% url 'obra_movil:almacen_movimiento_editar' mov.pk %}">Editar</a>{% endif %}{% if mov.can_delete %}<a class="alm3-btn alm3-btn-danger alm3-btn-sm" href="{% url 'obra_movil:almacen_movimiento_eliminar' mov.pk %}">Eliminar</a>{% endif %}{% if not mov.can_edit and not mov.can_delete %}<span class="alm3-muted" title="{{ mov.blocked_reason }}">—</span>{% endif %}</div></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="11">No hay movimientos con estos filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="alm3-pagination">
+      {% if page_obj.has_previous %}
+        <a class="alm3-btn" href="?page={{ page_obj.previous_page_number }}&q={{ filtros.q }}&tipo={{ filtros.tipo }}&estado={{ filtros.estado }}&destino={{ filtros.destino }}&empleado={{ filtros.empleado }}&almacen={{ filtros.almacen }}&obra={{ filtros.obra }}&fecha_desde={{ filtros.fecha_desde }}&fecha_hasta={{ filtros.fecha_hasta }}">← Anterior</a>
+      {% endif %}
+      <span class="alm3-pill">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a class="alm3-btn" href="?page={{ page_obj.next_page_number }}&q={{ filtros.q }}&tipo={{ filtros.tipo }}&estado={{ filtros.estado }}&destino={{ filtros.destino }}&empleado={{ filtros.empleado }}&almacen={{ filtros.almacen }}&obra={{ filtros.obra }}&fecha_desde={{ filtros.fecha_desde }}&fecha_hasta={{ filtros.fecha_hasta }}">Siguiente →</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

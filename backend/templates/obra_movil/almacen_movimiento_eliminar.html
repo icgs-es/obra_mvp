@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Eliminar movimiento de almacén{% endblock %}
+{% block content %}
+<style>
+  .del-wrap{max-width:760px;margin:24px auto;padding:0 12px;}
+  .del-card{background:#fff;border:1px solid #fecdd3;border-radius:16px;padding:18px;box-shadow:0 8px 20px rgba(15,23,42,.07);}
+  .btnx{display:inline-flex;align-items:center;justify-content:center;border:1px solid #cbd5e1;border-radius:10px;padding:9px 12px;font-weight:800;text-decoration:none;background:#fff;color:#0f172a;}
+  .danger{background:#e11d48;color:#fff;border-color:#e11d48;}
+  .warn{background:#fff7ed;color:#9a3412;border:1px solid #fdba74;padding:10px;border-radius:12px;margin:10px 0;}
+</style>
+
+<div class="del-wrap">
+  <a class="btnx" href="{% url 'obra_movil:almacen_movimientos' %}?q={{ mov.pk }}">← Volver</a>
+  <h1>Eliminar movimiento #{{ mov.legacy_id_movimiento|default:mov.pk }}</h1>
+
+  <div class="del-card">
+    <p><strong>Fecha:</strong> {{ mov.fecha_movimiento|date:"d/m/Y" }} {{ mov.hora_movimiento|time:"H:i" }}</p>
+    <p><strong>Tipo:</strong> {{ mov.tipo_movimiento }}</p>
+    <p><strong>Recurso:</strong> {{ mov.recurso|default:"—" }}</p>
+    <p><strong>Cantidad:</strong> {{ mov.cantidad|floatformat:2 }} {{ mov.unidad }}</p>
+    <p><strong>Quedan:</strong> {{ mov.quedan|floatformat:2|default:"—" }}</p>
+    <p><strong>Origen:</strong> {{ origin_label }}</p>
+
+    {% if blocked_reason %}
+      <div class="warn">{{ blocked_reason }}</div>
+      <a class="btnx" href="{% url 'obra_movil:almacen_movimientos' %}?q={{ mov.pk }}">Volver</a>
+    {% elif can_delete %}
+      <form method="post">
+        {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+        <p>Se eliminará el movimiento #{{ mov.legacy_id_movimiento|default:mov.pk }}, {{ mov.cantidad|floatformat:2 }} {{ mov.unidad }} de {{ mov.recurso|default:"recurso" }}. El stock de todos sus almacenes se recalculará de forma transaccional.</p>
+        <button class="btnx danger" type="submit">Sí, eliminar</button>
+        <a class="btnx" href="{% url 'obra_movil:almacen_movimientos' %}?q={{ mov.pk }}">Cancelar</a>
+      </form>
+    {% else %}
+      <div class="warn">No tienes permiso funcional para eliminar este movimiento.</div>
+      <a class="btnx" href="{% url 'obra_movil:almacen_movimientos' %}?q={{ mov.pk }}">Volver</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

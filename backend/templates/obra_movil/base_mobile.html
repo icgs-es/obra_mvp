@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title|default:"Obra móvil" }} · Intasa{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  /* OBRA_MOVIL_BASE_MOBILE_V1 */
+  .obra-mobile-shell {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1rem 0 5rem;
+  }
+  .obra-mobile-header {
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .18);
+  }
+  .obra-mobile-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    border-radius: 999px;
+    padding: .35rem .7rem;
+    background: rgba(255,255,255,.16);
+    font-size: .85rem;
+  }
+  .obra-mobile-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .9rem;
+  }
+  @media (min-width: 576px) {
+    .obra-mobile-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .obra-mobile-card {
+    display: flex;
+    gap: .9rem;
+    align-items: center;
+    min-height: 92px;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 1.1rem;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(15,23,42,.06);
+  }
+  .obra-mobile-card:active {
+    transform: scale(.99);
+  }
+  .obra-mobile-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 1rem;
+    display: grid;
+    place-items: center;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 1.55rem;
+    flex: 0 0 auto;
+  }
+  .obra-mobile-stat {
+    border-radius: 1rem;
+    background: #f8fafc;
+    padding: .85rem;
+    border: 1px solid rgba(15,23,42,.06);
+  }
+  .obra-mobile-stat .label {
+    font-size: .78rem;
+    color: #64748b;
+  }
+  .obra-mobile-stat .value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .obra-mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1030;
+    background: rgba(255,255,255,.96);
+    border-top: 1px solid rgba(15,23,42,.12);
+    backdrop-filter: blur(12px);
+  }
+  .obra-mobile-bottom-nav .inner {
+    max-width: 760px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .obra-mobile-bottom-nav a {
+    padding: .65rem .35rem;
+    text-align: center;
+    text-decoration: none;
+    color: #334155;
+    font-size: .78rem;
+  }
+  .obra-mobile-bottom-nav i {
+    display: block;
+    font-size: 1.25rem;
+    margin-bottom: .15rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="obra-mobile-shell">
+    {% block mobile_content %}{% endblock %}
+  </div>
+</div>
+
+<nav class="obra-mobile-bottom-nav d-lg-none" aria-label="Navegación Obra móvil">
+  <div class="inner">
+    <a href="{% url 'obra_movil:index' %}">
+      <i class="bi bi-house-door"></i>Inicio
+    </a>
+    <a href="{% url 'obra_movil:produccion_home' %}">
+      <i class="bi bi-person-check"></i>Prod.
+    </a>
+    <a href="{% url 'obra_movil:almacen_home' %}">
+      <i class="bi bi-box-seam"></i>Almacén
+    </a>
+    <a href="{% url 'obra_movil:stock_home' %}">
+      <i class="bi bi-clipboard-data"></i>Stock
+    </a>
+  </div>
+</nav>
+{% endblock %}

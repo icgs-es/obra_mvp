@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block title %}Pendiente de pago{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3 gap-3 flex-wrap">
+    <div>
+      <h1 class="h3 mb-1">Pendiente de pago</h1>
+
+      <div class="text-muted">
+        Facturas pendientes y albaranes todavía no incluidos en ninguna factura.
+      </div>
+
+      <div class="small mt-1">
+        Periodo:
+        <strong>{{ fecha_desde|date:"d/m/Y" }}</strong>
+        a
+        <strong>{{ fecha_hasta|date:"d/m/Y" }}</strong>
+        · {{ periodo_dias }} días
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="button"
+              class="btn btn-outline-secondary"
+              onclick="window.print()">
+        Imprimir
+      </button>
+
+      <a class="btn btn-success"
+         href="?{{ request.GET.urlencode }}{% if request.GET.urlencode %}&{% endif %}export=csv">
+        Exportar CSV
+      </a>
+
+      <a class="btn btn-outline-dark"
+         href="/app/informes/">
+        Centro de Informes
+      </a>
+    </div>
+  </div>
+
+  {# PENDIENTE_PAGO_ORDEN_INTERACTIVO_UI_V2_2 #}
+  <form method="get" class="card card-body mb-2">
+    <div class="row g-2 align-items-end">
+      <div class="col-xl-3 col-md-6">
+        <label class="form-label">Buscar</label>
+
+        <input class="form-control"
+               type="text"
+               name="q"
+               value="{{ q }}"
+               placeholder="Proveedor o documento">
+      </div>
+
+      <div class="col-xl-2 col-md-6">
+        <label class="form-label">Empresa</label>
+
+        <select class="form-select" name="empresa">
+          <option value="">Todas las permitidas</option>
+
+          {% for empresa in equipos %}
+            <option value="{{ empresa.id }}"
+              {% if empresa_id == empresa.id|stringformat:"s" %}selected{% endif %}>
+              {{ empresa }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-xl-2 col-md-4">
+        <label class="form-label">Desde</label>
+
+        <input class="form-control"
+               type="date"
+               name="desde"
+               value="{{ fecha_desde|date:'Y-m-d' }}">
+      </div>
+
+      <div class="col-xl-2 col-md-4">
+        <label class="form-label">Hasta</label>
+
+        <input class="form-control"
+               type="date"
+               name="hasta"
+               value="{{ fecha_hasta|date:'Y-m-d' }}">
+      </div>
+
+      <div class="col-xl-2 col-md-4">
+        <label class="form-label">Ordenar por</label>
+
+        <select class="form-select" name="orden">
+          <option value="empresa"
+            {% if orden == "empresa" %}selected{% endif %}>
+            Empresa
+          </option>
+
+          <option value="proveedor"
+            {% if orden == "proveedor" %}selected{% endif %}>
+            Proveedor
+          </option>
+
+          <option value="fecha"
+            {% if orden == "fecha" %}selected{% endif %}>
+            Fecha
+          </option>
+        </select>
+      </div>
+
+      <div class="col-xl-1 col-md-4">
+        <label class="form-label">Dirección</label>
+
+        <select class="form-select" name="direccion">
+          <option value="asc"
+            {% if direccion == "asc" %}selected{% endif %}>
+            Ascendente ↑
+          </option>
+
+          <option value="desc"
+            {% if direccion == "desc" %}selected{% endif %}>
+            Descendente ↓
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end mt-3">
+      <button class="btn btn-primary"
+              type="submit">
+        Aplicar filtros y orden
+      </button>
+
+      <a class="btn btn-outline-secondary"
+         href="/app/gestion/pagos/pendientes/">
+        Últimos 30 días
+      </a>
+    </div>
+  </form>
+
+  <div class="small text-muted mb-3">
+    Orden actual:
+    <strong>{{ orden_label }}</strong>
+    ·
+    <strong>{{ direccion_label }}</strong>
+  </div>
+
+  {% if inconsistentes %}
+    <div class="alert alert-warning">
+      {{ inconsistentes }} albaranes del periodo presentan marcas
+      de asignación sin vínculo documental verificable.
+      No se incluyen en el total.
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card card-body h-100">
+        <div class="text-muted">Facturas pendientes</div>
+        <div class="fs-3 fw-bold">
+          {{ total_facturas|floatformat:2 }} €
+        </div>
+        <div>{{ cantidad_facturas }} documentos</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card card-body h-100">
+        <div class="text-muted">Albaranes sin factura</div>
+        <div class="fs-3 fw-bold">
+          {{ total_albaranes|floatformat:2 }} €
+        </div>
+        <div>{{ cantidad_albaranes }} documentos</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card card-body h-100 border-danger">
+        <div class="text-muted">Facturas vencidas</div>
+        <div class="fs-3 fw-bold text-danger">
+          {{ total_vencido|floatformat:2 }} €
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card card-body h-100 border-primary">
+        <div class="text-muted">Total del periodo</div>
+        <div class="fs-3 fw-bold text-primary">
+          {{ total_general|floatformat:2 }} €
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="h4">Facturas pendientes del periodo</h2>
+
+  <div class="table-responsive mb-5">
+    <table class="table table-sm table-striped align-middle">
+      <thead>
+        <tr>
+          <th>
+            <a href="?{{ orden_urls.empresa }}"
+               class="text-decoration-none {% if orden == "empresa" %}text-primary fw-bold{% else %}text-reset{% endif %}">
+              Empresa
+              {% if orden == "empresa" %}
+                {% if direccion == "asc" %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{{ orden_urls.proveedor }}"
+               class="text-decoration-none {% if orden == "proveedor" %}text-primary fw-bold{% else %}text-reset{% endif %}">
+              Proveedor
+              {% if orden == "proveedor" %}
+                {% if direccion == "asc" %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+          {# FACTURA_PLAN_REPORT_UI_V1B #}
+          <th>Factura / pago</th>
+          <th>
+            <a href="?{{ orden_urls.fecha }}"
+               class="text-decoration-none {% if orden == "fecha" %}text-primary fw-bold{% else %}text-reset{% endif %}">
+              Emisión
+              {% if orden == "fecha" %}
+                {% if direccion == "asc" %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+          <th>Vencimiento</th>
+          <th>Estado</th>
+          <th class="text-end">Importe</th>
+          <th class="text-end">Pagado</th>
+          <th class="text-end">Pendiente</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for f in facturas %}
+          <tr {% if f.vencida %}class="table-danger"{% endif %}>
+            <td>{{ f.team }}</td>
+            <td>{{ f.proveedor }}</td>
+
+            <td>
+              <a href="/app/gestion/facturas/{{ f.id }}/">
+                {{ f.num_factura_proveedor|default:f.cod_factura }}
+              </a>
+              {% if f.numero_pago %}
+                <div class="small text-muted">
+                  Pago {{ f.numero_pago }}
+                  {% if f.forma_pago %}
+                    · {{ f.forma_pago }}
+                  {% endif %}
+                </div>
+              {% endif %}
+            </td>
+
+            <td>{{ f.fecha_emision|date:"d/m/Y" }}</td>
+
+            <td>
+              {{ f.fecha_pago_segun_contrato|date:"d/m/Y"|default:"—" }}
+
+              {% if f.vencida %}
+                <div class="small text-danger">
+                  {{ f.dias_vencida }} días vencida
+                </div>
+              {% endif %}
+            </td>
+
+            <td>{{ f.estado|default:"PENDIENTE" }}</td>
+
+            <td class="text-end">
+              {{ f.importe_factura|floatformat:2 }} €
+            </td>
+
+            <td class="text-end">
+              {{ f.importe_pagado|floatformat:2 }} €
+            </td>
+
+            <td class="text-end fw-bold">
+              {{ f.saldo_pendiente|floatformat:2 }} €
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" class="text-center text-muted">
+              No hay facturas pendientes en el periodo seleccionado.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="h4">Albaranes sin factura del periodo</h2>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead>
+        <tr>
+          <th>
+            <a href="?{{ orden_urls.empresa }}"
+               class="text-decoration-none {% if orden == "empresa" %}text-primary fw-bold{% else %}text-reset{% endif %}">
+              Empresa
+              {% if orden == "empresa" %}
+                {% if direccion == "asc" %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{{ orden_urls.proveedor }}"
+               class="text-decoration-none {% if orden == "proveedor" %}text-primary fw-bold{% else %}text-reset{% endif %}">
+              Proveedor
+              {% if orden == "proveedor" %}
+                {% if direccion == "asc" %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+          <th>Albarán</th>
+          <th>
+            <a href="?{{ orden_urls.fecha }}"
+               class="text-decoration-none {% if orden == "fecha" %}text-primary fw-bold{% else %}text-reset{% endif %}">
+              Fecha
+              {% if orden == "fecha" %}
+                {% if direccion == "asc" %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+          <th class="text-end">Pendiente</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for a in albaranes %}
+          <tr>
+            <td>{{ a.team }}</td>
+            <td>{{ a.proveedor }}</td>
+
+            <td>
+              <a href="/app/gestion/albaranes/{{ a.id }}/">
+                {{ a.num_albaran_proveedor|default:a.cod_albaran }}
+              </a>
+            </td>
+
+            <td>{{ a.fecha_albaran|date:"d/m/Y" }}</td>
+
+            <td class="text-end fw-bold">
+              {{ a.importe_albaran|floatformat:2 }} €
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted">
+              No hay albaranes sin factura en el periodo seleccionado.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+@media print {
+  nav,
+  form,
+  .btn {
+    display: none !important;
+  }
+
+  .container-fluid {
+    padding: 0 !important;
+  }
+}
+</style>
+{% endblock %}

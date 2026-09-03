@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Enviar movimiento a partida</h1>
+      <div class="text-muted small">Movimiento #{{ mov.id }} · {{ mov.tipo_movimiento }} · {{ mov.recurso|default:"Sin recurso" }}</div>
+    </div>
+    <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="row g-2 small">
+        <div class="col-md-3"><strong>Fecha:</strong> {{ mov.fecha_movimiento|date:"d/m/Y"|default:"—" }}</div>
+        <div class="col-md-3"><strong>Almacén:</strong> {{ mov.almacen|default:mov.legacy_id_almacen|default:"—" }}</div>
+        <div class="col-md-3"><strong>Cantidad:</strong> {{ mov.cantidad }} {{ mov.unidad }}</div>
+        <div class="col-md-3"><strong>Documento:</strong> {% if mov.cod_albaran %}{{ mov.cod_albaran }}{% elif mov.cod_factura %}{{ mov.cod_factura }}{% else %}—{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" class="card shadow-sm border-0">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ back_url }}">
+    <input type="hidden" name="tarea_obra_id" id="id_tarea_obra_id">
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Obra</label>
+          <select id="id_obra" class="form-select"></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Edificio / Fase</label>
+          <select id="id_edificio" class="form-select"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Vivienda</label>
+          <select id="id_vivienda" class="form-select"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Planta</label>
+          <select id="id_planta" class="form-select"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Capítulo</label>
+          <select id="id_capitulo" class="form-select"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Partida</label>
+          <select id="id_partida" class="form-select"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Tarea</label>
+          <select id="id_tarea_select" class="form-select"></select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Fecha real</label>
+          <input type="date" name="fecha_real" value="{{ fecha_hoy|date:'Y-m-d' }}" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Cantidad</label>
+          <input type="number" name="cantidad" value="{{ cantidad_def }}" step="0.0001" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Precio unidad</label>
+          <input type="number" name="precio_unidad" value="{{ precio_def }}" step="0.0001" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Coste real</label>
+          <input type="number" name="costo_recurso_real" value="{{ coste_def }}" step="0.0001" class="form-control">
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Observaciones</label>
+          <textarea name="observaciones" rows="3" class="form-control">Imputado desde movimiento de almacén {{ mov.id }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{{ back_url }}" class="btn btn-outline-secondary">Cancelar</a>
+      <button class="btn btn-primary">Crear recurso real e imputar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  const tareas = {{ tareas_json|safe }};
+  const selects = {
+    obra: document.getElementById("id_obra"),
+    edificio: document.getElementById("id_edificio"),
+    vivienda: document.getElementById("id_vivienda"),
+    planta: document.getElementById("id_planta"),
+    capitulo: document.getElementById("id_capitulo"),
+    partida: document.getElementById("id_partida"),
+    tarea: document.getElementById("id_tarea_select"),
+    hidden: document.getElementById("id_tarea_obra_id"),
+  };
+
+  function uniq(list, keyFn, labelFn) {
+    const seen = new Set();
+    const out = [];
+    list.forEach(x => {
+      const k = keyFn(x);
+      if (!seen.has(k)) {
+        seen.add(k);
+        out.push({value: k, label: labelFn(x)});
+      }
+    });
+    return out;
+  }
+
+  function fill(sel, items, placeholder) {
+    sel.innerHTML = "";
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = placeholder || "---------";
+    sel.appendChild(first);
+    items.forEach(it => {
+      const opt = document.createElement("option");
+      opt.value = it.value;
+      opt.textContent = it.label;
+      sel.appendChild(opt);
+    });
+  }
+
+  function val(name) { return selects[name].value; }
+
+  function filtered(level) {
+    return tareas.filter(t => {
+      if (level !== "obra" && val("obra") && String(t.obra_id) !== val("obra")) return false;
+      if (!["obra","edificio"].includes(level) && val("edificio") && t.edificio_key !== val("edificio")) return false;
+      if (!["obra","edificio","vivienda"].includes(level) && val("vivienda") && t.vivienda_key !== val("vivienda")) return false;
+      if (!["obra","edificio","vivienda","planta"].includes(level) && val("planta") && t.planta_key !== val("planta")) return false;
+      if (!["obra","edificio","vivienda","planta","capitulo"].includes(level) && val("capitulo") && String(t.capitulo_id) !== val("capitulo")) return false;
+      if (!["obra","edificio","vivienda","planta","capitulo","partida"].includes(level) && val("partida") && String(t.partida_id) !== val("partida")) return false;
+      return true;
+    });
+  }
+
+  function refreshFrom(level) {
+    if (level === "obra") {
+      fill(selects.edificio, uniq(filtered("edificio"), x => x.edificio_key, x => x.edificio), "Edificio/Fase");
+    }
+    if (["obra","edificio"].includes(level)) {
+      fill(selects.vivienda, uniq(filtered("vivienda"), x => x.vivienda_key, x => x.vivienda), "Vivienda");
+    }
+    if (["obra","edificio","vivienda"].includes(level)) {
+      fill(selects.planta, uniq(filtered("planta"), x => x.planta_key, x => x.planta), "Planta");
+    }
+    if (["obra","edificio","vivienda","planta"].includes(level)) {
+      fill(selects.capitulo, uniq(filtered("capitulo"), x => String(x.capitulo_id), x => x.capitulo), "Capítulo");
+    }
+    if (["obra","edificio","vivienda","planta","capitulo"].includes(level)) {
+      fill(selects.partida, uniq(filtered("partida"), x => String(x.partida_id), x => x.partida), "Partida");
+    }
+    if (["obra","edificio","vivienda","planta","capitulo","partida"].includes(level)) {
+      fill(selects.tarea, filtered("tarea").map(x => ({value: x.id, label: x.label})), "Tarea");
+      selects.hidden.value = "";
+    }
+  }
+
+  fill(selects.obra, uniq(tareas, x => String(x.obra_id), x => x.obra), "Obra");
+
+  selects.obra.addEventListener("change", () => refreshFrom("obra"));
+  selects.edificio.addEventListener("change", () => refreshFrom("edificio"));
+  selects.vivienda.addEventListener("change", () => refreshFrom("vivienda"));
+  selects.planta.addEventListener("change", () => refreshFrom("planta"));
+  selects.capitulo.addEventListener("change", () => refreshFrom("capitulo"));
+  selects.partida.addEventListener("change", () => refreshFrom("partida"));
+  selects.tarea.addEventListener("change", () => { selects.hidden.value = selects.tarea.value; });
+
+  if (selects.obra.options.length === 2) {
+    selects.obra.selectedIndex = 1;
+    refreshFrom("obra");
+  }
+})();
+</script>
+{% endblock %}

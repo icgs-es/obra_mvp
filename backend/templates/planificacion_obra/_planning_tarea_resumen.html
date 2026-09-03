@@ -1,0 +1,113 @@
+{% load planning_format %}
+
+<style>
+  .planning-task-summary { font-size: .82rem; }
+  .planning-task-summary .card { border-radius: .75rem; }
+  .planning-task-summary .card-header {
+    padding: .45rem .65rem;
+    font-weight: 700;
+    background: #fff;
+  }
+  .planning-task-summary .card-body { padding: .55rem .65rem; }
+  .planning-task-summary .kpi-row {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+    padding: .22rem 0;
+  }
+  .planning-task-summary .kpi-row:last-child { border-bottom: 0; }
+  .planning-task-summary .kpi-label {
+    color: #6c757d;
+    font-size: .74rem;
+  }
+  .planning-task-summary .kpi-value {
+    font-weight: 650;
+    text-align: right;
+  }
+  .planning-task-summary .legacy-box {
+    opacity: .88;
+    font-size: .76rem;
+  }
+</style>
+
+<div class="planning-task-summary mb-3">
+
+  <div class="row g-2 mb-2">
+    <div class="col-xxl-3 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">Identificación</div>
+        <div class="card-body">
+          <div class="kpi-row"><span class="kpi-label">Obra</span><span class="kpi-value">{{ snapshot.obra }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Vivienda</span><span class="kpi-value">{{ snapshot.vivienda }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Planta</span><span class="kpi-value">{{ snapshot.planta }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Capítulo</span><span class="kpi-value">{{ snapshot.capitulo }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Partida</span><span class="kpi-value">{{ snapshot.partida }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Unidad / Cant.</span><span class="kpi-value">{{ snapshot.unidad }} · {{ snapshot.cantidad_tarea }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Estado</span><span class="kpi-value"><span class="badge bg-light text-dark border">{{ snapshot.estado_calculado }}</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xxl-3 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">Cálculo previsto</div>
+        <div class="card-body">
+          <div class="kpi-row"><span class="kpi-label">Coste previsto</span><span class="kpi-value">{{ snapshot.coste_previsto|money_es }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Horas previstas</span><span class="kpi-value">{{ snapshot.horas_mo_previstas|floatformat:2 }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Inicio previsto</span><span class="kpi-value">{% if tarea.inicio_tarea %}{{ tarea.inicio_tarea|date:"d/m/Y" }}{% else %}-{% endif %}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Fin previsto</span><span class="kpi-value">{% if tarea.fin_tarea %}{{ tarea.fin_tarea|date:"d/m/Y" }}{% else %}-{% endif %}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Recursos previstos</span><span class="kpi-value">{{ snapshot.n_previstos }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xxl-3 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">Cálculo real</div>
+        <div class="card-body">
+          <div class="kpi-row"><span class="kpi-label">Coste real</span><span class="kpi-value">{{ snapshot.coste_real|money_es }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Horas reales MO</span><span class="kpi-value">{{ snapshot.horas_mo_reales|floatformat:2 }}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Inicio real</span><span class="kpi-value">{% if snapshot.inicio_real %}{{ snapshot.inicio_real|date:"d/m/Y" }}{% else %}-{% endif %}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Fin real</span><span class="kpi-value">{% if snapshot.fin_real %}{{ snapshot.fin_real|date:"d/m/Y" }}{% else %}-{% endif %}</span></div>
+          <div class="kpi-row"><span class="kpi-label">Recursos reales</span><span class="kpi-value">{{ snapshot.n_reales }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xxl-3 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">Desvío</div>
+        <div class="card-body">
+          <div class="kpi-row">
+            <span class="kpi-label">Desvío coste</span>
+            <span class="kpi-value {% if snapshot.desviacion_coste > 0 %}text-danger{% elif snapshot.desviacion_coste < 0 %}text-success{% endif %}">
+              {{ snapshot.desviacion_coste|money_abs_es }}
+            </span>
+          </div>
+          <div class="kpi-row"><span class="kpi-label">% coste</span><span class="kpi-value">{% if snapshot.desviacion_coste_pct %}{{ snapshot.desviacion_coste_pct }}%{% else %}-{% endif %}</span></div>
+          <div class="kpi-row">
+            <span class="kpi-label">Desvío horas</span>
+            <span class="kpi-value {% if snapshot.desviacion_horas_mo > 0 %}text-danger{% elif snapshot.desviacion_horas_mo < 0 %}text-success{% endif %}">
+              {{ snapshot.desviacion_horas_mo|floatformat:2 }}
+            </span>
+          </div>
+          <div class="kpi-row"><span class="kpi-label">% horas</span><span class="kpi-value">{% if snapshot.desviacion_horas_mo_pct %}{{ snapshot.desviacion_horas_mo_pct }}%{% else %}-{% endif %}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card legacy-box">
+    <div class="card-header text-secondary">Legacy / importado · referencia</div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-3"><span class="text-secondary">Importe previsto:</span> <strong>{{ snapshot.legacy_coste_previsto|money_es }}</strong></div>
+        <div class="col-md-3"><span class="text-secondary">Importe real:</span> <strong>{{ snapshot.legacy_coste_real|money_es }}</strong></div>
+        <div class="col-md-3"><span class="text-secondary">Horas previstas:</span> <strong>{{ snapshot.legacy_horas_previstas|floatformat:2 }}</strong></div>
+        <div class="col-md-3"><span class="text-secondary">Horas reales:</span> <strong>{{ snapshot.legacy_horas_reales|floatformat:2 }}</strong></div>
+      </div>
+    </div>
+  </div>
+
+</div>

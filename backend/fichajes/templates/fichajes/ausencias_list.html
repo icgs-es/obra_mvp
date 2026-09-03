@@ -90,7 +90,7 @@
     </form>
 
     {# Filtros activos #}
-    {% if filtros.estado or filtros.tipo or (request.user.is_staff and filtros.empleado) %}
+    {% if hay_filtros_activos %}
       <div class="mb-2 small">
         <strong>Filtros activos:</strong>
         {% if filtros.estado %}

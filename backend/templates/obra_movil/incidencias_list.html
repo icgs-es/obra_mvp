@@ -1,0 +1,115 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- OBRA_MOVIL_INCIDENCIAS_LIST_V1 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi bi-exclamation-triangle"></i>
+    </span>
+    <div>
+      <h1 class="h3 mb-1">Incidencias</h1>
+      <p class="mb-0 opacity-75">Registro y seguimiento desde obra.</p>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between gap-2 text-center">
+      <div class="flex-fill p-2 bg-light rounded-4">
+        <div class="small text-muted">Total filtro</div>
+        <div class="h4 mb-0">{{ total_count }}</div>
+      </div>
+      <div class="flex-fill p-2 bg-light rounded-4">
+        <div class="small text-muted">Abiertas</div>
+        <div class="h4 mb-0">{{ abiertas_count }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <form method="get" class="obra-mobile-filter">
+      <div class="mb-2">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.q.id_for_label }}">{{ filtro_form.q.label }}</label>
+        {{ filtro_form.q }}
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.estado.id_for_label }}">{{ filtro_form.estado.label }}</label>
+        {{ filtro_form.estado }}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.prioridad.id_for_label }}">{{ filtro_form.prioridad.label }}</label>
+        {{ filtro_form.prioridad }}
+      </div>
+
+      <div class="d-grid gap-2">
+        <button class="btn btn-outline-primary btn-lg rounded-4" type="submit">
+          Filtrar
+        </button>
+        <a class="btn btn-light rounded-4" href="{% url 'obra_movil:incidencias_home' %}">
+          Limpiar
+        </a>
+      </div>
+    </form>
+  </div>
+</section>
+
+<div class="d-grid gap-2 mb-3">
+  <a class="btn btn-primary btn-lg rounded-4" href="{% url 'obra_movil:incidencia_nueva' %}">
+    <i class="bi bi-plus-circle me-1"></i> Nueva incidencia
+  </a>
+</div>
+
+<section class="d-grid gap-3">
+  {% for inc in rows %}
+    <article class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">{{ inc.get_estado_display }}</span>
+            <span class="badge rounded-pill bg-light text-dark">{{ inc.get_prioridad_display }}</span>
+            <h2 class="h6 mt-2 mb-1">{{ inc.titulo }}</h2>
+            <div class="small text-muted">
+              {{ inc.obra }}{% if inc.unidad_obra %} · {{ inc.unidad_obra }}{% endif %}
+            </div>
+          </div>
+          <div class="small text-muted text-end">#{{ inc.pk }}</div>
+        </div>
+
+        <div class="small mt-3">
+          {{ inc.descripcion|truncatechars:140 }}
+        </div>
+
+        <div class="small text-muted mt-2">
+          {{ inc.fecha|date:"d/m/Y" }}{% if inc.empleado %} · {{ inc.empleado }}{% endif %}
+        </div>
+
+        <div class="d-grid mt-3">
+          <a class="btn btn-outline-primary rounded-4" href="{% url 'obra_movil:incidencia_detail' inc.pk %}">
+            Ver detalle
+          </a>
+        </div>
+      </div>
+    </article>
+  {% empty %}
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body text-center text-muted py-4">
+        No hay incidencias con esos filtros.
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+<style>
+  /* OBRA_MOVIL_INCIDENCIAS_LIST_STYLE_V1 */
+  .obra-mobile-filter select,
+  .obra-mobile-filter input {
+    border-radius: 1rem;
+  }
+</style>
+{% endblock %}

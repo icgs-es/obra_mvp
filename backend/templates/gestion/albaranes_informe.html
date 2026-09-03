@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+{% load gestion_money %}
+{% block title %}Informe de albaranes{% endblock %}
+{% block content %}
+
+<style>
+.gi-report-page {
+  padding: 24px 28px;
+  font-family: "Segoe UI", Aptos, Calibri, Arial, sans-serif;
+}
+.gi-report-header,
+.gi-report-card,
+.gi-report-kpi {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+}
+.gi-report-header {
+  padding: 18px 20px;
+}
+.gi-report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.gi-report-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.gi-report-kpi {
+  padding: 12px 14px;
+}
+.gi-report-kpi span {
+  display: block;
+  color: #64748b;
+  font-size: .76rem;
+}
+.gi-report-kpi strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.18rem;
+  font-weight: 700;
+}
+.gi-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .78rem;
+}
+.gi-report-table th {
+  background: #f8fafc;
+  color: #0f172a;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 1px solid #d8dee4;
+  padding: 8px 9px;
+  white-space: nowrap;
+}
+.gi-report-table td {
+  border-bottom: 1px solid #edf2f7;
+  padding: 7px 9px;
+  vertical-align: top;
+}
+.gi-report-muted {
+  color: #64748b;
+  font-size: .78rem;
+}
+.gi-report-main {
+  font-weight: 600;
+  color: #111827;
+}
+.gi-text-end {
+  text-align: right;
+}
+.gi-badge {
+  display: inline-block;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-size: .68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.gi-badge-ok { background: #dcfce7; color: #166534; border-color: #86efac; }
+.gi-badge-warn { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.gi-badge-muted { background: #f8fafc; color: #475569; }
+.gi-print-header,
+.gi-print-footer {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #111827 !important;
+    font-family: "Segoe UI", Aptos, Calibri, Arial, sans-serif !important;
+    font-size: 10px !important;
+  }
+  nav,
+  header,
+  .navbar,
+  .gi-report-actions,
+  .gi-report-header {
+    display: none !important;
+  }
+  .gi-report-page {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .gi-print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+  .gi-print-brand {
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+  .gi-print-header h1 {
+    font-size: 18px;
+    line-height: 1.1;
+    margin: 0 0 3px 0;
+    color: #0f172a;
+  }
+  .gi-print-header p {
+    margin: 0;
+    color: #475569;
+    font-size: 11px;
+  }
+  .gi-print-meta {
+    text-align: right;
+    font-size: 9px;
+    color: #475569;
+  }
+  .gi-report-kpis {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 9px !important;
+    break-inside: avoid;
+  }
+  .gi-report-kpi {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0 !important;
+    padding: 6px 8px !important;
+  }
+  .gi-report-kpi span {
+    font-size: 8px !important;
+  }
+  .gi-report-kpi strong {
+    font-size: 12px !important;
+  }
+  .gi-report-card {
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+  .gi-report-table {
+    font-size: 8px !important;
+  }
+  .gi-report-table th {
+    padding: 4px 5px !important;
+    border-bottom: 1px solid #475569 !important;
+  }
+  .gi-report-table td {
+    padding: 4px 5px !important;
+  }
+}
+
+.gi-report-filter {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 14px;
+  padding: 14px;
+}
+.gi-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+.gi-filter-grid label {
+  display: block;
+  color: #64748b;
+  font-size: .76rem;
+  margin-bottom: 3px;
+}
+.gi-filter-grid input,
+.gi-filter-grid select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: .85rem;
+}
+.gi-filter-actions {
+  display: flex;
+  gap: 6px;
+}
+@media print {
+  .gi-report-filter {
+    display: none !important;
+  }
+}
+
+
+/* === AJUSTE FINAL DE IMPRESION GESTION === */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm 7mm 8mm 7mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  body > * {
+    max-width: none !important;
+  }
+
+  .container,
+  .container-fluid,
+  main,
+  .content,
+  .page-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .gi-report-page {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .gi-print-header {
+    width: 100% !important;
+    margin: 0 0 6px 0 !important;
+    padding: 0 0 5px 0 !important;
+  }
+
+  .gi-print-header h1 {
+    font-size: 15px !important;
+  }
+
+  .gi-print-header p,
+  .gi-print-meta {
+    font-size: 8px !important;
+  }
+
+  .gi-report-kpis {
+    width: 100% !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 4px !important;
+    margin: 0 0 6px 0 !important;
+  }
+
+  .gi-report-kpi {
+    padding: 4px 6px !important;
+    min-height: auto !important;
+  }
+
+  .gi-report-kpi span {
+    font-size: 7px !important;
+  }
+
+  .gi-report-kpi strong {
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+  }
+
+  .gi-report-card {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .gi-report-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: 7.2px !important;
+    line-height: 1.12 !important;
+  }
+
+  .gi-report-table thead {
+    display: table-header-group !important;
+  }
+
+  .gi-report-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .gi-report-table th,
+  .gi-report-table td {
+    padding: 3px 4px !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+    vertical-align: top !important;
+  }
+
+  .gi-report-table th {
+    font-size: 7px !important;
+    border-bottom: 1px solid #1e293b !important;
+  }
+
+  .gi-badge {
+    font-size: 6px !important;
+    padding: 0 4px !important;
+  }
+
+  .gi-text-end {
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+
+  /* Ocultar elementos que no aportan en papel */
+  .gi-report-actions,
+  .gi-report-filter,
+  nav,
+  header,
+  .navbar,
+  footer {
+    display: none !important;
+  }
+}
+
+
+/* === GESTION REPORT COLUMN WIDTHS === */
+.gi-report-table {
+  table-layout: fixed;
+}
+.gi-col-code { width: 7%; white-space: nowrap; }
+.gi-col-empresa { width: 7%; white-space: nowrap; }
+.gi-col-num { width: 10%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gi-col-proveedor {
+  width: 25%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gi-col-fecha { width: 7%; white-space: nowrap; }
+.gi-col-estado { width: 8%; white-space: nowrap; }
+.gi-col-aud { width: 7%; white-space: nowrap; }
+.gi-col-pdf { width: 4%; text-align: center; white-space: nowrap; }
+.gi-col-money { width: 8%; text-align: right; white-space: nowrap; }
+@media print {
+  .gi-col-proveedor {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .gi-col-pdf {
+    width: 3.5% !important;
+  }
+  .gi-col-money {
+    width: 8% !important;
+  }
+}
+
+</style>
+
+<div class="gi-report-page">
+  <div class="gi-report-actions">
+    <a href="/app/gestion/albaranes/{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+    <button onclick="window.print()" class="btn btn-primary btn-sm">Imprimir / PDF</button>
+  </div>
+
+  <div class="gi-print-header">
+    <div>
+      <div class="gi-print-brand">PORTAL INTASA · Gestión</div>
+      <h1>Informe de albaranes de proveedores</h1>
+      <p>{% if modo_todas %}Todas las empresas{% elif team %}{{ team.name }}{% endif %}</p>
+    </div>
+    <div class="gi-print-meta">
+      <strong>Generado</strong>
+      <span>{{ fecha_generacion|date:"d/m/Y H:i" }}</span>
+      <span>{{ total_resultados }} albaranes</span>
+    </div>
+  </div>
+
+  <div class="gi-report-header mb-3">
+    <h1 class="h4 mb-1">Informe de albaranes de proveedores</h1>
+    <div class="gi-report-muted">
+      {% if modo_todas %}Todas las empresas{% elif team %}{{ team.name }}{% endif %}
+      · Generado {{ fecha_generacion|date:"d/m/Y H:i" }}
+      · {{ total_resultados }} albaranes
+    </div>
+  </div>
+
+  
+  <form method="get" class="gi-report-filter mb-3">
+    <div class="gi-filter-grid">
+      {% if modo_todas %}
+      <div>
+        <label>Empresa</label>
+        <select name="team_id">
+          <option value="">Todas</option>
+          {% for t in team_scope %}
+            <option value="{{ t.id }}" {% if team_id|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div>
+        <label>Proveedor</label>
+        <select name="proveedor_key">
+          <option value="">Todos</option>
+          {% for p in proveedores %}
+            <option value="{{ p.value }}" {% if proveedor_key == p.value %}selected{% endif %}>{{ p.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Asignado</label>
+        <select name="asignado">
+          <option value="">Todos</option>
+          <option value="si" {% if asignado == "si" %}selected{% endif %}>Sí</option>
+          <option value="no" {% if asignado == "no" %}selected{% endif %}>No</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Auditoría</label>
+        <select name="aviso">
+          <option value="">Todas</option>
+          <option value="OK" {% if aviso == "OK" %}selected{% endif %}>OK</option>
+          <option value="SIN_LINEAS" {% if aviso == "SIN_LINEAS" %}selected{% endif %}>Sin líneas</option>
+          <option value="DIFERENCIA_LINEAS" {% if aviso == "DIFERENCIA_LINEAS" %}selected{% endif %}>Diferencia</option>
+        </select>
+      </div>
+
+      <div>
+        <label>PDF</label>
+        <select name="pdf">
+          <option value="">Todos</option>
+          <option value="con" {% if pdf == "con" %}selected{% endif %}>Con PDF</option>
+          <option value="sin" {% if pdf == "sin" %}selected{% endif %}>Sin PDF</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Desde</label>
+        <input type="date" name="desde" value="{{ desde }}">
+      </div>
+
+      <div>
+        <label>Hasta</label>
+        <input type="date" name="hasta" value="{{ hasta }}">
+      </div>
+
+      <div>
+        <label>Buscar</label>
+        <input type="text" name="q" value="{{ q }}" placeholder="Código, nº, proveedor...">
+      </div>
+
+      <div class="gi-filter-actions">
+        <button class="btn btn-primary btn-sm">Filtrar</button>
+        <a href="/app/gestion/albaranes/informe/" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+      </div>
+    </div>
+  </form>
+
+
+  <div class="gi-report-kpis">
+    <div class="gi-report-kpi"><span>Albaranes</span><strong>{{ total_resultados }}</strong></div>
+    <div class="gi-report-kpi"><span>Importe</span><strong>{{ total_importe|money_es }}</strong></div>
+    <div class="gi-report-kpi"><span>Asignados</span><strong>{{ total_asignados }}</strong></div>
+    <div class="gi-report-kpi"><span>Pendientes</span><strong>{{ total_pendientes }}</strong></div>
+    <div class="gi-report-kpi"><span>Scope</span><strong>{% if modo_todas %}Todas{% elif team %}{{ team.name }}{% else %}—{% endif %}</strong></div>
+  </div>
+
+  <div class="gi-report-card">
+    <table class="gi-report-table">
+      <thead>
+        <tr>
+          <th class="gi-col-code">Albarán</th>
+          {% if modo_todas %}<th class="gi-col-empresa">Empresa</th>{% endif %}
+          <th class="gi-col-num">Nº proveedor</th>
+          <th class="gi-col-proveedor">Proveedor</th>
+          <th class="gi-col-fecha">Fecha</th>
+          <th class="gi-col-estado">Asignado</th>
+          <th class="gi-col-aud">Aud.</th>
+          <th class="gi-col-pdf">PDF</th>
+          <th class="gi-col-money gi-text-end">Importe</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in albaranes %}
+        <tr>
+          <td class="gi-col-code gi-report-main">{{ a.cod_albaran }}</td>
+          {% if modo_todas %}<td class="gi-col-empresa">{{ a.team.name }}</td>{% endif %}
+          <td class="gi-col-num">{{ a.num_albaran_proveedor|default:"—" }}</td>
+          <td class="gi-col-proveedor" title="{{ a.proveedor|default:"—" }}">{{ a.proveedor|default:"—" }}</td>
+          <td class="gi-col-fecha">{{ a.fecha_albaran|date:"d/m/Y" }}</td>
+          <td>{% if a.asignado_factura %}<span class="gi-badge gi-badge-ok">Sí</span>{% else %}<span class="gi-badge gi-badge-muted">No</span>{% endif %}</td>
+          <td>
+            {% if a.audit_estado == "OK" %}
+              <span class="gi-badge gi-badge-ok">OK</span>
+            {% elif a.audit_estado %}
+              <span class="gi-badge gi-badge-warn">{{ a.audit_estado }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="gi-col-pdf">{% if a.has_pdf %}PDF{% else %}—{% endif %}</td>
+          <td class="gi-col-money gi-text-end gi-report-main">{{ a.importe_albaran|money_es }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="{% if modo_todas %}9{% else %}8{% endif %}" class="gi-report-muted">No hay albaranes con estos filtros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

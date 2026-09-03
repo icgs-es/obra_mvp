@@ -1,0 +1,1175 @@
+{# FACTURA_LINEA_DESCUENTO_PORCENTUAL_SAVE_V2 #}
+{% extends "base.html" %}
+{% load gestion_money %}
+
+{% block content %}
+{% if factura_cierre_real %}
+  {# FACTURA_PAGO_REAL_PROTEGIDA_UI_V3 #}
+  <div class="alert alert-success border mb-3">
+    <strong>Factura con pago registrado.</strong>
+    El pago y sus vencimientos están protegidos.
+    Puedes completar las líneas y su vinculación documental
+    sin modificar el pago registrado.
+  </div>
+
+  <style>
+    /*
+      Una factura pagada permanece cerrada financieramente,
+      pero puede completarse documentalmente.
+    */
+
+    a[href*="/eliminar/"],
+    a[href*="/recalcular-lineas/"],
+    a[href*="/lineas/a-almacen/"],
+    a[href*="/lineas/a-partida/"],
+    form[action*="/adjuntos/subir/"],
+    form[action*="/adjuntos/"][action*="/eliminar/"],
+    form[action*="/albaranes/"][action*="/desvincular/"],
+    form[action*="/pagado/"] {
+      display: none !important;
+    }
+  </style>
+{% endif %}
+
+
+  {# FACTURA_ANULAR_BUTTON_V1 #}
+  <div class="mb-3 d-flex justify-content-end gap-2">
+    {% if factura %}
+      {% if factura.raw_data.anulada %}
+        <span class="btn btn-secondary btn-sm disabled">Factura anulada</span>
+      {% else %}
+        <a href="/app/gestion/facturas/{{ factura.id }}/anular/" class="btn btn-outline-danger btn-sm">
+          Anular factura
+        </a>
+      {% endif %}
+    {% endif %}
+  </div>
+
+
+<style id="factura-lineas-tabla-compacta-v1">
+/* FACTURA_LINEAS_TABLA_COMPACTA_V1 */
+.factura-lineas-table {
+  table-layout: auto;
+  width: 100%;
+}
+
+.factura-lineas-table th,
+.factura-lineas-table td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.factura-lineas-table th:nth-child(1),
+.factura-lineas-table td:nth-child(1) {
+  width: 42px;
+}
+
+.factura-lineas-table th:nth-child(2),
+.factura-lineas-table td:nth-child(2) {
+  width: 92px;
+  max-width: 92px;
+}
+
+.factura-lineas-table th:nth-child(3),
+.factura-lineas-table td:nth-child(3) {
+  width: auto;
+  min-width: 260px;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.factura-lineas-table th:nth-child(4),
+.factura-lineas-table td:nth-child(4) {
+  width: 105px;
+}
+
+.factura-lineas-table th:nth-child(5),
+.factura-lineas-table td:nth-child(5),
+.factura-lineas-table th:nth-child(6),
+.factura-lineas-table td:nth-child(6),
+.factura-lineas-table th:nth-child(7),
+.factura-lineas-table td:nth-child(7),
+.factura-lineas-table th:nth-child(8),
+.factura-lineas-table td:nth-child(8),
+.factura-lineas-table th:nth-child(9),
+.factura-lineas-table td:nth-child(9),
+.factura-lineas-table th:nth-child(10),
+.factura-lineas-table td:nth-child(10) {
+  width: 78px;
+}
+
+.factura-lineas-table th:nth-child(11),
+.factura-lineas-table td:nth-child(11) {
+  width: 92px;
+}
+
+.factura-lineas-table td:nth-child(11) .btn {
+  margin-bottom: 2px;
+}
+</style>
+
+<style>
+
+/* === ESTADOS FACTURA COLOR === */
+.estado-factura-pagada {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: 1px solid #86efac !important;
+}
+.estado-factura-pendiente {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+.estado-factura-vencida {
+  background: #fecaca !important;
+  color: #7f1d1d !important;
+  border: 1px solid #f87171 !important;
+}
+.estado-factura-pagare {
+  background: #e0e7ff !important;
+  color: #3730a3 !important;
+  border: 1px solid #a5b4fc !important;
+}
+.estado-factura-otro {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+
+
+/* === GESTION LINEAS CONTROLLED TABLE === */
+.gestion-lineas-table {
+  width: 100%;
+  table-layout: auto;
+  font-size: .84rem;
+  line-height: 1.22;
+}
+
+.gestion-lineas-table th,
+.gestion-lineas-table td {
+  padding: .26rem .42rem !important;
+  vertical-align: middle !important;
+}
+
+.gestion-lineas-table thead th {
+  font-size: .80rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gestion-lineas-table td:nth-child(1),
+.gestion-lineas-table th:nth-child(1) {
+  width: 46px;
+  white-space: nowrap;
+}
+
+.gestion-lineas-table td:nth-child(2) {
+  min-width: 420px;
+  max-width: 760px;
+}
+
+.gestion-lineas-table td:nth-child(2) a {
+  font-size: .84rem;
+  line-height: 1.18;
+}
+
+/* Columnas numéricas compactas, sin forzar scroll */
+.gestion-lineas-table td:nth-last-child(4),
+.gestion-lineas-table td:nth-last-child(3),
+.gestion-lineas-table td:nth-last-child(2) {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.gestion-lineas-table td:last-child,
+.gestion-lineas-table th:last-child {
+  width: 112px;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.gestion-lineas-table td:last-child .btn,
+.gestion-lineas-table td:last-child .btn-sm {
+  padding: .12rem .34rem !important;
+  font-size: .70rem !important;
+  line-height: 1.1 !important;
+  border-radius: 5px !important;
+  margin-left: .10rem;
+}
+
+.gestion-lineas-table-wrap {
+  overflow-x: visible !important;
+}
+
+</style>
+
+<style id="factura-lineas-colgroup-v2">
+/* FACTURA_LINEAS_COLGROUP_V2 */
+.gestion-lineas-table.factura-lineas-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th,
+.gestion-lineas-table.factura-lineas-table td {
+  vertical-align: middle !important;
+  white-space: nowrap;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(1),
+.gestion-lineas-table.factura-lineas-table td:nth-child(1) {
+  width: 40px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(2),
+.gestion-lineas-table.factura-lineas-table td:nth-child(2) {
+  width: 78px !important;
+  max-width: 78px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(3),
+.gestion-lineas-table.factura-lineas-table td:nth-child(3) {
+  width: auto !important;
+  white-space: normal !important;
+  line-height: 1.12;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(4),
+.gestion-lineas-table.factura-lineas-table td:nth-child(4) {
+  width: 100px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(5),
+.gestion-lineas-table.factura-lineas-table td:nth-child(5) {
+  width: 74px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(6),
+.gestion-lineas-table.factura-lineas-table td:nth-child(6) {
+  width: 78px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(7),
+.gestion-lineas-table.factura-lineas-table td:nth-child(7) {
+  width: 54px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(8),
+.gestion-lineas-table.factura-lineas-table td:nth-child(8),
+.gestion-lineas-table.factura-lineas-table th:nth-child(9),
+.gestion-lineas-table.factura-lineas-table td:nth-child(9),
+.gestion-lineas-table.factura-lineas-table th:nth-child(10),
+.gestion-lineas-table.factura-lineas-table td:nth-child(10) {
+  width: 78px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(11),
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) {
+  width: 92px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) .btn {
+  padding: 0 5px !important;
+  font-size: 11px !important;
+}
+</style>
+
+<style id="factura-lineas-colgroup-css-v3">
+/* FACTURA_LINEAS_COLGROUP_CSS_V3 */
+.gestion-lineas-table.factura-lineas-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th,
+.gestion-lineas-table.factura-lineas-table td {
+  padding-left: 5px !important;
+  padding-right: 5px !important;
+  vertical-align: middle !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(1),
+.gestion-lineas-table.factura-lineas-table td:nth-child(1) {
+  width: 34px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(2),
+.gestion-lineas-table.factura-lineas-table td:nth-child(2) {
+  width: 58px !important;
+  max-width: 58px !important;
+  white-space: nowrap !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(3),
+.gestion-lineas-table.factura-lineas-table td:nth-child(3) {
+  white-space: normal !important;
+  line-height: 1.12 !important;
+  text-align: left !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(11),
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) {
+  width: 92px !important;
+}
+</style>
+
+<style id="factura-lineas-pro-v4">
+/* FACTURA_LINEAS_PRO_V4 */
+.gestion-lineas-table.factura-lineas-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th,
+.gestion-lineas-table.factura-lineas-table td {
+  padding: 4px 6px !important;
+  vertical-align: middle !important;
+  font-size: 12px;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(1),
+.gestion-lineas-table.factura-lineas-table td:nth-child(1) {
+  width: 42px !important;
+  min-width: 42px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(2),
+.gestion-lineas-table.factura-lineas-table td:nth-child(2) {
+  width: 96px !important;
+  min-width: 96px !important;
+  white-space: nowrap !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(3),
+.gestion-lineas-table.factura-lineas-table td:nth-child(3) {
+  white-space: normal !important;
+  line-height: 1.15 !important;
+  text-align: left !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(4),
+.gestion-lineas-table.factura-lineas-table td:nth-child(4) {
+  width: 96px !important;
+  min-width: 96px !important;
+  white-space: nowrap !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(5),
+.gestion-lineas-table.factura-lineas-table td:nth-child(5) {
+  width: 72px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(6),
+.gestion-lineas-table.factura-lineas-table td:nth-child(6) {
+  width: 76px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(7),
+.gestion-lineas-table.factura-lineas-table td:nth-child(7) {
+  width: 54px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(8),
+.gestion-lineas-table.factura-lineas-table td:nth-child(8),
+.gestion-lineas-table.factura-lineas-table th:nth-child(9),
+.gestion-lineas-table.factura-lineas-table td:nth-child(9),
+.gestion-lineas-table.factura-lineas-table th:nth-child(10),
+.gestion-lineas-table.factura-lineas-table td:nth-child(10) {
+  width: 78px !important;
+  white-space: nowrap !important;
+}
+
+.gestion-lineas-table.factura-lineas-table th:nth-child(11),
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) {
+  width: 118px !important;
+  min-width: 118px !important;
+  white-space: nowrap !important;
+}
+
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) {
+  text-align: right !important;
+}
+
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) .btn {
+  display: inline-block !important;
+  padding: 1px 5px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  margin-left: 2px !important;
+}
+</style>
+
+
+
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Factura de compra {{ factura.cod_factura }}</h1>
+      <div class="text-muted small">
+        {% if factura.proveedor %}{{ factura.proveedor.nombre_comercial }}{% else %}Proveedor no definido{% endif %}
+        {% if factura.num_factura_proveedor %} · Nº proveedor: {{ factura.num_factura_proveedor }}{% endif %}
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      {% if team %}<span class="badge bg-primary">{{ team.name }}</span>{% endif %}
+      <a href="{{ request.GET.next|default:'/app/gestion/facturas/' }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+      <a href="/app/gestion/facturas/{{ factura.id }}/editar/?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-outline-primary btn-sm">Editar</a>
+      {# FACTURA_ABONO_CIERRE_ADMINISTRATIVO_V1 #}
+      {% if factura.subtipo_rectificativa == "ABONO" and puede_gestionar_estado_abono %}
+
+        {% if factura.estado == "PAGADA" %}
+
+          <form method="post"
+                action="{% url 'gestion:factura_abono_estado' factura.id %}"
+                class="d-inline"
+                onsubmit="return confirm('¿Reabrir este abono como PENDIENTE? No se modificará ningún importe ni se creará ningún pago.');">
+
+            {% csrf_token %}
+            <input type="hidden"
+                   name="_action"
+                   value="reabrir">
+
+            <button type="submit"
+                    class="btn btn-outline-warning btn-sm">
+              Reabrir abono
+            </button>
+          </form>
+
+        {% elif factura.estado == "PENDIENTE" %}
+
+          <form method="post"
+                action="{% url 'gestion:factura_abono_estado' factura.id %}"
+                class="d-inline"
+                onsubmit="return confirm('¿Marcar este abono como PAGADA/aplicado? No se creará ningún pago ni vencimiento.');">
+
+            {% csrf_token %}
+            <input type="hidden"
+                   name="_action"
+                   value="cerrar">
+
+            <button type="submit"
+                    class="btn btn-outline-success btn-sm">
+              Marcar PAGADA
+            </button>
+          </form>
+
+        {% endif %}
+
+      {% endif %}
+
+      {% if factura.estado == "PAGADA" and puede_corregir_estado_pago %}
+        <form method="post" action="{% url 'gestion:factura_revertir_pago_erroneo' factura.id %}" class="d-inline" onsubmit="return confirm('Solo se corregirá si no existe evidencia real de pago. ¿Continuar?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-warning btn-sm">Revertir pago erróneo</button>
+        </form>
+      {% endif %}
+
+        {% if request.user.is_superuser %}
+          {# FACTURA_DETAIL_SUPRIMIR_BUTTON_V1 #}
+          <a href="/app/gestion/facturas/{{ factura.id }}/eliminar/?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-outline-danger btn-sm">Suprimir</a>
+        {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-semibold">Cabecera</div>
+        <div class="card-body">
+          <div class="row g-2 small">
+            <div class="col-md-4"><span class="text-muted">Fecha:</span> {{ factura.fecha_emision|date:"d/m/Y"|default:"—" }}</div>
+            <div class="col-md-4"><span class="text-muted">Estado:</span> <span class="badge {{ factura.estado|estado_factura_class }}">{{ factura.estado|default:"—" }}</span></div>
+            <div class="col-md-4"><span class="text-muted">Forma pago:</span> {{ factura.forma_pago|default:"—" }}</div>
+
+            <div class="col-md-4"><span class="text-muted">Base:</span> {{ factura.importe_base_imponible|money_es }}</div>
+            <div class="col-md-4"><span class="text-muted">IVA:</span> {{ factura.importe_iva|money_es }}</div>
+            <div class="col-md-4"><span class="text-muted">Total:</span> <strong>{{ factura.importe_factura|money_es }}</strong></div>
+
+            <div class="col-md-4"><span class="text-muted">Retención:</span> {{ factura.retencion|money_es }}</div>
+            <div class="col-md-4"><span class="text-muted">Pagado:</span> {{ factura.importe_pagado|money_es }}</div>
+            <div class="col-md-4"><span class="text-muted">Certificada:</span> {% if factura.certificada %}Sí{% else %}No{% endif %}</div>
+
+            <div class="col-12 mt-2">
+              <span class="text-muted">Observaciones:</span><br>
+              {{ factura.observaciones|default:"—" }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-semibold">Auditoría</div>
+        <div class="card-body small">
+          <div class="mb-2">
+            {% if auditoria.estado == "OK" %}
+              <span class="badge bg-success">OK</span>
+            {% elif auditoria.estado == "SIN_LINEAS" %}
+              <span class="badge bg-secondary">Sin líneas</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Diferencia líneas</span>
+            {% endif %}
+          </div>
+
+          <div><span class="text-muted">Nº líneas:</span> {{ auditoria.num_lineas }}</div>
+          <div><span class="text-muted">Base cabecera:</span> {{ auditoria.base_cabecera|money_es }}</div>
+          <div><span class="text-muted">Suma líneas:</span> {{ auditoria.suma_lineas|money_es }}</div>
+          <div><span class="text-muted">Diferencia:</span> {{ auditoria.diferencia|money_es }}</div>
+
+          {# FACTURA_EMPTY_RECALC_UI_GUARD_V1 #}
+          {% if auditoria.num_lineas %}
+            <form method="post" action="/app/gestion/facturas/{{ factura.id }}/recalcular-lineas/" class="mt-3">
+              {% csrf_token %}
+              <button class="btn btn-outline-primary btn-sm w-100">
+                Recalcular base desde líneas
+              </button>
+            </form>
+          {% else %}
+            <div class="small text-muted mt-3">
+              Sin líneas: la cabecera económica se conserva.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# FACTURA_PAGOS_MULTIPLES_DETAIL_V1 #}
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div class="fw-semibold">
+        Plan de pagos y vencimientos
+      </div>
+
+      <div class="d-flex gap-2">
+        {# FACTURACION_AYUDA_DETAIL_V1C #}
+        <a
+          href="/app/gestion/facturacion/ayuda/"
+          class="btn btn-outline-secondary btn-sm"
+          title="Ayuda de facturación"
+        >
+          ?
+        </a>
+
+        {% if perms.gestion.authorize_factura_payment_plan %}
+          <a
+            href="/app/gestion/facturas/{{ factura.id }}/pagos/plan/"
+            class="btn btn-outline-primary btn-sm"
+          >
+            {% if factura.vencimientos_pago.exists %}
+              Revisar plan
+            {% elif factura.importe_factura < 0 %}
+              Crear y autorizar devoluciones
+            {% else %}
+              Crear y autorizar plan
+            {% endif %}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      {% with vencimientos=factura.vencimientos_pago.all %}
+        {% if vencimientos %}
+          <div class="px-3 py-2 small bg-light border-bottom">
+            <strong>Autorización de Gerencia:</strong>
+            {{ factura.fecha_autorizacion_gerencia|date:"d/m/Y"|default:"—" }}
+            ·
+            <strong>Total pagado:</strong>
+            {{ factura.importe_pagado|money_es }}
+            de
+            {{ factura.importe_factura|money_es }}
+
+            {% if not factura.fecha_autorizacion_gerencia or factura.estado == "PENDIENTE" %}
+              <span class="badge bg-warning text-dark ms-2">
+                PLAN NO AUTORIZADO
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Pago</th>
+                  <th>Vencimiento</th>
+                  <th class="text-end">Importe</th>
+                  <th>Estado</th>
+                  <th>Fecha real</th>
+                  <th>Registrado por</th>
+                  <th>Referencia</th>
+                  <th style="min-width: 430px;">Acción</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for vencimiento in vencimientos %}
+                  <tr>
+                    <td>
+                      {{ vencimiento.numero_pago }}
+                    </td>
+
+                    <td>
+                      {{ vencimiento.fecha_vencimiento|date:"d/m/Y" }}
+                    </td>
+
+                    <td class="text-end fw-semibold">
+                      {{ vencimiento.importe_previsto|money_es }}
+                    </td>
+
+                    <td>
+                      {% if vencimiento.estado == "PAGADO" %}
+                        <span class="badge bg-success">
+                          PAGADO
+                        </span>
+                      {% elif vencimiento.estado == "ANULADO" %}
+                        <span class="badge bg-secondary">
+                          ANULADO
+                        </span>
+                      {% else %}
+                        <span class="badge bg-warning text-dark">
+                          PENDIENTE
+                        </span>
+                      {% endif %}
+                    </td>
+
+                    <td>
+                      {{ vencimiento.fecha_real_pago|date:"d/m/Y"|default:"—" }}
+                    </td>
+
+                    <td>
+                      {{ vencimiento.pagado_por|default:"—" }}
+                    </td>
+
+                    <td>
+                      {{ vencimiento.referencia_pago|default:"—" }}
+                    </td>
+
+                    <td>
+                      {% if vencimiento.estado == "PENDIENTE" %}
+                        {% if not factura.fecha_autorizacion_gerencia or factura.estado == "PENDIENTE" %}
+                          <span class="text-muted small">
+                            Pendiente de autorización de Gerencia
+                          </span>
+                        {% elif perms.gestion.register_factura_installment_payment %}
+                          <form
+                            method="post"
+                            action="/app/gestion/facturas/{{ factura.id }}/pagos/{{ vencimiento.id }}/pagado/"
+                            class="d-flex gap-2 align-items-center"
+                          >
+                            {% csrf_token %}
+
+                            <input
+                              type="date"
+                              name="fecha_real_pago"
+                              value="{% now 'Y-m-d' %}"
+                              class="form-control form-control-sm"
+                              style="max-width: 150px;"
+                              required
+                            >
+
+                            <input
+                              type="text"
+                              name="referencia_pago"
+                              class="form-control form-control-sm"
+                              placeholder="Referencia bancaria"
+                            >
+
+                            <button
+                              type="submit"
+                              class="btn btn-success btn-sm text-nowrap"
+                            >
+                              {% if factura.importe_factura < 0 %}Registrar devolución{% else %}Marcar pagado{% endif %}
+                            </button>
+                          </form>
+                        {% else %}
+                          <span class="text-muted small">
+                            Pendiente de Administración
+                          </span>
+                        {% endif %}
+                      {% else %}
+                        <span class="text-muted small">
+                          {% if factura.importe_factura < 0 %}Devolución confirmada{% else %}Pago confirmado{% endif %}
+                        </span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="p-3 text-muted">
+            {% if factura.importe_factura < 0 %}
+            Este abono no tiene un plan de devoluciones todavía. Gerencia puede autorizar uno o varios vencimientos negativos cuya suma coincida con el total del abono.
+          {% else %}
+            Esta factura todavía no tiene un plan de pagos. Gerencia puede crear uno o varios vencimientos, cuya suma debe coincidir con el total de la factura.
+          {% endif %}
+          </div>
+        {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white fw-semibold">Albaranes vinculados</div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Albarán</th>
+            <th>Nº proveedor</th>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th class="text-end">Importe asignado</th>
+              <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in vinculos %}
+          <tr>
+            <td class="fw-semibold">{{ v.albaran.cod_albaran }}</td>
+            <td>{{ v.albaran.num_albaran_proveedor|default:"—" }}</td>
+            <td>{{ v.albaran.fecha_albaran|date:"d/m/Y"|default:"—" }}</td>
+            <td>{{ v.albaran.proveedor|default:"—" }}</td>
+            <td class="text-end">{{ v.importe_asignado|money_es }}</td>
+            <td class="text-end">
+              {% if request.user.is_superuser %}
+                {# FACTURA_ALBARAN_DESVINCULAR_BTN_V1 #}
+                <form method="post"
+                      action="{% url 'gestion:factura_albaran_desvincular' factura.id v.id %}"
+                      class="d-inline"
+                      onsubmit="return confirm('¿Desvincular este albarán de la factura? No se eliminará el albarán.');">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">
+                    Desvincular
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted p-3">Esta factura no tiene albaranes vinculados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Líneas de factura</span>
+      <div class="d-flex gap-2">
+        {% if not tiene_lineas_factura %}
+          <a href="/app/gestion/facturas/{{ factura.id }}/lineas/desde-ocr/?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-outline-primary btn-sm">Importar OCR</a>
+        {% endif %}
+
+        {# FACTURA_DETAIL_LINEAS_SIN_ALBARAN_UI_V1 #}
+        {% if puede_enviar_lineas_sin_albaran %}
+          {# FACTURA_LINEAS_A_ALMACEN_BTN_V1 #}
+          {# FACTURA_DETAIL_BOTONES_OBRA_ONLY_V3 #}
+          <a href="{% url 'gestion:factura_lineas_a_almacen' factura.id %}?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-outline-success btn-sm">Enviar a almacén</a>
+
+          {# FACTURA_LINEAS_A_PARTIDA_BTN_V1 #}
+          <a href="{% url 'gestion:factura_lineas_a_partida' factura.id %}?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-outline-primary btn-sm">Enviar a partida/tarea</a>
+        {% endif %}
+        <a href="/app/gestion/facturas/{{ factura.id }}/lineas/nueva/?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-primary btn-sm">Nueva línea</a>
+
+{% if factura and factura.pk %}
+  <a class="btn btn-outline-primary btn-sm ms-2" href="{% url 'gestion:factura_importar_desde_albaran' factura.pk %}?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}">
+    Importar desde albarán
+  </a>
+  {# GESTION_FACTURA_IMPORTAR_DESDE_ALBARAN_BTN_V1 #}
+{% endif %}
+      </div>
+    </div>
+
+    <div class="gestion-lineas-table-wrap table-responsive">
+      <table class="gestion-lineas-table factura-lineas-table table table-sm table-hover align-middle mb-0 small">
+        {# FACTURA_LINEAS_COLGROUP_PRO_V4 #}
+        <colgroup>
+          <col style="width:42px">
+          <col style="width:96px">
+          <col>
+          <col style="width:96px">
+          <col style="width:72px">
+          <col style="width:76px">
+          <col style="width:54px">
+          <col style="width:78px">
+          <col style="width:78px">
+          <col style="width:82px">
+          <col style="width:118px">
+        </colgroup>
+        <thead class="table-light">
+          <tr>
+            <th>Línea</th>
+            <th>Cód. proveedor</th>
+            <th>Descripción artículo</th>
+            <th>Albarán origen</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-end">Precio</th>
+            <th class="text-end">Dto.</th>
+            <th class="text-end">Base</th>
+            <th class="text-end">IVA</th>
+            <th class="text-end">Total c/IVA</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in lineas %}
+          <tr>
+            <td>{{ l.linea }}</td>
+
+            <td class="small">
+              {{ l|factura_linea_codigo_proveedor_display }}
+            </td>
+
+            <td>
+              {{ l|factura_linea_descripcion_display }}
+            </td>
+
+            <td>
+              {% if l.albaran %}
+                <a href="/app/gestion/albaranes/{{ l.albaran.id }}/">{{ l.albaran.cod_albaran }}</a>
+              {% elif l.cod_albaran_legacy %}
+                {{ l.cod_albaran_legacy }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <td class="text-end">{{ l.cantidad|floatformat:4 }}</td>
+            <td class="text-end">{{ l.precio_unitario|floatformat:4 }} €</td>
+            <td class="text-end">{{ l.descuento|floatformat:2 }} %</td>
+            <td class="text-end">{{ l.importe_linea|money_es }}</td>
+            <td class="text-end">{{ l|factura_linea_iva_display }}</td>
+            <td class="text-end fw-semibold">{{ l|factura_linea_total_iva_display }}</td>
+
+            <td class="text-end">
+              <a href="/app/gestion/facturas/{{ factura.id }}/lineas/{{ l.id }}/editar/?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-outline-primary btn-sm py-0 px-2">Editar</a>
+              <a href="/app/gestion/facturas/{{ factura.id }}/lineas/{{ l.id }}/eliminar/?next={% if request.GET.next %}{{ request.GET.next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn btn-outline-danger btn-sm py-0 px-2">Eliminar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-muted p-3">Esta factura no tiene líneas.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+  <div class="card shadow-sm mt-3">
+    
+<div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div class="fw-semibold">Documentos adjuntos</div>
+      <span class="badge text-bg-light">PDF factura / anexos</span>
+    </div>
+
+    <div class="card-body">
+      <form method="post" action="/app/gestion/facturas/{{ factura.id }}/adjuntos/subir/" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+        {% csrf_token %}
+
+        <div class="col-md-4">
+          <label class="form-label small text-muted mb-1">Tipo documento</label>
+          <select name="tipo_documento" class="form-select form-select-sm">
+            <option value="FACTURA_PDF" selected>PDF factura</option>
+            <option value="ANEXO">Anexo</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+
+        <div class="col-md-5">
+          <label class="form-label small text-muted mb-1">Archivo PDF</label>
+          <input type="file" name="archivo" accept="application/pdf,.pdf" required class="form-control form-control-sm">
+        </div>
+
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            Adjuntar PDF
+          </button>
+        </div>
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Tipo</th>
+              <th>Tamaño</th>
+              <th>Subido</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for adjunto in factura.adjuntos.all %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ adjunto.nombre_original }}</div>
+                  <div class="small text-muted">{{ adjunto.content_type }}</div>
+                </td>
+                <td>{{ adjunto.get_tipo_documento_display }}</td>
+                <td>{{ adjunto.tamano_bytes|filesizeformat }}</td>
+                <td>{{ adjunto.creado_en|date:"d/m/Y H:i" }}</td>
+                <td class="text-end">
+                  <a href="/app/gestion/adjuntos/{{ adjunto.id }}/ver/" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    Ver PDF
+                  </a>
+
+                  <form method="post" action="/app/gestion/facturas/{{ factura.id }}/adjuntos/{{ adjunto.id }}/eliminar/" class="d-inline" onsubmit="return confirm('¿Eliminar este adjunto?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                      Eliminar
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-muted small">
+                  Esta factura todavía no tiene documentos adjuntos.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+
+{# FACTURA_RECTIFICATIVA_DETAIL_V1 #}
+{% if factura.tipo_factura == "RECTIFICATIVA" %}
+<div class="card mt-3 border-warning">
+  <div class="card-header bg-warning-subtle">
+    <strong>
+      Factura rectificativa
+      {% if factura.subtipo_rectificativa == "ABONO" %}
+        · ABONO
+      {% endif %}
+    </strong>
+  </div>
+
+  <div class="card-body">
+    {% if factura.numero_factura_rectificada %}
+      <p class="mb-1">
+        <strong>Factura rectificada:</strong>
+
+        {% if factura.factura_rectificada_id %}
+          <a href="/app/gestion/facturas/{{ factura.factura_rectificada_id }}/">
+            {{ factura.numero_factura_rectificada }}
+          </a>
+        {% else %}
+          {{ factura.numero_factura_rectificada }}
+        {% endif %}
+      </p>
+    {% endif %}
+
+    {% if factura.subtipo_rectificativa == "ABONO" %}
+      <p class="mb-0 text-muted small">
+        Los importes económicos de este documento
+        se registran con signo negativo.
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{# CENTRO_COSTE_GESTION_FACTURA_DETAIL_V1 #}
+<div class="card mt-3">
+  <div class="card-header">
+    <strong>Clasificación de gestión</strong>
+  </div>
+  <div class="card-body">
+    <p class="mb-1"><strong>Ámbito:</strong> {{ factura.ambito_gestion|default:"SIN_CLASIFICAR" }}</p>
+    <p class="mb-1"><strong>Centro de coste:</strong> {% if factura.centro_coste %}{{ factura.centro_coste }}{% else %}-{% endif %}</p>
+    <p class="mb-0"><strong>Obra vinculada:</strong> {% if factura.obra_planificacion %}{{ factura.obra_planificacion.codigo }} · {{ factura.obra_planificacion.nombre }}{% else %}-{% endif %}</p>
+  </div>
+</div>
+
+{# GESTION_TRAZABILIDAD_V1 #}
+<div class="card mt-3">
+  <div class="card-header">
+    <strong>Trazabilidad</strong>
+  </div>
+  <div class="card-body">
+    <p class="mb-1">
+      <strong>Creada por:</strong>
+      {% if factura.creado_por %}{{ factura.creado_por.get_username }}{% else %}-{% endif %}
+      · <strong>Origen:</strong> {{ factura.origen_alta|default:"-" }}
+      · <strong>Fecha creación:</strong> {{ factura.created_at|date:"d/m/Y H:i" }}
+    </p>
+    <p class="mb-3">
+      <strong>Última modificación:</strong>
+      {% if factura.modificado_por %}{{ factura.modificado_por.get_username }}{% else %}-{% endif %}
+      · {{ factura.updated_at|date:"d/m/Y H:i" }}
+    </p>
+
+    <h6>Últimos movimientos</h6>
+    <div class="table-responsive">
+      <table class="table table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in factura.audit_logs.all|slice:":10" %}
+            <tr>
+              <td>{{ log.created_at|date:"d/m/Y H:i" }}</td>
+              <td>{% if log.usuario %}{{ log.usuario.get_username }}{% else %}Sistema{% endif %}</td>
+              <td>{{ log.accion }}</td>
+              <td>{{ log.descripcion }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-muted">Sin movimientos registrados todavía.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<style id="factura-lineas-legibles-v1">
+/* FACTURA_LINEAS_LEGIBLES_V1 */
+
+/*
+ * La tabla conserva todas sus columnas, pero nunca permite
+ * que código y descripción se dibujen uno encima del otro.
+ */
+.gestion-lineas-table-wrap {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-gutter: stable;
+}
+
+.gestion-lineas-table.factura-lineas-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  min-width: 1180px !important;
+}
+
+/* Anchos canónicos de las once columnas. */
+.gestion-lineas-table.factura-lineas-table col:nth-child(1),
+.gestion-lineas-table.factura-lineas-table th:nth-child(1),
+.gestion-lineas-table.factura-lineas-table td:nth-child(1) {
+  width: 40px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(2),
+.gestion-lineas-table.factura-lineas-table th:nth-child(2),
+.gestion-lineas-table.factura-lineas-table td:nth-child(2) {
+  width: 150px !important;
+  max-width: 150px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(3),
+.gestion-lineas-table.factura-lineas-table th:nth-child(3),
+.gestion-lineas-table.factura-lineas-table td:nth-child(3) {
+  width: 365px !important;
+  max-width: 365px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(4),
+.gestion-lineas-table.factura-lineas-table th:nth-child(4),
+.gestion-lineas-table.factura-lineas-table td:nth-child(4) {
+  width: 96px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(5),
+.gestion-lineas-table.factura-lineas-table th:nth-child(5),
+.gestion-lineas-table.factura-lineas-table td:nth-child(5) {
+  width: 72px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(6),
+.gestion-lineas-table.factura-lineas-table th:nth-child(6),
+.gestion-lineas-table.factura-lineas-table td:nth-child(6) {
+  width: 78px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(7),
+.gestion-lineas-table.factura-lineas-table th:nth-child(7),
+.gestion-lineas-table.factura-lineas-table td:nth-child(7) {
+  width: 52px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(8),
+.gestion-lineas-table.factura-lineas-table th:nth-child(8),
+.gestion-lineas-table.factura-lineas-table td:nth-child(8),
+.gestion-lineas-table.factura-lineas-table col:nth-child(9),
+.gestion-lineas-table.factura-lineas-table th:nth-child(9),
+.gestion-lineas-table.factura-lineas-table td:nth-child(9) {
+  width: 76px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(10),
+.gestion-lineas-table.factura-lineas-table th:nth-child(10),
+.gestion-lineas-table.factura-lineas-table td:nth-child(10) {
+  width: 86px !important;
+}
+
+.gestion-lineas-table.factura-lineas-table col:nth-child(11),
+.gestion-lineas-table.factura-lineas-table th:nth-child(11),
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) {
+  width: 105px !important;
+}
+
+/* Código del proveedor: permite cortar códigos largos. */
+.gestion-lineas-table.factura-lineas-table td:nth-child(2) {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  overflow: hidden !important;
+  font-family: var(--bs-font-monospace);
+  font-size: .72rem;
+  line-height: 1.22;
+}
+
+/* Descripción: varias líneas, sin invadir columnas contiguas. */
+.gestion-lineas-table.factura-lineas-table td:nth-child(3) {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  overflow: hidden !important;
+  line-height: 1.28;
+}
+
+/* Las columnas económicas permanecen compactas. */
+.gestion-lineas-table.factura-lineas-table
+td:nth-child(n+4):not(:nth-child(11)) {
+  white-space: nowrap !important;
+}
+
+/* Las filas con varias líneas de texto crecen correctamente. */
+.gestion-lineas-table.factura-lineas-table tbody td {
+  vertical-align: top !important;
+  padding-top: .42rem !important;
+  padding-bottom: .42rem !important;
+}
+
+.gestion-lineas-table.factura-lineas-table td:nth-child(11) {
+  vertical-align: top !important;
+  white-space: nowrap !important;
+}
+</style>
+
+{% endblock %}

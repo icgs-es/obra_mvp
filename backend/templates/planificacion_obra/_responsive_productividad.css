@@ -1,0 +1,300 @@
+/* Responsive aislado del informe de asignaciones. */
+.asignaciones-report-page,
+.asignaciones-report-page * {
+  box-sizing: border-box;
+}
+
+.asignaciones-report-mobile-cards {
+  display: none;
+}
+
+.asignaciones-report-period {
+  overflow-wrap: anywhere;
+}
+
+@media screen and (max-width: 767px) {
+  .asignaciones-report-page {
+    width: 100%;
+    max-width: 100%;
+    padding-bottom: 7rem;
+    overflow-x: clip;
+  }
+
+  .asignaciones-report-header,
+  .asignaciones-report-actions {
+    width: 100%;
+  }
+
+  .asignaciones-report-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .asignaciones-report-actions .btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .asignaciones-report-actions .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .asignaciones-report-period {
+    margin-bottom: .75rem;
+    font-size: .875rem;
+    line-height: 1.35;
+  }
+
+  .asignaciones-report-filter-toggle,
+  .asignaciones-report-filters .form-control,
+  .asignaciones-report-filters .form-select,
+  .asignaciones-report-filters .btn {
+    min-height: 44px;
+  }
+
+  .asignaciones-report-filter-disclosure {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .asignaciones-report-filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .asignaciones-report-filter-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .asignaciones-report-filter-state::before {
+    content: "Cerrados";
+  }
+
+  .asignaciones-report-filter-disclosure[open] .asignaciones-report-filter-state::before {
+    content: "Abiertos";
+  }
+
+  .asignaciones-report-filter-state {
+    font-size: .8rem;
+  }
+
+  .asignaciones-report-filter-state:not(:empty) {
+    font-size: 0;
+  }
+
+  .asignaciones-report-filter-state::before {
+    font-size: .8rem;
+  }
+
+  .asignaciones-report-filters {
+    width: 100%;
+    max-width: 100%;
+    margin-top: .5rem;
+    overflow: visible;
+  }
+
+  .asignaciones-report-filters .row > [class*="col-"] {
+    width: 100%;
+  }
+
+  .asignaciones-report-filters .btn {
+    width: 100%;
+  }
+
+  .asignaciones-report-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .65rem !important;
+  }
+
+  .asignaciones-report-kpi {
+    min-width: 0;
+    min-height: 88px;
+    padding: .75rem !important;
+  }
+
+  .asignaciones-report-kpi span,
+  .asignaciones-report-kpi strong {
+    display: block;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .asignaciones-report-kpi strong {
+    font-size: 1.15rem;
+  }
+
+  .asignaciones-report-kpi-total {
+    grid-column: 1 / -1;
+  }
+
+  .asignaciones-report-table-wrap {
+    display: none !important;
+  }
+
+  .asignaciones-report-mobile-cards {
+    display: grid;
+    gap: .75rem;
+  }
+
+  .asignaciones-report-assignment-card {
+    min-width: 0;
+    padding: .9rem;
+    border: 1px solid #dee2e6;
+    border-radius: .65rem;
+    background: #fff;
+    box-shadow: 0 .125rem .25rem rgba(15, 23, 42, .06);
+  }
+
+  .asignaciones-report-card-header {
+    display: flex;
+    gap: .65rem;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .asignaciones-report-card-header strong,
+  .asignaciones-report-status,
+  .asignaciones-report-card-details dd {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .asignaciones-report-card-highlights {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+    margin: .8rem 0;
+  }
+
+  .asignaciones-report-card-highlights > div {
+    min-width: 0;
+    padding: .6rem;
+    border-radius: .5rem;
+    background: #f1f5f9;
+  }
+
+  .asignaciones-report-card-highlights span,
+  .asignaciones-report-card-highlights strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .asignaciones-report-card-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .55rem .8rem;
+    margin: 0;
+  }
+
+  .asignaciones-report-card-details > div {
+    min-width: 0;
+  }
+
+  .asignaciones-report-card-details dt {
+    color: #64748b;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+
+  .asignaciones-report-card-details dd {
+    margin: 0;
+  }
+
+  .asignaciones-report-card-work,
+  .asignaciones-report-empty {
+    grid-column: 1 / -1;
+  }
+
+  .asignaciones-report-empty {
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  body.asignaciones-report-active #intasa-help-launcher,
+  body.asignaciones-report-active #intasa-correo-dock-launcher {
+    right: auto;
+    bottom: .75rem;
+    width: 3rem;
+    height: 3rem;
+    max-width: 3rem;
+  }
+
+  body.asignaciones-report-active #intasa-correo-dock-launcher {
+    left: .75rem;
+  }
+
+  body.asignaciones-report-active #intasa-help-launcher,
+  body.asignaciones-report-active #intasa-help-launcher.with-mail {
+    left: 4.25rem;
+    bottom: .75rem;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .asignaciones-report-filter-toggle {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .asignaciones-report-filters .row > [class*="col-md-"] {
+    width: 50%;
+  }
+
+  .asignaciones-report-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .asignaciones-report-table-wrap {
+    overflow-x: auto !important;
+  }
+
+  .asignaciones-report-table-wrap table {
+    width: 1100px !important;
+    min-width: 1100px !important;
+    font-size: .8rem;
+  }
+}
+
+@media screen and (min-width: 992px) and (max-width: 1199px) {
+  .asignaciones-report-filters .row > [class*="col-md-"] {
+    width: 25%;
+  }
+
+  .asignaciones-report-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .asignaciones-report-table-wrap {
+    overflow-x: auto !important;
+  }
+
+  .asignaciones-report-table-wrap table {
+    width: 1100px !important;
+    min-width: 1100px !important;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .asignaciones-report-kpis {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+@media print {
+  .asignaciones-report-filter-toggle,
+  .asignaciones-report-mobile-cards {
+    display: none !important;
+  }
+
+  .asignaciones-report-table-wrap {
+    display: block !important;
+  }
+}

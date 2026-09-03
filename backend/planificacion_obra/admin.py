@@ -11,6 +11,7 @@ from .models import (
     RecursoCatalogo,
     TareaObra,
     UnidadObra,
+    UnidadObraPlanta,
 )
 
 
@@ -30,12 +31,88 @@ class FaseObraAdmin(admin.ModelAdmin):
     ordering = ("obra__legacy_cod_obra", "legacy_cod_fase")
 
 
+# === UNIDAD_OBRA_PLANTAS_ADMIN_V1 ===
+class UnidadObraPlantaInline(admin.TabularInline):
+    model = UnidadObraPlanta
+    extra = 1
+    fields = (
+        "nombre",
+        "orden",
+        "activa",
+    )
+    ordering = (
+        "orden",
+        "nombre",
+    )
+    verbose_name = "Planta"
+    verbose_name_plural = (
+        "Plantas disponibles para planificación"
+    )
+
+
 @admin.register(UnidadObra)
 class UnidadObraAdmin(admin.ModelAdmin):
-    list_display = ("obra", "edificio", "vivienda", "nivel", "tipo", "team")
-    list_filter = ("team", "obra", "edificio", "nivel", "tipo")
-    search_fields = ("obra__nombre", "edificio", "vivienda", "nivel", "observaciones")
-    ordering = ("obra__legacy_cod_obra", "edificio", "vivienda", "nivel")
+    list_display = (
+        "obra",
+        "edificio",
+        "vivienda",
+        "nivel",
+        "tipo",
+        "team",
+    )
+    list_filter = (
+        "team",
+        "obra",
+        "edificio",
+        "nivel",
+        "tipo",
+    )
+    search_fields = (
+        "obra__nombre",
+        "edificio",
+        "vivienda",
+        "nivel",
+        "observaciones",
+        "plantas__nombre",
+    )
+    ordering = (
+        "obra__legacy_cod_obra",
+        "edificio",
+        "vivienda",
+        "nivel",
+    )
+    inlines = (
+        UnidadObraPlantaInline,
+    )
+
+
+@admin.register(UnidadObraPlanta)
+class UnidadObraPlantaAdmin(admin.ModelAdmin):
+    list_display = (
+        "unidad_obra",
+        "nombre",
+        "orden",
+        "activa",
+        "team",
+    )
+    list_filter = (
+        "team",
+        "activa",
+        "nombre",
+    )
+    search_fields = (
+        "unidad_obra__obra__nombre",
+        "unidad_obra__edificio",
+        "unidad_obra__vivienda",
+        "nombre",
+    )
+    ordering = (
+        "unidad_obra__obra__legacy_cod_obra",
+        "unidad_obra__edificio",
+        "unidad_obra__vivienda",
+        "orden",
+        "nombre",
+    )
 
 
 @admin.register(CapituloCatalogo)

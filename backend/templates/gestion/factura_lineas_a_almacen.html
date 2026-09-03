@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Enviar líneas de factura a almacén</h1>
+      <div class="text-muted small">
+        Factura {{ factura.cod_factura }} · {{ factura.proveedor }} · Nº proveedor {{ factura.num_factura_proveedor }}
+      </div>
+    </div>
+    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="card border-0 shadow-sm">
+    {% csrf_token %}
+
+    <div class="card-body">
+      <div class="alert alert-warning small">
+        Selecciona solo líneas que realmente deben entrar en almacén. Los portes/servicios aparecen desmarcados por defecto.
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-8">
+          <label class="form-label">Almacén destino</label>
+          <select name="almacen_id" class="form-select" required>
+            <option value="">Selecciona almacén...</option>
+            {% for a in almacenes %}
+              <option value="{{ a.id }}">{{ a }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Fecha movimiento</label>
+          <input type="date" name="fecha_movimiento" value="{{ fecha_hoy|date:'Y-m-d' }}" class="form-control">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Línea</th>
+              <th>Artículo</th>
+              <th>Albarán</th>
+              <th class="text-end">Cantidad</th>
+              <th class="text-end">Precio</th>
+              <th class="text-end">Importe</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lineas_view %}
+              {% with l=item.obj %}
+              <tr>
+                <td>
+                  <input type="checkbox"
+                         name="sel_{{ l.id }}"
+                         {% if item.pendiente and item.recurso_ok and not item.servicio_o_porte %}checked{% endif %}
+                         {% if not item.pendiente or not item.recurso_ok %}disabled{% endif %}>
+                </td>
+                <td>{{ l.linea }}</td>
+                <td>
+                  {% if l.articulo_compra %}
+                    <strong>{{ l.articulo_compra.nombre }}</strong>
+                  {% else %}
+                    <span class="text-danger">Sin artículo</span>
+                  {% endif %}
+                  {% if item.servicio_o_porte %}
+                    <div class="text-warning small">Posible servicio/porte. Revisar antes de seleccionar.</div>
+                  {% endif %}
+                  {% if not item.recurso_ok %}
+                    <div class="text-danger small">Sin recurso de catálogo vinculado.</div>
+                  {% endif %}
+                </td>
+                <td>{{ l.cod_albaran_legacy|default:"-" }}</td>
+                <td class="text-end">{{ l.cantidad }}</td>
+                <td class="text-end">{{ l.precio_unitario }}</td>
+                <td class="text-end">{{ l.importe_linea }}</td>
+                <td>
+                  {% if l.en_almacen %}
+                    <span class="badge bg-success">En almacén</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Pendiente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endwith %}
+            {% empty %}
+              <tr><td colspan="8" class="text-muted p-3">La factura no tiene líneas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary">Cancelar</a>
+      <button class="btn btn-success">Crear entradas de almacén</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

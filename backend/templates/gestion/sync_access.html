@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Sincronización Access</h1>
+      <div class="text-muted small">Proceso manual y controlado para importar novedades de Gestión.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/app/gestion/" class="btn btn-outline-secondary btn-sm">Gestión</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-2 align-items-end">
+          <div class="col-md-8">
+            <label class="form-label small text-muted">Carpeta origen</label>
+            <select name="source_path" class="form-select form-select-sm">
+              {% for folder in folders %}
+                <option value="{{ folder }}" {% if selected_source == folder|stringformat:"s" %}selected{% endif %}>{{ folder }}</option>
+              {% empty %}
+                <option value="">No hay carpetas access_sync_*</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2 d-grid">
+            <button name="action" value="analyze" class="btn btn-primary btn-sm">Analizar</button>
+          </div>
+          <div class="col-md-2 d-grid">
+            <button name="action" value="commit"
+                    class="btn btn-danger btn-sm"
+                    onclick="return confirm('Vas a sincronizar datos reales. Se hará backup, validación final, reajuste de contadores y dry-run final. ¿Continuar?');"
+                    {% if not last_ok_dry_run %}disabled{% endif %}>
+              Sincronizar
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="small text-muted mt-2">
+        Regla activa: insert-only. No actualiza existentes, no borra, no sobrescribe. Al sincronizar también valida huérfanos, reajusta contadores y ejecuta dry-run final.
+      </div>
+
+      {% if last_ok_dry_run %}
+        <div class="small text-success mt-1">Último análisis correcto disponible para esta carpeta.</div>
+      {% else %}
+        <div class="small text-warning mt-1">Primero ejecuta Analizar para habilitar Sincronizar.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-semibold">Últimas ejecuciones</div>
+        <div class="list-group list-group-flush">
+          {% for run in recent_runs %}
+            <a class="list-group-item list-group-item-action small"
+               href="/app/gestion/sync-access/?run={{ run.id }}&source_path={{ run.source_path }}">
+              <div class="d-flex justify-content-between">
+                <strong>{{ run.mode }}</strong>
+                <span class="badge {% if run.status == 'OK' %}bg-success{% elif run.status == 'ERROR' %}bg-danger{% else %}bg-secondary{% endif %}">
+                  {{ run.status }}
+                </span>
+              </div>
+              <div class="text-muted">{{ run.created_at|date:"d/m/Y H:i" }}</div>
+              <div class="text-truncate">{{ run.source_path }}</div>
+            </a>
+          {% empty %}
+            <div class="list-group-item small text-muted">Sin ejecuciones todavía.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-semibold">Resultado</div>
+        <div class="card-body">
+          {% if selected_run %}
+            <div class="small mb-2">
+              <strong>Modo:</strong> {{ selected_run.mode }} ·
+              <strong>Estado:</strong> {{ selected_run.status }} ·
+              <strong>Fecha:</strong> {{ selected_run.created_at|date:"d/m/Y H:i" }}
+            </div>
+
+            {% if selected_run.backup_path %}
+              <div class="alert alert-info py-2 small">
+                Backup creado: <code>{{ selected_run.backup_path }}</code>
+              </div>
+            {% endif %}
+
+            {% if selected_run.mode == 'COMMIT' and selected_run.status == 'OK' %}
+              <div class="alert alert-success py-2 small">
+                Cierre post-sync incluido: validación, reajuste de contadores y dry-run final. Revisa el log para el resumen operativo.
+              </div>
+            {% endif %}
+
+            {% if selected_run.error_text %}
+              <h6 class="text-danger">Error</h6>
+              <pre class="small bg-light border rounded p-2" style="white-space: pre-wrap;">{{ selected_run.error_text }}</pre>
+            {% endif %}
+
+            <h6>Log</h6>
+            <pre class="small bg-dark text-light rounded p-3" style="white-space: pre-wrap; max-height: 620px; overflow:auto;">{{ selected_run.output_text }}</pre>
+          {% else %}
+            <div class="text-muted small">Selecciona una carpeta y pulsa Analizar.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

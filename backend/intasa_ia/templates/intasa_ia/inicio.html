@@ -1,0 +1,973 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .ia-shell {
+    min-height: calc(100vh - 95px);
+  }
+
+  .ia-sidebar {
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+  }
+
+  .ia-hero {
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(13, 110, 253, .14),
+        transparent 38%
+      ),
+      linear-gradient(
+        135deg,
+        #ffffff,
+        #f5f8ff
+      );
+  }
+
+  .ia-card-action {
+    transition: transform .15s ease,
+                box-shadow .15s ease;
+  }
+
+  .ia-card-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08);
+  }
+
+  .ia-prompt {
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+  }
+
+  .ia-message {
+    max-width: 84%;
+    white-space: normal;
+  }
+
+  .ia-future-card {
+    background: #f8f9fa;
+    border-style: dashed !important;
+  }
+
+  {% include "intasa_ia/_responsive.css" %}
+</style>
+
+<div class="container-fluid py-4 ia-shell">
+  <div class="ia-page-header d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div class="ia-page-heading">
+      <h1 class="h2 mb-1 ia-page-title">
+        <i class="bi bi-stars me-2 text-primary"></i>
+        INTASA IA
+      </h1>
+
+      <p class="text-muted mb-0 ia-page-intro">
+        Tu asistente privado para preguntar, redactar,
+        analizar y desarrollar ideas.
+      </p>
+    </div>
+
+    <div class="text-end ia-privacy-status">
+      <div class="badge text-bg-light border mb-1">
+        <i class="bi bi-person-lock me-1"></i>
+        Privado por usuario
+      </div>
+
+      <div class="small text-muted">
+        Solo ves tus conversaciones y las compartidas contigo.
+      </div>
+    </div>
+  </div>
+
+  {% if proveedor_activo %}
+    <div class="alert alert-success ia-provider-status">
+      <strong>
+        <i class="bi bi-shield-check me-1"></i>
+        OpenAI conectado · Búsqueda web disponible.
+      </strong>
+
+      INTASA IA puede consultar información actualizada en Internet.
+
+      El acceso a datos operativos de INTASA depende de las
+      herramientas y permisos habilitados.
+
+      <span class="small text-muted">
+        Modelo activo: {{ modelo_activo }}.
+      </span>
+    </div>
+  {% else %}
+    <div class="alert alert-warning ia-provider-status">
+      <strong>
+        <i class="bi bi-hourglass-split me-1"></i>
+        Conexión de IA pendiente de autorización.
+      </strong>
+
+      El módulo, las conversaciones privadas y el sistema
+      de compartir ya están preparados. Las respuestas
+      externas permanecerán desactivadas hasta disponer
+      de saldo API autorizado.
+    </div>
+  {% endif %}
+
+  <div class="d-lg-none mb-3 ia-mobile-conversations-trigger">
+    <button class="btn btn-outline-primary w-100 ia-touch-target"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#iaConversations"
+            aria-controls="iaConversations">
+      <i class="bi bi-chat-left-text me-1"></i>
+      Conversaciones
+    </button>
+  </div>
+
+  <div class="row g-4 ia-layout">
+    <div class="col-12 col-lg-4 col-xl-3 ia-conversations-column">
+      <div class="offcanvas-lg offcanvas-start ia-conversations-offcanvas"
+           tabindex="-1"
+           id="iaConversations"
+           aria-labelledby="iaConversationsLabel">
+        <div class="offcanvas-header d-lg-none">
+          <h2 class="offcanvas-title h5 mb-0"
+              id="iaConversationsLabel">
+            Conversaciones
+          </h2>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="offcanvas"
+                  data-bs-target="#iaConversations"
+                  aria-label="Cerrar"></button>
+        </div>
+        <div class="offcanvas-body p-0 d-block">
+      <div class="card shadow-sm ia-sidebar">
+        <div class="card-body border-bottom">
+          <a class="btn btn-primary w-100 ia-conversation-link"
+             href="{% url 'intasa_ia:inicio' %}">
+            <i class="bi bi-plus-circle me-1"></i>
+            Nueva conversación
+          </a>
+        </div>
+
+        <div class="card-header bg-white">
+          <strong>
+            <i class="bi bi-chat-left-text me-1"></i>
+            Mis conversaciones
+          </strong>
+        </div>
+
+        <div class="list-group list-group-flush">
+          {% for item in conversaciones_propias %}
+            <div class="list-group-item list-group-item-action ia-conversation-item d-flex align-items-center gap-1
+               {% if conversacion and item.pk == conversacion.pk %}
+                 active
+               {% endif %}">
+              <a href="{% url 'intasa_ia:detalle' item.pk %}"
+                 class="ia-conversation-link flex-grow-1 min-w-0">
+                <div class="fw-semibold text-truncate">
+                  {{ item.titulo }}
+                </div>
+
+                <small>
+                  {{ item.updated_at|date:"d/m/Y H:i" }}
+                </small>
+              </a>
+
+              <button type="button"
+                      class="btn btn-sm ia-delete-conversation-button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#iaDeleteConversationModal"
+                      data-delete-url="{% url 'intasa_ia:eliminar_conversacion' item.pk %}"
+                      aria-label="Eliminar conversación"
+                      title="Eliminar conversación">
+                <i class="bi bi-trash" aria-hidden="true"></i>
+              </button>
+            </div>
+          {% empty %}
+            <div class="p-3 text-muted small">
+              Todavía no tienes conversaciones.
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="card-header bg-white border-top">
+          <strong>
+            <i class="bi bi-share me-1"></i>
+            Compartidas conmigo
+          </strong>
+        </div>
+
+        <div class="list-group list-group-flush">
+          {% for item in conversaciones_compartidas %}
+            <a href="{% url 'intasa_ia:detalle' item.pk %}"
+               class="ia-conversation-link list-group-item list-group-item-action
+               {% if conversacion and item.pk == conversacion.pk %}
+                 active
+               {% endif %}">
+              <div class="fw-semibold text-truncate">
+                {{ item.titulo }}
+              </div>
+
+              <small>
+                De:
+                {{ item.user.get_full_name|default:item.user.username }}
+              </small>
+            </a>
+          {% empty %}
+            <div class="p-3 text-muted small">
+              Nadie ha compartido conversaciones contigo.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8 col-xl-9 ia-primary-content">
+      {% if not conversacion %}
+        <div class="card border-0 shadow-sm ia-hero mb-4">
+          <div class="card-body p-4 p-lg-5">
+            <div class="row align-items-center g-4">
+              <div class="col-lg-8">
+                <span class="badge text-bg-primary mb-3">
+                  Tu espacio de inteligencia personal
+                </span>
+
+                <h2 class="display-6 fw-semibold">
+                  ¿En qué podemos trabajar hoy?
+                </h2>
+
+                <p class="lead text-muted mb-0">
+                  Haz una consulta general, prepara un documento,
+                  desarrolla una idea o utiliza una de las preguntas
+                  sugeridas.
+                </p>
+              </div>
+
+              <div class="col-lg-4 ia-hero-privacy">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex gap-3">
+                      <i class="bi bi-shield-lock fs-3 text-primary"></i>
+
+                      <div>
+                        <strong>Conversaciones privadas</strong>
+
+                        <div class="small text-muted mt-1">
+                          Cada usuario ve únicamente sus propias
+                          conversaciones. Solo se comparten cuando
+                          el propietario lo decide expresamente.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="h5 mb-3 ia-suggestions-heading">
+          Qué puedes preguntarle
+        </h3>
+
+        <div class="row g-3 mb-4">
+          {% for grupo in sugerencias_actuales %}
+            <div class="col-12 col-lg-4 ia-suggestion-column">
+              <div class="card h-100 border-0 shadow-sm ia-card-action">
+                <div class="card-body">
+                  <button type="button"
+                          class="btn ia-suggestion-toggle d-md-none w-100 p-0 text-start"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#iaSuggestion{{ forloop.counter }}"
+                          aria-expanded="false"
+                          aria-controls="iaSuggestion{{ forloop.counter }}">
+                    <span class="d-flex align-items-center gap-2">
+                      <i class="bi {{ grupo.icono }} fs-4 text-primary"></i>
+                      <span class="h6 mb-0 flex-grow-1">{{ grupo.titulo }}</span>
+                      <i class="bi bi-chevron-down ia-collapse-indicator"></i>
+                    </span>
+                  </button>
+
+                  <div class="d-none d-md-flex align-items-center gap-2 mb-2">
+                    <i class="bi {{ grupo.icono }} fs-4 text-primary"></i>
+                    <h4 class="h6 mb-0">
+                      {{ grupo.titulo }}
+                    </h4>
+                  </div>
+
+                  <div class="collapse d-md-block ia-suggestion-collapse"
+                       id="iaSuggestion{{ forloop.counter }}">
+                    <p class="small text-muted ia-suggestion-description">
+                      {{ grupo.descripcion }}
+                    </p>
+
+                    <div class="d-grid gap-2">
+                      {% for pregunta in grupo.preguntas %}
+                        <button type="button"
+                                class="btn btn-sm btn-light border ia-prompt"
+                                data-ia-prompt="{{ pregunta }}">
+                          {{ pregunta }}
+                        </button>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white">
+            <strong>
+              <i class="bi bi-send me-1"></i>
+              Comenzar una conversación
+            </strong>
+          </div>
+
+          <div class="card-body">
+            <form method="post" enctype="multipart/form-data" class="ia-message-form">
+              {% csrf_token %}
+              {{ form.non_field_errors }}
+
+              <div class="mb-3">
+                {{ form.pregunta }}
+                {{ form.pregunta.errors }}
+              </div>
+
+              <div class="ia-attachment-composer mb-3">
+                {{ form.adjuntos }}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                  <label for="id_adjuntos" class="btn btn-outline-primary ia-touch-target">
+                    <i class="bi bi-paperclip me-1"></i>Adjuntar archivos
+                  </label>
+                  <span class="small text-muted ia-attachment-counter" aria-live="polite">0 de 5 archivos</span>
+                </div>
+                {{ form.adjuntos.errors }}
+                <div class="small text-muted mt-1">PDF, imágenes, DOCX, XLSX, XLS, CSV o TXT. Máximo 10 MB por archivo y 25 MB en total.</div>
+                <div class="small mt-1" data-ia-attachment-feedback aria-live="polite"></div>
+                <div class="ia-selected-attachments mt-2" data-ia-selected-files></div>
+              </div>
+
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <small class="text-muted">
+                  No incluyas contraseñas, claves o credenciales.
+                </small>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                  <i class="bi bi-send me-1"></i>
+                  Enviar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 ia-future-heading">
+          <h3 class="h5 mb-0">
+            Próximamente con datos de INTASA
+          </h3>
+
+          <span class="badge text-bg-light border">
+            Siempre según permisos del usuario
+          </span>
+
+          <button type="button"
+                  class="btn btn-outline-secondary w-100 d-md-none ia-touch-target"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#iaFutureContent"
+                  aria-expanded="false"
+                  aria-controls="iaFutureContent">
+            Ver información futura
+            <i class="bi bi-chevron-down ms-1"></i>
+          </button>
+        </div>
+
+        <div class="row g-3 collapse d-md-flex ia-future-content"
+             id="iaFutureContent">
+          {% for grupo in sugerencias_futuras %}
+            <div class="col-12 col-md-6">
+              <div class="card h-100 ia-future-card">
+                <div class="card-body">
+                  <div class="d-flex gap-2 align-items-center mb-3">
+                    <i class="bi {{ grupo.icono }} fs-4 text-secondary"></i>
+
+                    <strong>{{ grupo.titulo }}</strong>
+                  </div>
+
+                  <ul class="small mb-0 ps-3">
+                    {% for pregunta in grupo.preguntas %}
+                      <li class="mb-2">
+                        “{{ pregunta }}”
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="alert alert-light border mt-4">
+          <i class="bi bi-kanban me-1"></i>
+
+          <strong>Evolución prevista:</strong>
+          una conversación compartida podrá convertirse
+          posteriormente en una idea, tarea o proyecto
+          dentro de INTASA Platform.
+        </div>
+
+      {% else %}
+        <div class="card shadow-sm">
+          <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+              <strong>{{ conversacion.titulo }}</strong>
+
+              <div class="small text-muted">
+                Propietario:
+                {{ conversacion.user.get_full_name|default:conversacion.user.username }}
+              </div>
+            </div>
+
+            {% if es_propietario %}
+              <span class="badge text-bg-primary">
+                <i class="bi bi-person-lock me-1"></i>
+                Tu conversación
+              </span>
+            {% else %}
+              <span class="badge text-bg-warning">
+                <i class="bi bi-share me-1"></i>
+                Compartida contigo · solo lectura
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="card-body ia-messages"
+               id="iaMessages">
+            {% for mensaje in conversacion.mensajes.all %}
+              <div class="mb-3 d-flex
+                {% if mensaje.rol == 'USUARIO' %}
+                  justify-content-end
+                {% else %}
+                  justify-content-start
+                {% endif %}">
+
+                <div class="p-3 rounded-3 ia-message
+                  {% if mensaje.rol == 'USUARIO' %}
+                    bg-primary text-white
+                  {% else %}
+                    bg-light border
+                  {% endif %}">
+
+                  <div class="small fw-semibold mb-1">
+                    {{ mensaje.get_rol_display }}
+                  </div>
+
+                  <div>
+                    {{ mensaje.contenido|linebreaksbr }}
+                  </div>
+
+                  {% if mensaje.document_processing %}
+                    <div class="ia-processing-status mt-2"
+                         data-ia-processing-url="{% url 'intasa_ia:estado_procesamiento' conversacion.pk mensaje.pk %}"
+                         data-ia-processing-state="{{ mensaje.document_processing.status }}"
+                         aria-live="polite">
+                      <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                      <span data-ia-processing-label>
+                        {% if mensaje.document_processing.status == 'QUEUED' %}En cola para procesar{% elif mensaje.document_processing.status == 'PROCESSING' %}Procesando documentos{% elif mensaje.document_processing.status == 'GENERATING' %}Generando respuesta{% elif mensaje.document_processing.status == 'FAILED' %}No se pudo completar el procesamiento{% else %}Procesamiento completado{% endif %}
+                      </span>
+                      <button type="button" class="btn btn-sm btn-outline-light ms-2 ia-touch-target" onclick="window.location.reload()">
+                        Actualizar
+                      </button>
+                      {% if es_propietario and mensaje.document_processing.status == 'FAILED' %}
+                        <form method="post" action="{% url 'intasa_ia:reintentar_procesamiento' conversacion.pk mensaje.pk %}" class="d-inline">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-sm btn-outline-light ia-touch-target">Reintentar</button>
+                        </form>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+
+                  {% if mensaje.adjuntos.all %}
+                    <div class="ia-message-attachments mt-2" aria-label="Archivos adjuntos">
+                      {% for adjunto in mensaje.adjuntos.all %}
+                        <div class="ia-attachment-card">
+                          <i class="bi {% if adjunto.extension == '.pdf' %}bi-file-earmark-pdf{% elif adjunto.extension == '.jpg' or adjunto.extension == '.jpeg' or adjunto.extension == '.png' or adjunto.extension == '.webp' %}bi-file-earmark-image{% elif adjunto.extension == '.xls' or adjunto.extension == '.xlsx' or adjunto.extension == '.csv' %}bi-file-earmark-spreadsheet{% elif adjunto.extension == '.docx' %}bi-file-earmark-word{% else %}bi-file-earmark-text{% endif %}" aria-hidden="true"></i>
+                          <span class="ia-attachment-name">{{ adjunto.safe_display_name }}</span>
+                          <span class="small">{{ adjunto.size_bytes|filesizeformat }}</span>
+                          <span class="badge text-bg-light border">{{ adjunto.get_status_display }}</span>
+                          {% if adjunto.status != 'DELETED' %}
+                            <a class="btn btn-sm btn-outline-secondary ia-touch-target"
+                               href="{% url 'intasa_ia:descargar_adjunto' adjunto.pk %}">
+                              Descargar
+                            </a>
+                          {% endif %}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+
+                  {% if mensaje.metadata.web_citations %}
+                    <div class="mt-3 pt-2 border-top small ia-web-sources">
+                      <div class="fw-semibold mb-1">
+                        Fuentes consultadas
+                      </div>
+                      <ul class="mb-0 ps-3">
+                        {% for cita in mensaje.metadata.web_citations %}
+                          <li>
+                            <a class="ia-web-source-link"
+                               href="{{ cita.url }}"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                              {{ cita.title }}
+                            </a>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% empty %}
+              <div class="text-center text-muted py-5">
+                No hay mensajes todavía.
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if es_propietario %}
+          <div class="card-footer bg-white ia-composer">
+              <form method="post" enctype="multipart/form-data" class="ia-message-form">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+
+                <div class="mb-3">
+                  {{ form.pregunta }}
+                  {{ form.pregunta.errors }}
+                </div>
+
+                <div class="ia-attachment-composer mb-3">
+                  {{ form.adjuntos }}
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <label for="id_adjuntos" class="btn btn-outline-primary ia-touch-target">
+                      <i class="bi bi-paperclip me-1"></i>Adjuntar archivos
+                    </label>
+                    <span class="small text-muted ia-attachment-counter" aria-live="polite">0 de 5 archivos</span>
+                  </div>
+                  {{ form.adjuntos.errors }}
+                  <div class="small text-muted mt-1">PDF, imágenes, DOCX, XLSX, XLS, CSV o TXT. Máximo 10 MB por archivo y 25 MB en total.</div>
+                  <div class="small mt-1" data-ia-attachment-feedback aria-live="polite"></div>
+                  <div class="ia-selected-attachments mt-2" data-ia-selected-files></div>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <small class="text-muted">
+                    La conversación es privada salvo que
+                    decidas compartirla.
+                  </small>
+
+                  <button type="submit"
+                          class="btn btn-primary ia-touch-target ia-send-button">
+                    <i class="bi bi-send me-1"></i>
+                    Enviar
+                  </button>
+                </div>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if es_propietario %}
+          <div class="card shadow-sm mt-4">
+            <div class="card-header bg-white">
+              <strong>
+                <i class="bi bi-share me-1"></i>
+                Compartir conversación
+              </strong>
+            </div>
+
+            <div class="card-body">
+              <p class="small text-muted">
+                El usuario seleccionado podrá leer toda la
+                conversación, pero no podrá modificarla ni
+                continuar escribiendo en ella.
+              </p>
+
+              {% if share_form %}
+                <form method="post"
+                      action="{% url 'intasa_ia:compartir' conversacion.pk %}"
+                      class="row g-2 align-items-end ia-sharing-form">
+                  {% csrf_token %}
+
+                  <div class="col-12 col-md-8">
+                    {{ share_form.usuario.label_tag }}
+                    {{ share_form.usuario }}
+                  </div>
+
+                  <div class="col-12 col-md-4">
+                    <button type="submit"
+                            class="btn btn-outline-primary w-100">
+                      <i class="bi bi-share me-1"></i>
+                      Compartir
+                    </button>
+                  </div>
+                </form>
+              {% endif %}
+
+              {% if shared_accesses %}
+                <hr>
+
+                <div class="small fw-semibold mb-2">
+                  Usuarios con acceso
+                </div>
+
+                {% for acceso in shared_accesses %}
+                  <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2 ia-shared-user">
+                    <div>
+                      <i class="bi bi-person-check me-1"></i>
+
+                      {{ acceso.user.get_full_name|default:acceso.user.username }}
+
+                      <span class="badge text-bg-light border ms-1">
+                        Solo lectura
+                      </span>
+                    </div>
+
+                    <form method="post"
+                          action="{% url 'intasa_ia:retirar_compartido' conversacion.pk acceso.user_id %}">
+                      {% csrf_token %}
+
+                      <button type="submit"
+                              class="btn btn-sm btn-outline-danger ia-touch-target">
+                        Retirar
+                      </button>
+                    </form>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="modal fade"
+       id="iaDeleteConversationModal"
+       tabindex="-1"
+       aria-labelledby="iaDeleteConversationModalLabel"
+       aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5"
+              id="iaDeleteConversationModalLabel">
+            Eliminar conversación
+          </h2>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          ¿Eliminar esta conversación? Se borrarán definitivamente
+          todos sus mensajes y dejará de estar disponible para las
+          personas con quienes se compartió.
+        </div>
+        <div class="modal-footer ia-delete-modal-actions">
+          <button type="button"
+                  class="btn btn-outline-secondary ia-touch-target"
+                  data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <form method="post"
+                action=""
+                id="iaDeleteConversationForm">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn btn-danger ia-touch-target">
+              Eliminar definitivamente
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const textarea = document.getElementById("id_pregunta");
+
+    document.querySelectorAll(".ia-message-form").forEach(function (form) {
+      let input = form.querySelector("[data-ia-attachments]");
+      const list = form.querySelector("[data-ia-selected-files]");
+      const counter = form.querySelector(".ia-attachment-counter");
+      const feedback = form.querySelector("[data-ia-attachment-feedback]");
+      if (!input || !list || !counter) return;
+
+      const MAX_FILES = 5;
+      const MAX_FILE_BYTES = 10 * 1048576;
+      const MAX_TOTAL_BYTES = 25 * 1048576;
+      const fieldName = input.name || "adjuntos";
+      const pickerId = input.id || "id_adjuntos";
+      const selectedFiles = [];
+      const supportsFormDataEvent = "FormDataEvent" in window;
+      let fallbackNeedsRewrite = false;
+      let supportsDataTransfer = false;
+
+      try {
+        const probe = new DataTransfer();
+        input.files = probe.files;
+        supportsDataTransfer = true;
+      } catch (error) {
+        supportsDataTransfer = false;
+      }
+
+      function fingerprint(file) {
+        return [file.name, file.size, file.type || "", file.lastModified || 0].join("\u001f");
+      }
+
+      function totalBytes() {
+        return selectedFiles.reduce(function (sum, file) { return sum + file.size; }, 0);
+      }
+
+      function formatMegabytes(bytes) {
+        return (bytes / 1048576).toFixed(2);
+      }
+
+      function showFeedback(messages, isError) {
+        if (!feedback) return;
+        feedback.textContent = messages.join(" ");
+        feedback.classList.toggle("text-danger", Boolean(isError));
+        feedback.classList.toggle("text-muted", !isError);
+      }
+
+      function syncNativeInput() {
+        if (!supportsDataTransfer) return false;
+        try {
+          const transfer = new DataTransfer();
+          selectedFiles.forEach(function (file) { transfer.items.add(file); });
+          input.files = transfer.files;
+          return true;
+        } catch (error) {
+          supportsDataTransfer = false;
+          return false;
+        }
+      }
+
+      function renderFiles() {
+        list.replaceChildren();
+        selectedFiles.forEach(function (file, index) {
+          const row = document.createElement("div");
+          row.className = "ia-selected-file";
+          const details = document.createElement("span");
+          details.className = "ia-attachment-name";
+          details.textContent = file.name + " · " + (file.type || "tipo desconocido") + " · " + (file.size / 1048576).toFixed(2) + " MB";
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "btn btn-sm btn-outline-danger ia-touch-target";
+          remove.textContent = "Retirar";
+          remove.setAttribute("aria-label", "Retirar " + file.name);
+          remove.addEventListener("click", function () {
+            selectedFiles.splice(index, 1);
+            if (!syncNativeInput()) fallbackNeedsRewrite = true;
+            showFeedback([], false);
+            renderFiles();
+          });
+          row.append(details, remove);
+          list.appendChild(row);
+        });
+        counter.textContent = selectedFiles.length + " de 5 archivos · " + formatMegabytes(totalBytes()) + " MB de 25 MB";
+      }
+
+      function installNextFallbackPicker(previousInput) {
+        previousInput.removeAttribute("id");
+        previousInput.removeAttribute("data-ia-attachments");
+        previousInput.setAttribute("data-ia-preserved-attachments", "");
+        const nextInput = previousInput.cloneNode(false);
+        nextInput.id = pickerId;
+        nextInput.value = "";
+        nextInput.removeAttribute("data-ia-preserved-attachments");
+        nextInput.setAttribute("data-ia-attachments", "");
+        previousInput.insertAdjacentElement("afterend", nextInput);
+        input = nextInput;
+        input.addEventListener("change", handleSelection);
+      }
+
+      function handleSelection(event) {
+        const changedInput = event.currentTarget;
+        const incoming = Array.from(changedInput.files || []);
+        const existing = new Set(selectedFiles.map(fingerprint));
+        const messages = [];
+        let rejected = false;
+
+        incoming.forEach(function (file) {
+          const key = fingerprint(file);
+          if (existing.has(key)) {
+            messages.push("Este archivo ya está seleccionado.");
+            rejected = true;
+            return;
+          }
+          if (file.size > MAX_FILE_BYTES) {
+            messages.push(file.name + ": supera 10 MB.");
+            rejected = true;
+            return;
+          }
+          if (selectedFiles.length >= MAX_FILES) {
+            messages.push(file.name + ": máximo 5 archivos.");
+            rejected = true;
+            return;
+          }
+          if (totalBytes() + file.size > MAX_TOTAL_BYTES) {
+            messages.push(file.name + ": el total superaría 25 MB.");
+            rejected = true;
+            return;
+          }
+          selectedFiles.push(file);
+          existing.add(key);
+        });
+
+        if (!syncNativeInput()) {
+          if (rejected) fallbackNeedsRewrite = true;
+          installNextFallbackPicker(changedInput);
+        }
+        showFeedback(messages, rejected);
+        renderFiles();
+      }
+
+      input.addEventListener("change", handleSelection);
+
+      form.addEventListener("formdata", function (event) {
+        event.formData.delete(fieldName);
+        selectedFiles.forEach(function (file) {
+          event.formData.append(fieldName, file, file.name);
+        });
+      });
+
+      form.addEventListener("submit", function (event) {
+        const total = totalBytes();
+        const invalidLimits = selectedFiles.length > MAX_FILES
+          || selectedFiles.some(function (file) { return file.size > MAX_FILE_BYTES; })
+          || total > MAX_TOTAL_BYTES;
+        if (invalidLimits) {
+          event.preventDefault();
+          window.alert("Revisa los límites: 5 archivos, 10 MB por archivo y 25 MB en total.");
+          return;
+        }
+        if (supportsDataTransfer) {
+          syncNativeInput();
+          const nativeKeys = Array.from(input.files).map(fingerprint);
+          const visualKeys = selectedFiles.map(fingerprint);
+          if (nativeKeys.join("\u001e") !== visualKeys.join("\u001e")) {
+            event.preventDefault();
+            window.alert("No se pudo preparar la lista exacta de archivos. Vuelve a intentarlo.");
+          }
+        } else if (fallbackNeedsRewrite && !supportsFormDataEvent) {
+          event.preventDefault();
+          window.alert("Este navegador no permite reconstruir con seguridad los archivos retirados. Actualízalo o vuelve a seleccionar los archivos.");
+        }
+      });
+
+      form.addEventListener("reset", function () {
+        selectedFiles.splice(0, selectedFiles.length);
+        syncNativeInput();
+        showFeedback([], false);
+        renderFiles();
+      });
+    });
+
+    document.querySelectorAll("[data-ia-prompt]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        if (!textarea) {
+          return;
+        }
+
+        textarea.value = button.dataset.iaPrompt || "";
+        textarea.focus();
+        textarea.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+      });
+    });
+
+    const messages = document.getElementById("iaMessages");
+
+    if (messages) {
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    const processingNodes = Array.from(document.querySelectorAll("[data-ia-processing-url]"));
+    processingNodes.forEach(function (node) {
+      const terminal = ["COMPLETED", "FAILED"].includes(node.dataset.iaProcessingState);
+      if (terminal) {
+        const spinner = node.querySelector(".spinner-border");
+        if (spinner) spinner.remove();
+        return;
+      }
+      let attempts = 0;
+      const poll = function () {
+        attempts += 1;
+        fetch(node.dataset.iaProcessingUrl, {
+          credentials: "same-origin",
+          headers: {"Accept": "application/json"}
+        }).then(function (response) {
+          if (!response.ok) throw new Error("poll_failed");
+          return response.json();
+        }).then(function (data) {
+          const label = node.querySelector("[data-ia-processing-label]");
+          const labels = {
+            QUEUED: "En cola para procesar",
+            PROCESSING: "Procesando documentos",
+            GENERATING: "Generando respuesta",
+            COMPLETED: "Procesamiento completado",
+            FAILED: "No se pudo completar el procesamiento"
+          };
+          if (label) label.textContent = labels[data.status] || "Procesando documentos";
+          if (data.terminal) {
+            window.location.reload();
+            return;
+          }
+          if (attempts < 60) window.setTimeout(poll, 3000);
+        }).catch(function () {
+          if (attempts < 20) window.setTimeout(poll, 5000);
+        });
+      };
+      window.setTimeout(poll, 1200);
+    });
+
+    const conversationsPanel = document.getElementById("iaConversations");
+
+    document.querySelectorAll(".ia-conversation-link").forEach(function (link) {
+      link.addEventListener("click", function () {
+        if (!conversationsPanel || typeof bootstrap === "undefined") {
+          return;
+        }
+
+        const offcanvas = bootstrap.Offcanvas.getInstance(conversationsPanel);
+
+        if (offcanvas) {
+          offcanvas.hide();
+        }
+      });
+    });
+
+    const deleteModal = document.getElementById("iaDeleteConversationModal");
+    const deleteForm = document.getElementById("iaDeleteConversationForm");
+
+    if (deleteModal && deleteForm) {
+      deleteModal.addEventListener("show.bs.modal", function (event) {
+        const trigger = event.relatedTarget;
+        deleteForm.action = trigger ? trigger.dataset.deleteUrl || "" : "";
+      });
+
+      deleteModal.addEventListener("hidden.bs.modal", function () {
+        deleteForm.action = "";
+      });
+    }
+  });
+</script>
+{% endblock %}

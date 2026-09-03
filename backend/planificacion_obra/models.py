@@ -107,6 +107,110 @@ class UnidadObra(models.Model):
         return f"{self.obra} · {self.edificio} · Viv. {self.vivienda} · {self.nivel or '-'}"
 
 
+# === UNIDAD_OBRA_PLANTAS_V1 ===
+class UnidadObraPlanta(models.Model):
+    team = models.ForeignKey(
+        "usuarios.Team",
+        on_delete=models.CASCADE,
+        related_name="plantas_unidad_obra",
+        editable=False,
+    )
+    unidad_obra = models.ForeignKey(
+        UnidadObra,
+        on_delete=models.CASCADE,
+        related_name="plantas",
+    )
+    nombre = models.CharField(
+        max_length=80,
+        help_text=(
+            "Nombre operativo: PRINCIPAL, "
+            "INTERIOR, EXTERIOR, SOLARIUM, "
+            "GARAJE..."
+        ),
+    )
+    orden = models.PositiveIntegerField(
+        default=0,
+    )
+    activa = models.BooleanField(
+        default=True,
+    )
+    raw_data = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+    )
+    actualizado_en = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "unidad_obra__obra__legacy_cod_obra",
+            "unidad_obra__edificio",
+            "unidad_obra__vivienda",
+            "orden",
+            "nombre",
+        ]
+        verbose_name = (
+            "Planta de unidad de obra"
+        )
+        verbose_name_plural = (
+            "Plantas de unidades de obra"
+        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "unidad_obra",
+                    "nombre",
+                ],
+                name=(
+                    "uniq_po_unidad_planta_nombre"
+                ),
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=[
+                    "unidad_obra",
+                    "activa",
+                    "orden",
+                ],
+                name="po_uop_unit_active_idx",
+            ),
+        ]
+
+    @staticmethod
+    def normalizar_nombre(value):
+        return " ".join(
+            str(value or "")
+            .strip()
+            .upper()
+            .split()
+        )
+
+    def save(self, *args, **kwargs):
+        self.nombre = (
+            self.normalizar_nombre(
+                self.nombre
+            )
+        )
+
+        if self.unidad_obra_id:
+            self.team_id = (
+                self.unidad_obra.team_id
+            )
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.unidad_obra} · "
+            f"{self.nombre}"
+        )
+
+
 class CapituloCatalogo(models.Model):
     team = models.ForeignKey("usuarios.Team", on_delete=models.CASCADE, related_name="capitulos_catalogo_obra")
 
@@ -703,6 +807,18 @@ class AsignacionObra(models.Model):
 
     estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.PENDIENTE)
     observaciones = models.TextField(blank=True)
+
+    # ASIGNACION_PERSONAL_PRODUCCION_V1
+    cantidad_ejecutada = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    unidad_ejecutada = models.CharField(
+        max_length=40,
+        blank=True,
+    )
 
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

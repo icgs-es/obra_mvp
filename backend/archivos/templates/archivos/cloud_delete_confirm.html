@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar — INTASA Documents{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <h1 class="h5 text-danger mb-3">
+            Eliminar elemento
+          </h1>
+
+          <p>
+            Vas a eliminar:
+            <strong>{{ item.name }}</strong>
+          </p>
+
+          <p class="small text-muted">
+            {{ current_path }}
+          </p>
+
+          {% if item.is_folder %}
+            <div class="alert alert-danger">
+              Se eliminarán también todas sus
+              subcarpetas y archivos.
+            </div>
+          {% else %}
+            <div class="alert alert-warning">
+              El archivo se eliminará del
+              almacenamiento documental.
+            </div>
+          {% endif %}
+
+          <form method="post"
+                class="d-flex justify-content-between gap-2">
+            {% csrf_token %}
+
+            <input type="hidden"
+                   name="path"
+                   value="{{ current_path }}">
+
+            <input type="hidden"
+                   name="next"
+                   value="{{ cancel_url }}">
+
+            <a href="{{ cancel_url }}"
+               class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+
+            <button type="submit"
+                    class="btn btn-danger">
+              Sí, eliminar
+            </button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

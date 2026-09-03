@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% load gestion_money %}
+
+{% block content %}
+{# LISTADOS_SOLO_AMBITO_OCULTAR_CENTRO_COSTE_V1 #}
+<style>
+  .gestion-facturas-list table {
+    font-size: .875rem;
+  }
+  .gestion-facturas-list .table {
+    min-width: 1500px;
+  }
+  .gestion-facturas-list .table > :not(caption) > * > * {
+    padding: .28rem .34rem;
+    vertical-align: middle;
+  }
+  .gestion-facturas-list th,
+  .gestion-facturas-list td {
+    white-space: nowrap;
+  }
+  .gestion-facturas-list .col-proveedor {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gestion-facturas-list .col-empresa .badge {
+    display: inline-block;
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gestion-facturas-list .col-actions {
+    width: 150px;
+  }
+  .gestion-actions {
+    display: inline-flex;
+    gap: .25rem;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+  .gestion-actions .btn {
+    padding: .15rem .45rem;
+    font-size: .75rem;
+    line-height: 1.25;
+  }
+  .gestion-top-actions .btn {
+    font-size: .82rem;
+    padding: .28rem .55rem;
+    line-height: 1.2;
+  }
+
+/* === ESTADOS FACTURA COLOR === */
+.estado-factura-pagada {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: 1px solid #86efac !important;
+}
+.estado-factura-pendiente {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+.estado-factura-vencida {
+  background: #fecaca !important;
+  color: #7f1d1d !important;
+  border: 1px solid #f87171 !important;
+}
+.estado-factura-pagare {
+  background: #e0e7ff !important;
+  color: #3730a3 !important;
+  border: 1px solid #a5b4fc !important;
+}
+.estado-factura-otro {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+</style>
+
+<div class="container-fluid py-3 gestion-facturas-list">
+
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Facturas de proveedores</h1>
+      <div class="text-muted small">Alta, edición y control económico por empresa activa.</div>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap gestion-top-actions">
+      {% if modo_todas %}
+        <span class="badge bg-primary">TODAS LAS EMPRESAS</span>
+      {% elif team %}
+        <span class="badge bg-primary">{{ team.name }}</span>
+      {% endif %}
+      <a href="/app/gestion/" class="btn btn-outline-secondary btn-sm">Gestión</a>
+      <a href="/app/gestion/facturas/informe/{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-dark btn-sm">Informe</a>
+      <a href="/app/gestion/pagos/pendientes/" class="btn btn-warning btn-sm">Pendiente de pago</a>
+      <a href="/app/gestion/facturas/desde-pdf/?next={{ request.get_full_path|urlencode }}" class="btn btn-outline-primary btn-sm">Desde PDF</a>
+      <a href="/app/gestion/facturas/desde-albaranes/?next={{ request.get_full_path|urlencode }}" class="btn btn-outline-primary btn-sm">Desde albaranes</a>
+      <a href="/app/gestion/facturas/nueva/?next={{ request.get_full_path|urlencode }}" class="btn btn-primary btn-sm">Nueva factura</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if sin_team %}
+    <div class="alert alert-warning">No tienes empresa activa asignada.</div>
+  {% else %}
+
+  <form method="get" class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-lg-3">
+          <label class="form-label small text-muted">Buscar</label>
+          <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Código, proveedor, CIF...">
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <label class="form-label small text-muted">Estado</label>
+          <select name="estado" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for e in estados %}
+              <option value="{{ e }}" {% if estado == e %}selected{% endif %}>{{ e }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <label class="form-label small text-muted">Auditoría</label>
+          <select name="aviso" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            <option value="OK" {% if aviso == "OK" %}selected{% endif %}>OK</option>
+            <option value="SIN_LINEAS" {% if aviso == "SIN_LINEAS" %}selected{% endif %}>Sin líneas</option>
+            <option value="DIFERENCIA_LINEAS" {% if aviso == "DIFERENCIA_LINEAS" %}selected{% endif %}>Diferencia líneas</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <label class="form-label small text-muted">PDF</label>
+          <select name="pdf" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            <option value="con" {% if pdf == "con" %}selected{% endif %}>Con PDF</option>
+            <option value="sin" {% if pdf == "sin" %}selected{% endif %}>Sin PDF</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-lg-1">
+          <label class="form-label small text-muted">Desde</label>
+          <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-6 col-lg-1">
+          <label class="form-label small text-muted">Hasta</label>
+          <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-6 col-lg-1 d-grid">
+          <button class="btn btn-primary btn-sm">Filtrar</button>
+        </div>
+      </div>
+
+        {# FILTROS_AMBITO_CENTRO_COSTE_FACTURAS_V3 #}
+        <div class="row g-2 align-items-end mt-1">
+          <div class="col-6 col-lg-2">
+            <label class="form-label small text-muted">Ámbito</label>
+            <select name="ambito_gestion" class="form-select form-select-sm">
+              {% for value,label in ambitos_gestion %}
+                <option value="{{ value }}" {% if ambito_gestion == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-6 col-lg-2 d-grid">
+            <a href="/app/gestion/facturas/" class="btn btn-outline-secondary btn-sm">Limpiar filtros</a>
+          </div>
+        </div>
+
+    </div>
+  </form>
+
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <div class="small text-muted">
+      {{ total_resultados }} facturas · {{ total_importe|money_es }}
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Orden facturas">
+      <a class="btn btn-outline-secondary {% if orden == '-cod_factura' %}active{% endif %}"
+         href="?orden=-cod_factura{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Código ↓</a>
+      <a class="btn btn-outline-secondary {% if orden == 'cod_factura' %}active{% endif %}"
+         href="?orden=cod_factura{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Código ↑</a>
+      <a class="btn btn-outline-secondary {% if orden == '-fecha_emision' %}active{% endif %}"
+         href="?orden=-fecha_emision{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Fecha ↓</a>
+      <a class="btn btn-outline-secondary {% if orden == 'fecha_emision' %}active{% endif %}"
+         href="?orden=fecha_emision{% if sort_querystring %}&{{ sort_querystring }}{% endif %}">Fecha ↑</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Factura</th>
+            {% if modo_todas %}<th class="col-empresa">Empresa</th>{% endif %}
+            <th>Nº proveedor</th>
+            <th>Proveedor</th>
+            <th>Ámbito</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Auditoría</th>
+            <th>PDF</th>
+            <th class="text-end">Base</th>
+            <th class="text-end">IVA</th>
+            <th class="text-end">Total</th>
+            <th class="text-end col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in page_obj %}
+          <tr>
+            <td class="fw-semibold">
+              <a href="/app/gestion/facturas/{{ f.id }}/?next={{ request.get_full_path|urlencode }}" class="text-decoration-none">{{ f.cod_factura }}</a>
+            </td>
+            {% if modo_todas %}
+              <td class="col-empresa"><span class="badge bg-light text-dark border">{{ f.team.name }}</span></td>
+            {% endif %}
+            <td>{{ f.num_factura_proveedor|default:"—" }}</td>
+            <td class="col-proveedor">{{ f.proveedor|default:"—" }}</td>
+            <td>
+              {% if f.ambito_gestion == "SIN_CLASIFICAR" %}
+                <span class="badge bg-warning text-dark">Sin clasificar</span>
+              {% elif f.ambito_gestion == "OBRA" %}
+                <span class="badge bg-primary">Obra</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ f.ambito_gestion|default:"—" }}</span>
+              {% endif %}
+            </td>
+            <td>{{ f.fecha_emision|date:"d/m/Y" }}</td>
+            <td><span class="badge estado-factura-badge {{ f.estado|estado_factura_class }}">{{ f.estado|default:"—" }}</span></td>
+            <td>
+              {% if f.audit_estado == "OK" %}
+                <span class="badge bg-success">OK</span>
+              {% elif f.audit_estado == "SIN_LINEAS" %}
+                <span class="badge bg-secondary">Sin líneas</span>
+              {% elif f.audit_estado == "DIFERENCIA_LINEAS" %}
+                <span class="badge bg-warning text-dark">Diferencia</span>
+              {% else %}
+                <span class="badge bg-light text-muted border">{{ f.audit_estado|default:"—" }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if f.has_pdf %}
+                <span class="badge bg-info text-dark">PDF</span>
+              {% else %}
+                <span class="badge bg-light text-muted border">Sin PDF</span>
+              {% endif %}
+            </td>
+            <td class="text-end">{{ f.importe_base_imponible|money_es }}</td>
+            <td class="text-end">{{ f.importe_iva|money_es }}</td>
+            <td class="text-end fw-semibold">{{ f.importe_factura|money_es }}</td>
+            <td class="text-end col-actions">
+              <div class="gestion-actions">
+                <a href="/app/gestion/facturas/{{ f.id }}/editar/?next={{ request.get_full_path|urlencode }}" class="btn btn-outline-primary btn-sm">Editar</a>
+                <a href="/app/gestion/facturas/{{ f.id }}/eliminar/?next={{ request.get_full_path|urlencode }}" class="btn btn-outline-danger btn-sm">Eliminar</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if modo_todas %}13{% else %}12{% endif %}" class="text-muted p-3">No hay facturas con estos filtros.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+      <div class="small text-muted">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </div>
+      <div class="btn-group btn-group-sm">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Siguiente</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{# FACTURA_EDIT_NEXT_FILTER_V2 #}

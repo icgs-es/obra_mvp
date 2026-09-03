@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .po-mov-table{width:100%;table-layout:fixed;font-size:.82rem}
+  .po-mov-table th,.po-mov-table td{vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .po-mov-table th:nth-child(1){width:72px}.po-mov-table th:nth-child(2){width:112px}.po-mov-table th:nth-child(3){width:90px}.po-mov-table th:nth-child(4){width:150px}.po-mov-table th:nth-child(5){width:22%}.po-mov-table th:nth-child(6){width:95px}.po-mov-table th:nth-child(7){width:150px}.po-mov-table th:nth-child(8){width:170px}.po-mov-table th:nth-child(9){width:150px}.po-mov-table th:nth-child(10){width:155px}
+  .po-mov-table td:nth-child(8),.po-mov-table td:nth-child(9){white-space:nowrap;overflow-wrap:normal;word-break:normal}
+  @media(max-width:680px){.po-mov-table,.po-mov-table tbody,.po-mov-table tr,.po-mov-table td{display:block;width:100%}.po-mov-table thead{display:none}.po-mov-table tr{border:1px solid #dee2e6;border-radius:.75rem;margin:.5rem 0;padding:.4rem}.po-mov-table td{border:0;white-space:normal;padding:.3rem;overflow-wrap:anywhere}.po-mov-table td::before{content:attr(data-label);display:inline-block;min-width:90px;color:#6c757d;font-size:.68rem;font-weight:700;text-transform:uppercase}.po-mov-table td:last-child{border-top:1px solid #e9ecef;margin-top:.25rem;padding-top:.55rem}.po-mov-table td:last-child .btn{min-height:44px}}
+</style>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">{% if general_mode %}Movimientos de almacén{% else %}Pendientes de almacén{% endif %}</h1>
+      <div class="text-muted small">{% if general_mode %}Histórico general de entradas, salidas, controles y roturas de almacén.{% else %}Salidas y roturas de almacén pendientes de imputar a una partida o tarea.{% endif %}</div>
+    </div>
+    <a href="{% if general_mode %}/app/planificacion-obra/{% else %}/app/planificacion-obra/planning/{% endif %}" class="btn btn-outline-secondary btn-sm">{% if general_mode %}Volver a Obra{% else %}Volver a planning{% endif %}</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="get" class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Buscar</label>
+          <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Recurso, código, almacén, albarán...">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Tipo</label>
+          <select name="tipo" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for t in tipos %}
+              <option value="{{ t }}" {% if tipo == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Estado</label>
+          <select name="estado" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            <option value="pendiente_partida" {% if estado == "pendiente_partida" %}selected{% endif %}>Pendiente partida</option>
+            <option value="en_partida" {% if estado == "en_partida" %}selected{% endif %}>En partida</option>
+            <option value="sin_partida" {% if estado == "sin_partida" %}selected{% endif %}>Sin partida</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Almacén</label>
+          <select name="almacen" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for a in almacenes %}
+              <option value="{{ a.id }}" {% if almacen_id|stringformat:"s" == a.id|stringformat:"s" %}selected{% endif %}>
+                {{ a.legacy_id_almacen }} · {{ a.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Obra</label>
+          <select name="obra" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            {% for o in obras %}
+              <option value="{{ o.id }}" {% if obra_id|stringformat:"s" == o.id|stringformat:"s" %}selected{% endif %}>
+                {{ o.codigo }} · {{ o.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-1 d-grid">
+          <button class="btn btn-primary btn-sm">Filtrar</button>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Desde</label>
+          <input type="date" name="desde" value="{{ fecha_desde }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Hasta</label>
+          <input type="date" name="hasta" value="{{ fecha_hasta }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-md-2 d-grid">
+          <a href="/app/planificacion-obra/almacen/movimientos/" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="small text-muted mb-2">{% if estado == "pendiente_partida" %}{{ total }} movimientos pendientes{% else %}{{ total }} movimiento(s) filtrado(s){% endif %}</div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0 po-mov-table">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Fecha/hora</th>
+            <th>Tipo</th>
+            <th>Almacén</th>
+            <th>Recurso</th>
+            <th class="text-end">Cantidad</th>
+            <th>Destino</th>
+            <th>Origen</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mov in page_obj %}
+            <tr>
+              <td data-label="ID">#{{ mov.legacy_id_movimiento|default:mov.pk }}<br><span class="small text-muted">pk {{ mov.pk }}</span></td>
+              <td data-label="Fecha/hora">{% if mov.fecha_movimiento %}{{ mov.fecha_movimiento|date:"d/m/Y" }}{% else %}<span class="badge bg-warning text-dark">Sin fecha</span>{% endif %}{% if mov.hora_movimiento %}<br><span class="small text-muted">{{ mov.hora_movimiento|time:"H:i" }}</span>{% endif %}</td>
+              <td data-label="Tipo">
+                {% if mov.tipo_movimiento == "SALIDA" %}
+                  <span class="badge bg-danger">SALIDA</span>
+                {% elif mov.tipo_movimiento == "ENTRADA" %}
+                  <span class="badge bg-success">ENTRADA</span>
+                {% elif mov.tipo_movimiento == "ROTURA" %}
+                  <span class="badge bg-warning text-dark">ROTURA</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ mov.tipo_movimiento }}</span>
+                {% endif %}
+              </td>
+              <td data-label="Almacén">{{ mov.almacen|default:mov.legacy_id_almacen|default:"—" }}</td>
+              <td data-label="Recurso">
+                <div class="fw-semibold">{{ mov.recurso.nombre|default:"Sin recurso" }}</div>
+                <div class="small text-muted">{{ mov.recurso.legacy_id|default:mov.legacy_cod_recurso|default:"—" }} · {{ mov.recurso.tipo|default:"—" }}</div>
+              </td>
+              <td class="text-end" data-label="Cantidad">{{ mov.cantidad|default:"0" }} {{ mov.unidad|default:"" }}</td>
+              <td data-label="Destino">
+                {% if mov.partida %}
+                  <span class="badge bg-primary">{{ mov.partida.codigo }}</span>
+                {% elif mov.unidad_obra %}
+                  {{ mov.unidad_obra }}
+                {% elif mov.empleado %}
+                  {{ mov.empleado }}
+                {% else %}
+                  <span class="text-muted">Sin partida</span>
+                {% endif %}
+              </td>
+              <td data-label="Origen">
+                {% if mov.cod_albaran %}<span title="Albarán {{ mov.cod_albaran }}">Albarán {{ mov.cod_albaran }}</span>{% elif mov.cod_factura %}<span title="Factura {{ mov.cod_factura }}">Factura {{ mov.cod_factura }}</span>{% else %}<span title="{{ mov.origin_label }}">{{ mov.origin_label }}</span>{% endif %}
+              </td>
+              <td data-label="Estado">
+                {# PLANIFICACION_ALMACEN_ENTRADA_A_PARTIDA_UI_V2 #}
+                {% if mov.en_partida or mov.partida_id or mov.tiene_real %}
+                  <span class="badge bg-success">En partida</span>
+                {% elif mov.tipo_movimiento == "ENTRADA" %}
+                  {% if mov.raw_data.cantidad_en_partidas %}
+                    <span class="badge bg-warning text-dark">Parcial a partida</span>
+                  {% else %}
+                    <span class="badge bg-light text-dark border">Stock</span>
+                  {% endif %}
+                {% elif mov.tipo_movimiento == "SALIDA" or mov.tipo_movimiento == "ROTURA" %}
+                  <span class="badge bg-warning text-dark">Pendiente partida</span>
+                {% else %}
+                  <span class="badge bg-light text-dark border">Sin destino</span>
+                {% endif %}
+              </td>
+              <td class="text-end" data-label="Acciones">
+                {% if general_mode and mov.can_edit or general_mode and mov.can_delete %}
+                  {% if mov.can_edit %}<a class="btn btn-outline-primary btn-sm" href="{% url 'obra_movil:almacen_movimiento_editar' mov.id %}?next={{ request.get_full_path|urlencode }}">Editar</a>{% endif %}
+                  {% if mov.can_delete %}<a class="btn btn-outline-danger btn-sm" href="{% url 'obra_movil:almacen_movimiento_eliminar' mov.id %}?next={{ request.get_full_path|urlencode }}">Eliminar</a>{% endif %}
+                {% elif can_imputar and not mov.en_partida and not mov.partida_id and not mov.tiene_real %}
+                  {% if mov.tipo_movimiento == "ENTRADA" or mov.tipo_movimiento == "SALIDA" or mov.tipo_movimiento == "ROTURA" %}
+                    <a class="btn btn-outline-primary btn-sm"
+                       href="/app/planificacion-obra/almacen/movimientos/{{ mov.id }}/imputar/?next={{ request.get_full_path|urlencode }}">
+                      Enviar a partida
+                    </a>
+                  {% else %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" class="text-center text-muted py-4">No hay movimientos.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <div class="small text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+      <div class="btn-group">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Siguiente</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

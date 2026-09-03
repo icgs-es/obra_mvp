@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Proveedores</h1>
+      <div class="text-muted small">Alta, edición y control de proveedores del grupo.</div>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      {# PROVEEDORES_MULTIEMPRESA_GRUPO_UI_V1 #}{% if modo_todas %}<span class="badge bg-primary">TODAS LAS EMPRESAS</span>{% elif team %}<span class="badge bg-primary">{{ team.name }}</span>{% endif %}
+      <a href="/app/gestion/" class="btn btn-outline-secondary btn-sm">Gestión</a>
+      <a href="/app/gestion/proveedores/nuevo/" class="btn btn-primary btn-sm">Nuevo proveedor</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if sin_team %}
+    <div class="alert alert-warning">No tienes empresa activa asignada.</div>
+  {% else %}
+
+  <form method="get" class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label small text-muted">Buscar</label>
+          <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Nombre, fiscal, CIF, teléfono, email...">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Tipo</label>
+          <select name="tipo" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            <option value="subcontrata" {% if tipo == "subcontrata" %}selected{% endif %}>Subcontratas</option>
+            <option value="fuera_listado" {% if tipo == "fuera_listado" %}selected{% endif %}>Fuera listado</option>
+            <option value="inactivos" {% if tipo == "inactivos" %}selected{% endif %}>Inactivos</option>
+          </select>
+        </div>
+        <div class="col-md-3 d-grid">
+          <button class="btn btn-primary btn-sm">Filtrar</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="small text-muted mb-2">{{ total_resultados }} proveedores</div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre comercial</th>
+            <th>CIF</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Tipo</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ p.nombre_comercial }}</td>
+            <td>{{ p.cif|default:"—" }}</td>
+            <td>{{ p.telefono|default:"—" }}</td>
+            <td>{{ p.email|default:"—" }}</td>
+            <td>
+              {% if not p.activo %}
+                <span class="badge bg-secondary">Inactivo</span>
+              {% elif p.es_subcontrata %}
+                <span class="badge bg-info text-dark">Subcontrata</span>
+              {% elif p.fuera_listado %}
+                <span class="badge bg-warning text-dark">Fuera listado</span>
+              {% else %}
+                <span class="badge bg-light text-dark border">Proveedor</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="/app/gestion/proveedores/{{ p.id }}/editar/" class="btn btn-outline-primary btn-sm">Editar</a>
+              <a href="/app/gestion/proveedores/{{ p.id }}/eliminar/" class="btn btn-outline-danger btn-sm">Eliminar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="{% if modo_todas %}8{% else %}7{% endif %}" class="text-muted p-3">No hay proveedores con estos filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+      <div class="small text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+      <div class="btn-group btn-group-sm">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Siguiente</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

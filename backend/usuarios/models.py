@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 
 User = settings.AUTH_USER_MODEL
 
@@ -26,6 +27,22 @@ class UserProfile(models.Model):
         on_delete=models.CASCADE,
         related_name="profile",
     )
+    empresa_documental_predeterminada = (
+        models.ForeignKey(
+            Team,
+            null=True,
+            blank=True,
+            on_delete=models.SET_NULL,
+            related_name=(
+                "perfiles_documentales_predeterminados"
+            ),
+            help_text=(
+                "Empresa utilizada para documentos cuando "
+                "el selector global está en Todas sus empresas."
+            ),
+        )
+    )
+
     color = models.CharField(
         max_length=7,
         default="#3498DB",  # changed from "#2D6CDF" to "#3498DB"
@@ -36,6 +53,30 @@ class UserProfile(models.Model):
             )
         ],
     )
+
+    def clean(self):
+        super().clean()
+
+        team = self.empresa_documental_predeterminada
+
+        if not team or not self.user_id:
+            return
+
+        if getattr(self.user, "is_superuser", False):
+            return
+
+        if not self.user.teams.filter(
+            pk=team.pk
+        ).exists():
+            raise ValidationError(
+                {
+                    "empresa_documental_predeterminada": (
+                        "La empresa documental predeterminada "
+                        "debe pertenecer a las empresas "
+                        "permitidas del usuario."
+                    )
+                }
+            )
 
     def __str__(self):
         return f"Perfil de {getattr(self.user, 'username', self.user_id)}"

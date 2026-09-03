@@ -6,25 +6,29 @@ from .models import Fichaje, Ausencia, TerminalFichaje
 
 User = get_user_model()
 
+
 @admin.register(Fichaje)
 class FichajeAdmin(admin.ModelAdmin):
     list_display = (
         "user",
+        "team",
         "tipo",
         "timestamp",
-        "origen",     # 👈 aquí
+        "origen",
         "ip",
         "lat",
         "lng",
         "corregido",
     )
     list_filter = (
+        "team",
         "tipo",
-        "origen",     # 👈 y aquí
+        "origen",
         "corregido",
         "timestamp",
     )
     search_fields = (
+        "team__name",
         "user__username",
         "user__first_name",
         "user__last_name",
@@ -38,11 +42,13 @@ class FichajeAdmin(admin.ModelAdmin):
         "user_agent",
     )
 
+
 @admin.register(Ausencia)
 class AusenciaAdmin(admin.ModelAdmin):
     list_display = ("empleado", "tipo", "fecha_inicio", "fecha_fin", "estado")
     list_filter = ("tipo", "estado", "fecha_inicio")
     search_fields = ("empleado__username", "empleado__first_name", "empleado__last_name")
+
 
 @admin.register(TerminalFichaje)
 class TerminalFichajeAdmin(admin.ModelAdmin):
@@ -55,7 +61,8 @@ class TerminalFichajeAdmin(admin.ModelAdmin):
         "user__last_name",
     )
     autocomplete_fields = ("user",)
-    
+
+
 class TerminalFichajeInline(admin.StackedInline):
     model = TerminalFichaje
     can_delete = True
@@ -66,6 +73,9 @@ class UserAdmin(BaseUserAdmin):
     inlines = [TerminalFichajeInline]
 
 
-# Reemplazamos el admin estándar de User por el nuestro
-admin.site.unregister(User)
+try:
+    admin.site.unregister(User)
+except admin.sites.NotRegistered:
+    pass
+
 admin.site.register(User, UserAdmin)

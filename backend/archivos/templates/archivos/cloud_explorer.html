@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{# P2A_FOLDER_UPLOAD_PREVIEW #}
+{% block head %}
+  {{ block.super }}
+  <link rel="stylesheet"
+        href="{% static 'archivos/cloud_folder_upload_preview.css' %}">
+{% endblock %}
+
+{% block title %}Archivos — INTASA Platform{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+        <div>
+          <nav aria-label="Ruta documental">
+            <ol class="breadcrumb mb-1">
+
+              {% for crumb in breadcrumbs %}
+                <li class="breadcrumb-item {% if forloop.last %}active{% endif %}">
+
+                  {% if forloop.last %}
+                    {{ crumb.name }}
+                  {% else %}
+                    <a href="{{ crumb.url }}">
+                      {{ crumb.name }}
+                    </a>
+                  {% endif %}
+
+                </li>
+              {% endfor %}
+
+            </ol>
+          </nav>
+
+          <div class="small text-muted">
+            INTASA Documents
+          </div>
+        </div>
+
+        {# CLOUD_MANAGEMENT_TOOLBAR_RBAC_V1 #}
+        {% if request.user.is_superuser or request.user.is_staff or perms.archivos.add_carpeta or perms.archivos.add_archivo or perms.archivos.upload_folder %}
+
+          <div class="d-flex flex-wrap gap-2">
+
+            {# CLOUD_CREATE_FOLDER_RBAC_V1 #}
+{% if request.user.is_superuser or request.user.is_staff or perms.archivos.add_carpeta %}
+<form method="post"
+                  action="{% url 'archivos:cloud_folder_create' %}"
+                  class="d-flex gap-2">
+
+              {% csrf_token %}
+
+              <input type="hidden"
+                     name="path"
+                     value="{{ current_path }}">
+
+              <input type="text"
+                     name="name"
+                     class="form-control form-control-sm"
+                     placeholder="Nombre de carpeta"
+                     maxlength="255"
+                     required>
+
+              <button type="submit"
+                      class="btn btn-outline-primary btn-sm text-nowrap">
+                Nueva carpeta
+              </button>
+
+            </form>
+{% endif %}
+
+            {# CLOUD_UPLOAD_FILES_RBAC_V1 #}
+{% if request.user.is_superuser or request.user.is_staff or perms.archivos.add_archivo %}
+<form method="post"
+                  action="{% url 'archivos:cloud_upload_files' %}"
+                  enctype="multipart/form-data"
+                  class="d-flex gap-2">
+
+              {% csrf_token %}
+
+              <input type="hidden"
+                     name="path"
+                     value="{{ current_path }}">
+
+              <input type="file"
+                     name="files"
+                     class="form-control form-control-sm"
+                     multiple
+                     required>
+
+              <button type="submit"
+                      class="btn btn-primary btn-sm text-nowrap">
+                Subir archivos
+              </button>
+
+            </form>
+{% endif %}
+
+              {# P3_FOLDER_UPLOAD_TEMPLATE_RBAC #}
+              {% if request.user.is_superuser or perms.archivos.upload_folder %}
+              <button type="button"
+                      id="folderUploadChooseButton"
+                      class="btn btn-outline-success btn-sm text-nowrap"
+                      aria-controls="folderUploadPreview"
+                      title="Seleccionar una carpeta completa">
+
+                <i class="bi bi-folder-plus me-1"
+                   aria-hidden="true"></i>
+
+                Elegir carpeta
+              </button>
+
+              <input type="file"
+                     id="folderUploadInput"
+                     webkitdirectory
+                     directory
+                     multiple
+                     hidden
+                     aria-hidden="true">
+              {% endif %}
+
+          </div>
+
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  {% if request.user.is_superuser or perms.archivos.upload_folder %}
+    {% include "archivos/_cloud_folder_upload_preview.html" %}
+  {% endif %}
+
+  {% if error %}
+
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+
+  {% else %}
+
+    <div class="card shadow-sm">
+
+      <div class="card-header bg-white">
+        <strong>{{ current_name }}</strong>
+      </div>
+
+      <div class="table-responsive">
+
+        <table class="table table-hover align-middle mb-0">
+
+          <thead class="table-light">
+            <tr>
+
+              <th style="min-width: 310px;">
+
+                <a href="{{ sort_name_url }}"
+                   class="text-dark text-decoration-none d-inline-flex align-items-center gap-1"
+                   title="Ordenar por nombre">
+
+                  <span>Nombre</span>
+
+                  {% if sort_field == "name" %}
+                    <span aria-hidden="true">
+                      {% if sort_direction == "asc" %}
+                        ↑
+                      {% else %}
+                        ↓
+                      {% endif %}
+                    </span>
+                  {% endif %}
+
+                </a>
+
+              </th>
+
+              <th>
+                Tipo
+              </th>
+
+              <th class="text-end text-nowrap">
+                Tamaño
+              </th>
+
+              <th class="text-nowrap"
+                  style="min-width: 150px;">
+
+                <a href="{{ sort_date_url }}"
+                   class="text-dark text-decoration-none d-inline-flex align-items-center gap-1"
+                   title="Ordenar por última modificación">
+
+                  <span>Fecha</span>
+
+                  {% if sort_field == "date" %}
+                    <span aria-hidden="true">
+                      {% if sort_direction == "asc" %}
+                        ↑
+                      {% else %}
+                        ↓
+                      {% endif %}
+                    </span>
+                  {% endif %}
+
+                </a>
+
+              </th>
+
+              <th class="text-end"
+                  style="min-width: 260px;">
+                Acciones
+              </th>
+
+            </tr>
+          </thead>
+
+          <tbody>
+
+            {% if parent_path is not None %}
+
+              <tr>
+                <td colspan="5">
+
+                  <a class="text-decoration-none"
+                     href="{{ parent_url }}">
+                    ← Subir un nivel
+                  </a>
+
+                </td>
+              </tr>
+
+            {% endif %}
+
+            {% for item in items %}
+
+              <tr>
+
+                <td>
+
+                  {% if item.is_folder %}
+
+                    <a class="text-decoration-none fw-semibold"
+                       href="{{ item.browse_url }}">
+                      📁 {{ item.name }}
+                    </a>
+
+                  {% else %}
+
+                    <a class="text-decoration-none"
+                       href="{% url 'archivos:cloud_file_open' %}?path={{ item.storage_key|urlencode }}&amp;file_id={{ item.file_id|urlencode }}&amp;next={{ current_url|urlencode }}">
+                      📄 {{ item.name }}
+                    </a>
+
+                  {% endif %}
+
+                </td>
+
+                <td class="small text-muted">
+
+                  {% if item.is_folder %}
+                    Carpeta
+                  {% else %}
+                    {{ item.content_type|default:"Archivo" }}
+                  {% endif %}
+
+                </td>
+
+                <td class="text-end small text-muted text-nowrap">
+
+                  {% if not item.is_folder %}
+                    {{ item.size_label }}
+                  {% endif %}
+
+                </td>
+
+                <td class="small text-muted text-nowrap"
+                    title="Última modificación registrada por INTASA Documents">
+                  {{ item.modified_label }}
+                </td>
+
+                <td class="text-end text-nowrap">
+
+                  {# ARCHIVOS_MANAGEMENT_COMPLETE_BUTTONS_V1 #}
+{% if can_manage_actions %}
+
+                    {% if current_path %}
+
+                      <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="{% url 'archivos:cloud_item_rename' %}?path={{ item.storage_key|urlencode }}&amp;next={{ current_url|urlencode }}">
+                          Renombrar
+                        </a>
+
+                        <a class="btn btn-sm btn-outline-primary"
+                           href="{% url 'archivos:cloud_item_move' %}?path={{ item.storage_key|urlencode }}&amp;next={{ current_url|urlencode }}">
+                          Mover
+                        </a>
+
+                        <a class="btn btn-sm btn-outline-danger"
+                           href="{% url 'archivos:cloud_item_delete' %}?path={{ item.storage_key|urlencode }}&amp;next={{ current_url|urlencode }}">
+                          Eliminar
+                        </a>
+
+                      </div>
+
+                    {% else %}
+
+                      <span class="badge text-bg-light border">
+                        Protegida
+                      </span>
+
+                    {% endif %}
+
+                  {% endif %}
+
+                </td>
+
+              </tr>
+
+            {% empty %}
+
+              <tr>
+                <td colspan="5"
+                    class="text-center text-muted py-5">
+                  Esta carpeta está vacía.
+                </td>
+              </tr>
+
+            {% endfor %}
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% endif %}
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const storagePrefix =
+    "intasa-documents-scroll-position:";
+
+  const storageKey =
+    storagePrefix
+    + window.location.pathname
+    + window.location.search;
+
+  function savePosition() {
+    try {
+      sessionStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          y: window.scrollY || 0,
+          timestamp: Date.now()
+        })
+      );
+    } catch (error) {
+      // La navegación continúa.
+    }
+  }
+
+  function restorePosition() {
+    try {
+      const raw = sessionStorage.getItem(
+        storageKey
+      );
+
+      if (!raw) {
+        return;
+      }
+
+      const value = JSON.parse(raw);
+
+      if (
+        !value
+        || typeof value.y !== "number"
+        || typeof value.timestamp !== "number"
+      ) {
+        return;
+      }
+
+      const maxAge = 30 * 60 * 1000;
+
+      if (
+        Date.now() - value.timestamp
+        > maxAge
+      ) {
+        sessionStorage.removeItem(
+          storageKey
+        );
+
+        return;
+      }
+
+      window.requestAnimationFrame(
+        function () {
+          window.scrollTo({
+            top: value.y,
+            left: 0,
+            behavior: "auto"
+          });
+        }
+      );
+
+    } catch (error) {
+      // No se bloquea el explorador.
+    }
+  }
+
+  window.addEventListener(
+    "pagehide",
+    savePosition
+  );
+
+  window.addEventListener(
+    "DOMContentLoaded",
+    restorePosition
+  );
+})();
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script src="{% static 'archivos/cloud_folder_upload_preview.js' %}"></script>
+  <script src="{% static 'archivos/cloud_folder_upload_execute.js' %}"></script>
+{% endblock %}
+

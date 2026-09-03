@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Plantillas OCR</h1>
+      <div class="text-muted small">Listado formal por proveedor, tipo documental y parser.</div>
+    </div>
+    <a href="{% url 'gestion:index' %}" class="btn btn-outline-secondary">Gestión</a>
+  </div>
+
+  <form method="get" class="card card-body mb-3">
+    <div class="row g-2">
+      <div class="col-md-3">
+        <label class="form-label">Tipo</label>
+        <select name="tipo" class="form-select">
+          <option value="">Todos</option>
+          <option value="ALBARAN" {% if tipo == "ALBARAN" %}selected{% endif %}>ALBARAN</option>
+          <option value="FACTURA" {% if tipo == "FACTURA" %}selected{% endif %}>FACTURA</option>
+          <option value="PEDIDO" {% if tipo == "PEDIDO" %}selected{% endif %}>PEDIDO</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Estado</label>
+        <select name="activa" class="form-select">
+          <option value="">Todas</option>
+          <option value="1" {% if activa == "1" %}selected{% endif %}>Activas</option>
+          <option value="0" {% if activa == "0" %}selected{% endif %}>Inactivas</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Buscar</label>
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Proveedor, código, nombre o parser">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-outline-primary w-100">Filtrar</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Proveedor</th>
+            <th>Empresa</th>
+            <th>Plantilla</th>
+            <th>Parser</th>
+            <th>Valorado</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in plantillas %}
+            <tr>
+              <td><span class="badge bg-secondary">{{ p.tipo_documento }}</span></td>
+              <td>{{ p.proveedor.nombre_fiscal|default:p.proveedor.nombre_comercial }}</td>
+              <td>{{ p.team.nombre|default:p.team.name }}</td>
+              <td>
+                <strong>{{ p.nombre }}</strong><br>
+                <code>{{ p.codigo }}</code>
+              </td>
+              <td><code>{{ p.parser_key }}</code></td>
+              <td>{% if p.valorado_default %}Sí{% else %}No{% endif %}</td>
+              <td>
+                {% if p.activa %}
+                  <span class="badge bg-success">Activa</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Inactiva</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'gestion:ocr_plantilla_detail' p.id %}">Ver</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-muted p-3">No hay plantillas OCR con estos filtros.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

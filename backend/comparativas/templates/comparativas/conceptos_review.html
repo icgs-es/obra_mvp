@@ -1,0 +1,636 @@
+{# COMPARATIVAS_V2C_PREVIEW_CONFIRM_R1 #}
+{% extends "base.html" %}
+
+{% block title %}Conceptos del presupuesto{% endblock %}
+
+{% block content %}
+<style>
+  .concept-review-compact {
+    font-size: .92rem;
+  }
+
+  .concept-review-compact .card {
+    margin-bottom: .75rem !important;
+  }
+
+  .concept-review-compact .card-header {
+    padding: .48rem .75rem;
+  }
+
+  .concept-review-compact .card-body {
+    padding: .65rem .8rem;
+  }
+
+  .concept-review-compact .table {
+    margin-bottom: 0;
+  }
+
+  .concept-review-compact .table > :not(caption) > * > * {
+    padding: .30rem .38rem;
+    vertical-align: middle;
+  }
+
+  .concept-review-compact .table thead th {
+    white-space: nowrap;
+    font-size: .86rem;
+    line-height: 1.1;
+  }
+
+  .concept-review-compact .table tbody td {
+    line-height: 1.15;
+  }
+
+  .concept-review-compact .form-control,
+  .concept-review-compact .form-select {
+    min-height: 30px;
+    height: 30px;
+    padding: .18rem .42rem;
+    font-size: .88rem;
+    line-height: 1.1;
+  }
+
+  .concept-review-compact textarea.form-control {
+    height: auto;
+    min-height: 54px;
+    line-height: 1.25;
+  }
+
+  .concept-review-compact input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin-top: 0;
+  }
+
+  .concept-review-compact .badge {
+    font-size: .72rem;
+    padding: .28em .48em;
+    white-space: nowrap;
+  }
+
+  .concept-review-compact details {
+    margin-top: .15rem !important;
+  }
+
+  .concept-review-compact details > summary {
+    cursor: pointer;
+    font-size: .78rem;
+    line-height: 1.05;
+  }
+
+  .concept-review-compact .concept-context-line {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    margin-top: .12rem;
+    min-height: 18px;
+  }
+
+  .concept-review-compact .concept-context-line .badge {
+    font-size: .68rem;
+  }
+
+  .concept-review-compact .concept-evidence {
+    margin-top: .3rem;
+    padding: .45rem !important;
+    line-height: 1.25;
+  }
+
+  .concept-review-compact .concept-title-cell {
+    min-width: 360px;
+  }
+
+  .concept-review-compact .concept-number {
+    width: 48px;
+    text-align: center;
+  }
+
+  .concept-review-compact .concept-qty {
+    width: 105px;
+  }
+
+  .concept-review-compact .concept-unit {
+    width: 82px;
+  }
+
+  .concept-review-compact .concept-money {
+    width: 122px;
+  }
+
+  .concept-review-compact .concept-scope {
+    width: 140px;
+  }
+
+  .concept-review-compact .concept-confidence {
+    width: 105px;
+  }
+
+  @media (max-width: 991.98px) {
+    .concept-review-compact {
+      font-size: .88rem;
+    }
+
+    .concept-review-compact .concept-title-cell {
+      min-width: 300px;
+    }
+  }
+</style>
+<div class="container-fluid py-3 concept-review-compact"
+     style="max-width: 1500px;">
+
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        Conceptos del presupuesto
+      </h1>
+
+      <div class="text-muted">
+        {{ ofertante.nombre }}
+        · Versión {{ oferta.version }}
+        · {{ documento.nombre_original }}
+      </div>
+    </div>
+
+    <a href="{% url 'comparativas:detail' comparativa.uuid %}"
+       class="btn btn-outline-secondary btn-sm">
+      Volver a la comparativa
+    </a>
+  </div>
+
+
+  {% if confirmed %}
+
+    <div class="alert alert-success">
+      <div class="fw-semibold">
+        Conceptos confirmados
+      </div>
+
+      <div>
+        Este documento ya tiene
+        {{ persisted_concepts|length }}
+        concepto{{ persisted_concepts|length|pluralize }}
+        persistido{{ persisted_concepts|length|pluralize }}.
+      </div>
+
+      <div class="small mt-1">
+        Una segunda confirmación no sustituye
+        silenciosamente los datos existentes.
+      </div>
+
+      <div class="mt-3">
+        <a href="{% url 'comparativas:documento_conceptos_editar' documento.pk %}"
+           class="btn btn-outline-primary btn-sm">
+          Editar conceptos confirmados
+        </a>
+      </div>
+    </div>
+
+    {% if saved_summary.reconciliation %}
+      <div class="card mb-3">
+        <div class="card-header bg-white fw-semibold">
+          Reconciliación guardada
+        </div>
+
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="small text-muted">
+                Estado
+              </div>
+              <div class="fw-semibold">
+                {{ saved_summary.reconciliation.estado|default:"—" }}
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="small text-muted">
+                Base documental
+              </div>
+              <div class="fw-semibold">
+                {% if saved_summary.reconciliation.base %}
+                  {{ saved_summary.reconciliation.base }} €
+                {% else %}
+                  —
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="small text-muted">
+                Suma conceptos
+              </div>
+              <div class="fw-semibold">
+                {{ saved_summary.reconciliation.suma_conceptos|default:"—" }}
+                {% if saved_summary.reconciliation.suma_conceptos %}
+                  €
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="small text-muted">
+                Diferencia
+              </div>
+              <div class="fw-semibold">
+                {{ saved_summary.reconciliation.diferencia|default:"—" }}
+                {% if saved_summary.reconciliation.diferencia %}
+                  €
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header bg-white fw-semibold">
+        Conceptos persistidos
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Concepto</th>
+              <th>Cantidad</th>
+              <th>Unidad</th>
+              <th>Precio</th>
+              <th>Importe</th>
+              <th>Alcance</th>
+              <th>Origen</th>
+              <th>Confianza</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for concepto in persisted_concepts %}
+              <tr>
+                <td>
+                  {{ concepto.orden }}
+                </td>
+
+                <td class="concept-title-cell">
+                  <div class="fw-semibold">
+                    {{ concepto.titulo_original }}
+                  </div>
+
+                  {% if concepto.descripcion_original %}
+                    <div class="small text-muted mt-1">
+                      {{ concepto.descripcion_original }}
+                    </div>
+                  {% endif %}
+
+                  {% if concepto.evidencia %}
+                    <details class="small mt-1">
+                      <summary class="text-muted">
+                        Evidencia
+                      </summary>
+
+                      <div class="mt-1">
+                        {{ concepto.evidencia }}
+                      </div>
+                    </details>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {{ concepto.cantidad|default_if_none:"—" }}
+                </td>
+
+                <td>
+                  {{ concepto.unidad|default:"—" }}
+                </td>
+
+                <td>
+                  {% if concepto.precio_unitario != None %}
+                    {{ concepto.precio_unitario|floatformat:4 }} €
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if concepto.importe != None %}
+                    {{ concepto.importe|floatformat:2 }} €
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td>
+                  {{ concepto.get_alcance_display }}
+                </td>
+
+                <td>
+                  {{ concepto.get_origen_display }}
+                </td>
+
+                <td>
+                  {{ concepto.get_confianza_extraccion_display }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+
+  {% else %}
+
+    <div class="alert alert-light border">
+      <strong>Previsualización.</strong>
+      La extracción se ha recalculado desde el
+      documento guardado.
+
+      Puedes corregir campos o desmarcar conceptos.
+      No se escribirá nada hasta pulsar
+      <strong>Confirmar conceptos seleccionados</strong>.
+    </div>
+
+
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">
+        Reconciliación económica
+      </div>
+
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-md-3">
+            <div class="small text-muted">
+              Estado
+            </div>
+
+            <div class="fw-semibold">
+              {% if reconciliation.estado == "COMPLETA" %}
+                <span class="badge bg-success">
+                  Completa
+                </span>
+              {% elif reconciliation.estado == "NO_VERIFICABLE" %}
+                <span class="badge bg-warning text-dark">
+                  No verificable
+                </span>
+              {% elif reconciliation.estado == "PARCIAL" %}
+                <span class="badge bg-warning text-dark">
+                  Parcial
+                </span>
+              {% elif reconciliation.estado == "EXCEDE" %}
+                <span class="badge bg-danger">
+                  Excede
+                </span>
+              {% else %}
+                {{ reconciliation.estado|default:"—" }}
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="small text-muted">
+              Base documental
+            </div>
+
+            <div class="fw-semibold">
+              {% if reconciliation.base != None %}
+                {{ reconciliation.base|floatformat:2 }} €
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="small text-muted">
+              Suma conceptos
+            </div>
+
+            <div class="fw-semibold">
+              {{ reconciliation.suma_conceptos|floatformat:2 }} €
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="small text-muted">
+              Diferencia
+            </div>
+
+            <div class="fw-semibold">
+              {% if reconciliation.diferencia != None %}
+                {{ reconciliation.diferencia|floatformat:2 }} €
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+
+        {% if reconciliation.estado == "NO_VERIFICABLE" %}
+          <div class="alert alert-warning mt-3 mb-0 small">
+            El documento contiene conceptos,
+            pero no importes por partida suficientes
+            para reconciliarlos contra la base.
+            No se inventarán precios ni importes.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+
+    {% if formset.non_form_errors %}
+      <div class="alert alert-danger">
+        {{ formset.non_form_errors }}
+      </div>
+    {% endif %}
+
+
+    {% if can_confirm %}
+      <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        <div class="card mb-3">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">
+              Conceptos propuestos
+            </span>
+
+            <span class="text-muted small">
+              {{ review_rows|length }} detectados
+            </span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="concept-number">
+                    Usar
+                  </th>
+
+                  <th class="concept-title-cell">
+                    Concepto
+                  </th>
+
+                  <th class="concept-qty">
+                    Cant.
+                  </th>
+
+                  <th class="concept-unit">
+                    Ud.
+                  </th>
+
+                  <th class="concept-money">
+                    Precio
+                  </th>
+
+                  <th class="concept-money">
+                    Importe
+                  </th>
+
+                  <th class="concept-scope">
+                    Alcance
+                  </th>
+
+                  <th class="concept-confidence">
+                    Confianza
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for row in review_rows %}
+
+                  {% ifchanged row.source.contexto %}
+                    {% if row.source.contexto %}
+                      <tr class="table-info">
+                        <td></td>
+                        <td colspan="7">
+                          <div class="fw-semibold">
+                            Bloque documental conjunto:
+                            {{ row.source.contexto|cut:"TOTAL DE BLOQUE DOCUMENTAL: " }}
+                          </div>
+                          <div class="small">
+                            Las partidas siguientes forman parte de este importe conjunto.
+                            El documento no desglosa un importe individual para cada una.
+                          </div>
+                        </td>
+                      </tr>
+                    {% endif %}
+                  {% endifchanged %}
+
+                  <tr>
+                    <td class="text-center">
+                      {{ row.form.source_index }}
+                      {{ row.form.selected }}
+                      {{ row.form.selected.errors }}
+                    </td>
+
+                    <td>
+                      {{ row.form.titulo }}
+                      {{ row.form.titulo.errors }}
+
+                      <div class="concept-context-line">
+                        <details class="small">
+                          <summary class="text-muted">
+                            Evidencia
+                          </summary>
+
+                        <div class="mt-2">
+                          <label class="form-label small">
+                            Descripción
+                          </label>
+
+                          {{ row.form.descripcion }}
+                          {{ row.form.descripcion.errors }}
+                        </div>
+
+                        {% if row.source.evidencia %}
+                          <div class="border rounded bg-light concept-evidence">
+                            <div class="fw-semibold">
+                              Evidencia original
+                            </div>
+
+                            <div>
+                              {{ row.source.evidencia }}
+                            </div>
+                          </div>
+                        {% endif %}
+                        </details>
+                      </div>
+                    </td>
+
+                    <td>
+                      {{ row.form.cantidad }}
+                      {{ row.form.cantidad.errors }}
+                    </td>
+
+                    <td>
+                      {{ row.form.unidad }}
+                      {{ row.form.unidad.errors }}
+                    </td>
+
+                    <td>
+                      {{ row.form.precio_unitario }}
+                      {{ row.form.precio_unitario.errors }}
+                    </td>
+
+                    <td>
+                      {{ row.form.importe }}
+                      {{ row.form.importe.errors }}
+                    </td>
+
+                    <td>
+                      {{ row.form.alcance }}
+                      {{ row.form.alcance.errors }}
+                    </td>
+
+                    <td>
+                      {% if row.source.confianza == "MUY_ALTA" %}
+                        <span class="badge bg-success">
+                          Muy alta
+                        </span>
+                      {% elif row.source.confianza == "ALTA" %}
+                        <span class="badge bg-primary">
+                          Alta
+                        </span>
+                      {% else %}
+                        <span class="badge bg-warning text-dark">
+                          Revisar
+                        </span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card-footer bg-white d-flex justify-content-between">
+            <a href="{% url 'comparativas:detail' comparativa.uuid %}"
+               class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+
+            <button class="btn btn-primary"
+                    type="submit">
+              Confirmar conceptos seleccionados
+            </button>
+          </div>
+        </div>
+      </form>
+
+    {% else %}
+
+      <div class="alert alert-warning">
+        No se han podido proponer conceptos
+        con la información extraída actualmente.
+      </div>
+
+    {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}

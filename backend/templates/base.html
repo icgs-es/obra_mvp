@@ -22,14 +22,58 @@
         .card { border-radius: 1rem; }
         .btn-link { text-decoration: none; }
         .empty-state { color:#6c757d; }
-      </style>
+      
+        /* INTASA_CORREO_V1F3_DRAGGABLE_DOCK */
+        /* INTASA_IA_NAV_DARK_GREEN_V1 */
+        .intasa-ia-nav-divider {
+          display: block;
+          width: 0.45rem;
+          height: 1.55rem;
+          border-left: 1px solid rgba(20, 83, 45, 0.38);
+          border-right: 1px solid rgba(20, 83, 45, 0.38);
+        }
+
+        .intasa-ia-nav-link {
+          color: #14532d !important;
+          font-weight: 650;
+          border-radius: 0.55rem;
+          background: rgba(20, 83, 45, 0.10);
+          padding-right: 0.75rem !important;
+          padding-left: 0.75rem !important;
+        }
+
+        .intasa-ia-nav-link:hover,
+        .intasa-ia-nav-link:focus {
+          color: #0f3d22 !important;
+          background: rgba(20, 83, 45, 0.18);
+        }
+
+        @media (max-width: 991.98px) {
+          .intasa-ia-nav-link {
+            margin-top: 0.25rem;
+            background: transparent;
+          }
+        }
+
+</style>
 
       {% block head %}{% endblock %}
-  </head>
+  
+  {# OBRA_MOVIL_UX0_HEAD_PWA_V1 #}
+  {% if request.path|slice:":15" == "/app/obra-movil" %}
+    <link rel="manifest" href="/app/obra-movil/manifest.webmanifest">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Obra móvil INTASA">
+    <link rel="apple-touch-icon" href="/app/obra-movil/icon.svg">
+  {% endif %}
+
+</head>
   <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
-      <div class="container">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/app/">
           <i class="bi bi-building"></i> Intasa Platform
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
@@ -37,23 +81,41 @@
         </button>
         <div id="navMain" class="collapse navbar-collapse">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-              <a class="nav-link" href="/app/">
-                <i class="bi bi-house"></i> Inicio
-              </a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link" href="/app/agenda/">
-                <i class="bi bi-calendar-event"></i> Agenda
-              </a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link" href="/app/tareas/">
-                <i class="bi bi-check2-square"></i> Tareas
-              </a>
-            </li>
+              {# NAVBAR_TRABAJO_AGENDA_TAREAS_V1 #}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navTrabajo" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-briefcase"></i> Trabajo
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navTrabajo">
+                  <li>
+                    <a class="dropdown-item" href="/app/">
+                      <i class="bi bi-house-door me-2"></i> Mi jornada
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="/app/agenda/">
+                      <i class="bi bi-calendar-event me-2"></i> Agenda
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="/app/tareas/">
+                      <i class="bi bi-check2-square me-2"></i> Tareas
+                    </a>
+                  </li>
+                  {# INTASA_CORREO_V1F2_SAMEORIGIN_MENU #}
+                  {% if perms.correo.use_correo %}
+                    <li>
+                      <a
+                        class="dropdown-item"
+                        href="{% url 'correo:inicio' %}"
+                      >
+                        <i class="bi bi-envelope-paper me-2"></i>
+                        Correo y comunicaciones
+                      </a>
+                    </li>
+                  {% endif %}
+                </ul>
+              </li>
 
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navPersonal" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -65,6 +127,14 @@
                     <i class="bi bi-person-lines-fill me-1"></i> RRHH · Empleados
                   </a>
                 </li>
+                {# RRHH_SELECCION_PERSONAL_V1 #}
+                {% if perms.rrhh.access_recruitment %}
+                <li>
+                <a class="dropdown-item" href="{% url 'rrhh:seleccion_personal_list' %}">
+                <i class="bi bi-person-check me-1"></i> Selección de personal
+                </a>
+                </li>
+                {% endif %}
                 <li>
                   <a class="dropdown-item" href="{% url 'fichajes:mi_jornada' %}">
                     <i class="bi bi-clock-history me-1"></i> Fichaje
@@ -78,17 +148,23 @@
               </ul>
             </li>
 
+            {# RBAC_CRM_NAV_V1 #}
+            {% if perms.crm.access_crm %}
             <li class="nav-item">
               <a class="nav-link" href="/crm/leads/">
                 <i class="bi bi-people me-1"></i> CRM
               </a>
             </li>
+            {% endif %}
 
+            {# RBAC_ACTIVOS_NAV_V1 #}
+            {% if perms.activos.access_activos %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'activos:list' %}">
                 <i class="bi bi-box-seam"></i> Activos
               </a>
             </li>
+            {% endif %}
 
             <li class="nav-item">
               <a class="nav-link" href="{% url 'archivos:explorador_raiz' %}">
@@ -96,30 +172,170 @@
               </a>
             </li>
 
+            <!-- NAV_INFORMES_CENTRAL_V1 -->
+            <li class="nav-item">
+              <a class="nav-link" href="/app/informes/">
+                <i class="bi bi-printer"></i> Informes
+              </a>
+            </li>
+
+
+              {# NAVBAR_GESTION_OBRA_REORG_V3 #}
+              {% if perms.gestion.access_gestion %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navGestion" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-receipt-cutoff"></i> Gestión
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navGestion">
+                  <li><h6 class="dropdown-header">Administración / Compras</h6></li>
+                  <li>
+                    <a class="dropdown-item" href="/app/gestion/">
+                      <i class="bi bi-grid-3x3-gap me-2"></i> Gestión de compras
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="/app/gestion/proveedores/">
+                      <i class="bi bi-people me-2"></i> Proveedores
+                    </a>
+                  </li>
+                  {# COMPARATIVAS_PRESUPUESTOS_NAV_V1 #}
+                  <li>
+                    <a class="dropdown-item" href="/app/gestion/comparativas/">
+                      <i class="bi bi-columns-gap me-2"></i> Comparativas de presupuestos
+                    </a>
+                  </li>
+                  {# CENTRO_COSTE_GESTION_MENU_V1 #}
+                  <li>
+                    <a class="dropdown-item" href="/app/gestion/centros-coste/">
+                      <i class="bi bi-diagram-3 me-2"></i> Centros de coste
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="/app/gestion/albaranes/">
+                      <i class="bi bi-truck me-2"></i> Albaranes
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="/app/gestion/facturas/">
+                      <i class="bi bi-file-earmark-text me-2"></i> Facturas
+                    </a>
+                  </li>
+                </ul>
+              </li>
+
+              {% endif %}
+              {# RBAC_GESTION_NAV_V1 #}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navObra" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-building-gear"></i> Obra
               </a>
               <ul class="dropdown-menu" aria-labelledby="navObra">
+
+                                <!-- OBRA_MOVIL_NAV_V1 -->
+                <li><h6 class="dropdown-header">Operaciones</h6></li>
                 <li>
-                  
-          <li>
-            <a class="dropdown-item" href="{% url 'planificacion_obra:obras_list' %}">
-              <i class="bi bi-bar-chart-line me-2"></i> Resumen de obras
-            </a>
-          </li>
-<a class="dropdown-item" href="/app/planificacion-obra/">
-                    <i class="bi bi-kanban me-1"></i> Planificación
-                  </a>
-                  <a class="dropdown-item" href="/app/planificacion-obra/access-sync/">
-                    <i class="bi bi-arrow-repeat me-1"></i> Sincronización Access
+                  <a class="dropdown-item" href="/app/obra-movil/">
+                    <i class="bi bi-phone me-2"></i> Obra móvil
                   </a>
                 </li>
+                <li><hr class="dropdown-divider"></li>                <li><h6 class="dropdown-header">Estado de Obra</h6></li>
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/">
+                    <i class="bi bi-grid me-2"></i> Panel de obra
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/viviendas/estado/">
+                    <i class="bi bi-clipboard-data me-2"></i> Estado por vivienda / Gantt
+                  </a>
+                </li>
+                  {# NAV_OBRA_PANEL_UNIFICADO_V2 · Resumen de obras integrado en Panel de obra #}
+
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Planificación</h6></li>
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/planning/">
+                    <i class="bi bi-kanban me-2"></i> Planning de obra
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/tareas/nueva/">
+                    <i class="bi bi-plus-circle me-2"></i> Nueva tarea de obra
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/asignaciones/">
+                    <i class="bi bi-person-workspace me-2"></i> Planificación de recursos
+                  </a>
+                </li>
+
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Producción / Almacén</h6></li>
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/asignaciones/gantt/">
+                    <i class="bi bi-diagram-3 me-2"></i> Gantt asignaciones
+                  </a>
+                </li>
+                {# RBAC_GESTION_OBRA_ARTICULOS_V1 #}
+                {% if perms.gestion.access_gestion %}
+                <li>
+                  <a class="dropdown-item" href="/app/gestion/articulos/">
+                    <i class="bi bi-box-seam me-2"></i> Artículos / recursos
+                  </a>
+                </li>
+                {% endif %}
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/almacen/movimientos/?estado=pendiente_partida">
+                    <i class="bi bi-arrow-left-right me-2"></i> Pendientes de almacén
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'planificacion_obra:almacen_movimientos_general' %}">
+                    <i class="bi bi-list-check me-2"></i> Movimientos de almacén
+                  </a>
+                </li>
+<li><hr class="dropdown-divider"></li>
+                <!-- ACCESS_HISTORICO_OBRA_V3 · referencia histórica dentro de Obra -->
+                  <li><h6 class="dropdown-header">Sincronización Access</h6></li>
+                <li>
+                  <a class="dropdown-item" href="/app/planificacion-obra/access-sync/">
+                    <i class="bi bi-arrow-repeat me-2"></i> Planificación
+                  </a>
+                </li>
+                {# RBAC_GESTION_OBRA_SYNC_V1 #}
+                {% if perms.gestion.access_gestion %}
+                <li>
+                  <a class="dropdown-item" href="/app/gestion/sync-access/">
+                    <i class="bi bi-arrow-repeat me-2"></i> Gestión
+                  </a>
+                </li>
+                {% endif %}
               </ul>
             </li>
+
+            {# INTASA_IA_NAV_DIFFERENTIAL_V1 #}
+            {% if perms.intasa_ia.use_intasa_ia %}
+              <li
+                class="nav-item d-none d-lg-flex align-items-center px-2"
+                aria-hidden="true"
+              >
+                <span class="intasa-ia-nav-divider"></span>
+              </li>
+
+              <li class="nav-item">
+                <a
+                  class="nav-link intasa-ia-nav-link"
+                  href="{% url 'intasa_ia:inicio' %}"
+                >
+                  <i class="bi bi-stars me-1"></i>
+                  INTASA IA
+                </a>
+              </li>
+            {% endif %}
+
           </ul>
           <div class="d-flex align-items-center gap-3">
-            {% if request.user.is_authenticated and request.user.teams.all|length > 1 %}
+            {% if request.user.is_authenticated and request.user.teams.all|length > 0 %}
               <div class="dropdown">
                 <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="activeTeamDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                   {% if request.session.active_team_id == "all" %}
@@ -179,6 +395,22 @@
       {% block content %}{% endblock %}
     </main>
 
+    {# INTASA_CORREO_V1F1_FLOATING_DOCK #}
+    {% if request.user.is_authenticated and perms.correo.use_correo %}
+      {% if request.path|slice:":12" != "/app/correo/" %}
+        {% with dock_account=request.user.cuenta_correo %}
+          {% if dock_account and dock_account.activa and dock_account.verificada and dock_account.tiene_contrasena %}
+            {% include "correo/_floating_dock.html" with correo_dock_account=dock_account %}
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+    {% endif %}
+
+    {# INTASA_AYUDA_V1_FLOATING_HELP #}
+    {% if request.user.is_authenticated %}
+      {% include "ayuda/_floating_help.html" %}
+    {% endif %}
+
     <!-- JS de Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -201,3 +433,5 @@
     {% block scripts %}{% endblock %}
   </body>
 </html>
+
+<!-- FIX_MENU_OBRA_QUITAR_N_LITERAL_OK -->

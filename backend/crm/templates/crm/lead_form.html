@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Nuevo Lead</h1>
+    <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary">
+      Cancelar
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        {% if form.errors %}
+          <div class="alert alert-danger">
+            <p class="mb-1"><strong>Hay errores en el formulario:</strong></p>
+            <ul class="mb-0">
+              {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                  <li>{{ field }}: {{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-12">
+            <h6 class="text-muted border-bottom pb-2 mt-4">Datos del Lead</h6>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.fuente.id_for_label }}">{{ form.fuente.label }}</label>
+            {{ form.fuente }}
+            {% if form.fuente.help_text %}
+              <div class="form-text">{{ form.fuente.help_text }}</div>
+            {% endif %}
+            {% for error in form.fuente.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.fecha.id_for_label }}">{{ form.fecha.label }}</label>
+            {{ form.fecha }}
+            {% if form.fecha.help_text %}
+              <div class="form-text">{{ form.fecha.help_text }}</div>
+            {% endif %}
+            {% for error in form.fecha.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
+            {{ form.estado }}
+            {% if form.estado.help_text %}
+              <div class="form-text">{{ form.estado.help_text }}</div>
+            {% endif %}
+            {% for error in form.estado.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label" for="{{ form.interes.id_for_label }}">{{ form.interes.label }}</label>
+            {{ form.interes }}
+            {% if form.interes.help_text %}
+              <div class="form-text">{{ form.interes.help_text }}</div>
+            {% endif %}
+            {% for error in form.interes.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-12">
+            <h6 class="text-muted border-bottom pb-2 mt-4">Activo / Propiedad</h6>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.activo.id_for_label }}">{{ form.activo.label }}</label>
+            {{ form.activo }}
+            {% if form.activo.help_text %}
+              <div class="form-text">{{ form.activo.help_text }}</div>
+            {% endif %}
+            {% for error in form.activo.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.tipo_activo.id_for_label }}">{{ form.tipo_activo.label }}</label>
+            {{ form.tipo_activo }}
+            {% if form.tipo_activo.help_text %}
+              <div class="form-text">{{ form.tipo_activo.help_text }}</div>
+            {% endif %}
+            {% for error in form.tipo_activo.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.precio.id_for_label }}">{{ form.precio.label }}</label>
+            {{ form.precio }}
+            {% if form.precio.help_text %}
+              <div class="form-text">{{ form.precio.help_text }}</div>
+            {% endif %}
+            {% for error in form.precio.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.dorm.id_for_label }}">{{ form.dorm.label }}</label>
+            {{ form.dorm }}
+            {% if form.dorm.help_text %}
+              <div class="form-text">{{ form.dorm.help_text }}</div>
+            {% endif %}
+            {% for error in form.dorm.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-12">
+            <h6 class="text-muted border-bottom pb-2 mt-4">Contacto</h6>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+            {{ form.nombre }}
+            {% if form.nombre.help_text %}
+              <div class="form-text">{{ form.nombre.help_text }}</div>
+            {% endif %}
+            {% for error in form.nombre.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>
+            {{ form.telefono }}
+            {% if form.telefono.help_text %}
+              <div class="form-text">{{ form.telefono.help_text }}</div>
+            {% endif %}
+            {% for error in form.telefono.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.help_text %}
+              <div class="form-text">{{ form.email.help_text }}</div>
+            {% endif %}
+            {% for error in form.email.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-12">
+            <h6 class="text-muted border-bottom pb-2 mt-4">Seguimiento</h6>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.contestada }}
+              <label class="form-check-label" for="{{ form.contestada.id_for_label }}">
+                {{ form.contestada.label }}
+              </label>
+            </div>
+            {% for error in form.contestada.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.contestada_at.id_for_label }}">{{ form.contestada_at.label }}</label>
+            {{ form.contestada_at }}
+            {% if form.contestada_at.help_text %}
+              <div class="form-text">{{ form.contestada_at.help_text }}</div>
+            {% endif %}
+            {% for error in form.contestada_at.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.visita }}
+              <label class="form-check-label" for="{{ form.visita.id_for_label }}">
+                {{ form.visita.label }}
+              </label>
+            </div>
+            {% for error in form.visita.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.visita_at.id_for_label }}">{{ form.visita_at.label }}</label>
+            {{ form.visita_at }}
+            {% if form.visita_at.help_text %}
+              <div class="form-text">{{ form.visita_at.help_text }}</div>
+            {% endif %}
+            {% for error in form.visita_at.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-12">
+            <h6 class="text-muted border-bottom pb-2 mt-4">Integraciones</h6>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.seatable }}
+              <label class="form-check-label" for="{{ form.seatable.id_for_label }}">
+                {{ form.seatable.label }}
+              </label>
+            </div>
+            {% for error in form.seatable.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.seatable_at.id_for_label }}">{{ form.seatable_at.label }}</label>
+            {{ form.seatable_at }}
+            {% if form.seatable_at.help_text %}
+              <div class="form-text">{{ form.seatable_at.help_text }}</div>
+            {% endif %}
+            {% for error in form.seatable_at.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.inmovilla }}
+              <label class="form-check-label" for="{{ form.inmovilla.id_for_label }}">
+                {{ form.inmovilla.label }}
+              </label>
+            </div>
+            {% for error in form.inmovilla.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.inmovilla_at.id_for_label }}">{{ form.inmovilla_at.label }}</label>
+            {{ form.inmovilla_at }}
+            {% if form.inmovilla_at.help_text %}
+              <div class="form-text">{{ form.inmovilla_at.help_text }}</div>
+            {% endif %}
+            {% for error in form.inmovilla_at.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="col-12">
+            <h6 class="text-muted border-bottom pb-2 mt-4">Notas</h6>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="{{ form.notas.id_for_label }}">{{ form.notas.label }}</label>
+            {{ form.notas }}
+            {% if form.notas.help_text %}
+              <div class="form-text">{{ form.notas.help_text }}</div>
+            {% endif %}
+            {% for error in form.notas.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">
+          Guardar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

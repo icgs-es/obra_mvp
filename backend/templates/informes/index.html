@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Informes · Intasa{% endblock %}
+
+{% block content %}
+<style>
+  .informes-page {
+    padding: 28px 32px;
+  }
+
+  .informes-hero,
+  .informes-card {
+    background: #fff;
+    border: 1px solid #d8dee4;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  }
+
+  .informes-hero {
+    padding: 22px 24px;
+    margin-bottom: 22px;
+  }
+
+  .informes-hero h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .informes-hero p {
+    margin: 6px 0 0;
+    color: #64748b;
+  }
+
+  .informes-section-title {
+    margin: 24px 0 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .informes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .informes-card {
+    padding: 18px;
+    min-height: 190px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .informes-card-top {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .informes-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eff6ff;
+    color: #1d4ed8;
+    flex: 0 0 auto;
+    font-size: 1.25rem;
+  }
+
+  .informes-card h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .informes-card p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: .9rem;
+    line-height: 1.35;
+  }
+
+  .informes-status {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: .75rem;
+    font-weight: 700;
+    background: #eef2ff;
+    color: #3730a3;
+    margin-top: 10px;
+  }
+
+  .informes-status.proximo {
+    background: #f8fafc;
+    color: #64748b;
+  }
+
+  .informes-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 1100px) {
+    .informes-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .informes-page {
+      padding: 18px;
+    }
+
+    .informes-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="informes-page">
+  <div class="informes-hero">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+      <div>
+        <h1>Centro de Informes</h1>
+        <p>Informes operativos separados de las pantallas de trabajo diario.</p>
+      </div>
+      <a href="/app/" class="btn btn-outline-secondary btn-sm">Volver al inicio</a>
+    </div>
+  </div>
+
+  {% for grupo in informes %}
+    <div class="informes-section-title">{{ grupo.grupo }}</div>
+    <div class="informes-grid">
+      {% for informe in grupo.items %}
+        <div class="informes-card">
+          <div>
+            <div class="informes-card-top">
+              <div class="informes-icon">
+                <i class="bi {{ informe.icono }}"></i>
+              </div>
+              <div>
+                <h2>{{ informe.titulo }}</h2>
+                <p>{{ informe.descripcion }}</p>
+                <span class="informes-status {% if informe.estado == 'Próximo' %}proximo{% endif %}">
+                  {{ informe.estado }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="informes-actions">
+            {% if informe.url %}
+              <a href="{{ informe.url }}" class="btn btn-primary btn-sm">Abrir informe</a>
+            {% else %}
+              <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Próximamente</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+
+        {% if grupo.grupo == "Gestión" %}
+          {# GESTION_PENDIENTE_PAGO_CARD_V3 #}
+          <div class="informes-card">
+            <div>
+              <div class="informes-card-top">
+                <div class="informes-icon">
+                  <i class="bi bi-cash-stack"></i>
+                </div>
+
+                <div>
+                  <h2>Pendiente de pago</h2>
+
+                  <p>
+                    Facturas pendientes y albaranes sin factura,
+                    con rango de fechas configurable.
+                  </p>
+
+                  <span class="informes-status">
+                    Disponible
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="informes-actions">
+              <a href="/app/gestion/pagos/pendientes/"
+                 class="btn btn-primary btn-sm">
+                Abrir informe
+              </a>
+            </div>
+          </div>
+        {% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

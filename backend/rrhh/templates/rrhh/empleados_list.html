@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}RRHH · Empleados{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="h3 mb-1">RRHH · Empleados</h1>
+      <p class="text-muted mb-0">Base general de personal por empresa y grupo de trabajo.</p>
+    </div>
+    <div class="text-end d-flex flex-column gap-2 align-items-end">
+      <div class="badge bg-primary fs-6">{{ total_empleados }} empleados</div>
+      <a href="{% url 'rrhh:empleado_create' %}" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-lg"></i> Nuevo empleado
+      </a>
+    </div>
+  </div>
+
+  <form method="get" class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Buscar</label>
+          <input type="text" name="q" value="{{ filtros.q }}" class="form-control" placeholder="Nombre">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Empresa</label>
+          <select name="team" class="form-select">
+            <option value="">Todas</option>
+            {% for team in teams %}
+              <option value="{{ team.id }}" {% if filtros.team == team.id|stringformat:"s" %}selected{% endif %}>{{ team.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Área</label>
+          <select name="area" class="form-select">
+            <option value="">Todas</option>
+            {% for value, label in area_choices %}
+              <option value="{{ value }}" {% if filtros.area == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Situación</label>
+          <select name="situacion" class="form-select">
+            <option value="">Todas</option>
+            {% for value, label in situacion_choices %}
+              <option value="{{ value }}" {% if filtros.situacion == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Grupo</label>
+          <select name="grupo" class="form-select">
+            <option value="">Todos</option>
+            {% for grupo in grupos %}
+              <option value="{{ grupo.id }}" {% if filtros.grupo == grupo.id|stringformat:"s" %}selected{% endif %}>
+                {{ grupo.team.name }} · {{ grupo.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" type="submit">Filtrar</button>
+          <a href="{% url 'rrhh:empleados_list' %}" class="btn btn-outline-secondary">Limpiar</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Empresa</th>
+            <th>Área</th>
+            <th>Grupo</th>
+            <th>Puesto</th>
+            <th>Situación</th>
+            <th>Usuario</th>
+            <th>Origen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for empleado in empleados %}
+            <tr>
+              <td>
+                <a href="{% url 'rrhh:empleado_detail' empleado.pk %}" class="text-decoration-none">
+                  <strong>{{ empleado.nombre_completo }}</strong>
+                </a>
+                {% if empleado.empresa_empleadora %}
+                  <div class="small text-muted">{{ empleado.empresa_empleadora }}</div>
+                {% endif %}
+              </td>
+              <td>{{ empleado.team.name }}</td>
+              <td>{{ empleado.get_area_principal_display }}</td>
+              <td>
+                {% for grupo in empleado.grupos_trabajo.all %}
+                  <span class="badge bg-light text-dark border">{{ grupo.nombre }}</span>
+                {% empty %}
+                  <span class="text-muted">—</span>
+                {% endfor %}
+              </td>
+              <td>{{ empleado.puesto|default:"—" }}</td>
+              <td>
+                {% if empleado.situacion == "ACTIVO" %}
+                  <span class="badge bg-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ empleado.get_situacion_display }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if empleado.user %}
+                  {{ empleado.user }}
+                {% else %}
+                  <span class="text-muted">Sin usuario</span>
+                {% endif %}
+              </td>
+              <td><span class="small text-muted">{{ empleado.origen|default:"manual" }}</span></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">No hay empleados con estos filtros.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

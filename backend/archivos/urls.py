@@ -1,10 +1,55 @@
 from django.urls import path
 from . import views
+from . import cloud_views
+from . import cloud_actions
+from . import media_views
+from . import cloud_folder_upload_views
 
 app_name = "archivos"
 
 urlpatterns = [
-    path("", views.explorador_raiz, name="explorador_raiz"),
+    path(
+        "archivo/<int:file_id>/media/",
+        media_views.media_stream,
+        name="media_stream",
+    ),
+    path("", cloud_views.cloud_explorer, name="explorador_raiz"),
+    path("cloud/abrir/", cloud_views.cloud_file_open, name="cloud_file_open"),
+    path(
+        "cloud/carpeta/nueva/",
+        cloud_views.cloud_folder_create,
+        name="cloud_folder_create",
+    ),
+    path(
+        "cloud/subir/",
+        cloud_views.cloud_upload_files,
+        name="cloud_upload_files",
+    ),
+    path(
+        "cloud/folder-upload/preflight/",
+        cloud_folder_upload_views.cloud_folder_upload_preflight,
+        name="cloud_folder_upload_preflight",
+    ),
+    path(
+        "cloud/folder-upload/execute/",
+        cloud_folder_upload_views.cloud_folder_upload_execute,
+        name="cloud_folder_upload_execute",
+    ),
+    path(
+        "cloud/renombrar/",
+        cloud_actions.cloud_item_rename,
+        name="cloud_item_rename",
+    ),
+    path(
+        "cloud/mover/",
+        cloud_actions.cloud_item_move,
+        name="cloud_item_move",
+    ),
+    path(
+        "cloud/eliminar/",
+        cloud_actions.cloud_item_delete,
+        name="cloud_item_delete",
+    ),
     path("carpeta/<int:pk>/", views.explorador_carpeta, name="explorador_carpeta"),
     path("carpeta/<int:pk>/subir/", views.subir_archivo, name="subir_archivo"),
     
@@ -29,6 +74,11 @@ urlpatterns = [
     path("carpeta/<int:pk>/subir-carpeta/", views.subir_carpeta, name="subir_carpeta"),
     path("carpeta/<int:pk>/eliminar-masivo/", views.eliminar_archivos_masivo, name="eliminar_archivos_masivo"),
     
-    path("archivo/<int:pk>/descargar/", views.archivo_descargar, name="archivo_descargar"),
+    path(
+        "archivo/<int:file_id>/editar-online/",
+        views.archivo_editar_online,
+        name="archivo_editar_online",
+    ),
+    path("archivo/<int:file_id>/descargar/", views.archivo_descargar, name="archivo_descargar"),
 
 ]

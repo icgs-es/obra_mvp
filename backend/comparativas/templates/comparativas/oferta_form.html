@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva versión de oferta{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width: 820px;">
+
+  <h1 class="h4 mb-1">Nueva versión de oferta</h1>
+
+  <div class="text-muted mb-3">
+    {{ ofertante.nombre }} · {{ comparativa.titulo }}
+  </div>
+
+  <form method="post" class="card">
+    {% csrf_token %}
+
+    <div class="card-body">
+      <div class="row g-3">
+        {% for field in form %}
+          <div class="{% if field.name == 'observaciones' %}col-12{% else %}col-md-6{% endif %}">
+            <label class="form-label">
+              {{ field.label }}
+            </label>
+            {{ field }}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{% url 'comparativas:detail' comparativa.uuid %}"
+         class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+
+      <button class="btn btn-primary">
+        Crear versión
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

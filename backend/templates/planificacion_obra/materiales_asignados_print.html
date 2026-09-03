@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Materiales asignados a obra · {{ obra.codigo }}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #17212b; font-family: Arial, sans-serif; font-size: 8pt; }
+    h1 { margin: 0 0 2mm; font-size: 16pt; }
+    .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2mm 5mm; margin: 0 0 4mm; }
+    .meta-item { border-bottom: .2mm solid #cfd6dc; padding-bottom: 1mm; }
+    .label { color: #5b6570; font-size: 7pt; text-transform: uppercase; }
+    .filters { margin: 0 0 3mm; color: #3e4852; }
+    table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    th, td { border-bottom: .2mm solid #d9dee3; padding: 1.2mm 1mm; text-align: left; vertical-align: top; }
+    th { border-top: .3mm solid #8b949e; border-bottom: .4mm solid #59636d; font-size: 7pt; white-space: nowrap; }
+    .c-date { width: 8%; } .c-code { width: 6%; } .c-article { width: 20%; }
+    .c-qty { width: 7%; } .c-unit { width: 5%; } .c-price { width: 7%; }
+    .c-total { width: 8%; } .c-origin { width: 8%; } .c-provider { width: 12%; }
+    .c-destination { width: 19%; }
+    .number { text-align: right; white-space: nowrap; }
+    .article, .destination, .provider { overflow-wrap: anywhere; word-break: normal; }
+    .origin { white-space: normal; }
+    .document { color: #4f5963; font-size: 6.5pt; }
+    a { color: inherit; text-decoration: none; }
+    a[href]::after { content: none !important; }
+    .no-print { margin-bottom: 4mm; }
+    .no-print button { min-height: 36px; padding: 0 5mm; }
+    .empty { padding: 8mm; text-align: center; color: #66717c; }
+    @media print { .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="no-print"><button type="button" onclick="window.print()">Imprimir informe</button></div>
+  <header>
+    <h1>Materiales asignados a obra</h1>
+    <div class="meta">
+      <div class="meta-item"><div class="label">Obra</div>{{ obra.codigo }} · {{ obra.nombre }}</div>
+      <div class="meta-item"><div class="label">Empresa / Team</div>{{ obra.team.name }}</div>
+      <div class="meta-item"><div class="label">Periodo</div>{{ filters.desde|date:'d/m/Y'|default:'Inicio' }} – {{ filters.hasta|date:'d/m/Y'|default:'Actualidad' }}</div>
+      <div class="meta-item"><div class="label">Generado</div>{{ generated_at|date:'d/m/Y H:i' }} · {{ generated_by }}</div>
+      <div class="meta-item"><div class="label">Asignaciones reales</div>{{ report.totals.assignments }}</div>
+      <div class="meta-item"><div class="label">Artículos asignados</div>{{ report.totals.articles }}</div>
+      {% if can_view_amounts %}<div class="meta-item"><div class="label">Total neto asignado</div>{{ report.totals.net_total_display }}</div>{% endif %}
+      <div class="meta-item"><div class="label">Sin valoración</div>{{ report.totals.unvalued }}</div>
+    </div>
+    <div class="filters">
+      Filtros: artículo {{ filters.recurso|default:'Todos' }} · proveedor {{ filters.proveedor|default:'Todos' }} · documento {{ filters.documento|default:'TODOS' }} · fase {{ filters.fase|default:'Todas' }} · vivienda {{ filters.vivienda|default:'Todas' }} · planta {{ filters.planta|default:'Todas' }} · capítulo {{ filters.capitulo|default:'Todos' }} · partida {{ filters.partida|default:'Todas' }} · valoración {{ filters.valoracion|default:'TODOS' }}
+    </div>
+  </header>
+  <table id="materials-print-table">
+    <thead><tr>
+      <th class="c-date">Fecha</th><th class="c-code">Código</th><th class="c-article">Artículo</th>
+      <th class="c-qty number">Cant.</th><th class="c-unit">Ud.</th>
+      {% if can_view_amounts %}<th class="c-price number">Precio</th><th class="c-total number">Total</th>{% endif %}
+      <th class="c-origin">Origen</th><th class="c-provider">Proveedor</th><th class="c-destination">Destino</th>
+    </tr></thead>
+    <tbody>
+      {% for x in rows %}<tr class="materials-print-row" data-assignment-id="{{ x.id }}">
+        <td>{{ x.date|date:'d/m/Y'|default:'—' }}</td>
+        <td>{{ x.code }}</td>
+        <td class="article">{{ x.article }}</td>
+        <td class="number">{{ x.quantity_display }}</td>
+        <td>{{ x.unit }}</td>
+        {% if can_view_amounts %}<td class="number">{{ x.price_display }}</td><td class="number">{{ x.net_total_display }}</td>{% endif %}
+        <td class="origin">{{ x.origin|title }}{% if x.albaran or x.factura %}<div class="document">{% if x.albaran %}{{ x.albaran.cod_albaran }}{% endif %}{% if x.albaran and x.factura %} · {% endif %}{% if x.factura %}{{ x.factura.cod_factura }}{% endif %}</div>{% endif %}</td>
+        <td class="provider">{{ x.provider|default:'—' }}</td>
+        <td class="destination">{{ x.destination }}</td>
+      </tr>{% empty %}<tr><td class="empty" colspan="10">No hay asignaciones reales para los filtros seleccionados.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

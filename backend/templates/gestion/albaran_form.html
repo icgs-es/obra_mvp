@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ title }}</h1>
+
+      <div class="text-muted small">
+        {% if selected_team %}
+          Empresa seleccionada:
+          <strong>{{ selected_team.name }}</strong>
+        {% elif albaran and team %}
+          Empresa seleccionada:
+          <strong>{{ team.name }}</strong>
+        {% else %}
+          Selecciona la empresa a la que pertenece el albarán.
+        {% endif %}
+      </div>
+    </div>
+
+    <a
+      href="{{ next_url|default:'/app/gestion/albaranes/' }}"
+      class="btn btn-outline-secondary btn-sm">
+      Volver
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form
+    method="post"
+    enctype="multipart/form-data"
+    class="card shadow-sm border-0">
+
+    <input
+      type="hidden"
+      name="next"
+      value="{{ next_url|default:'/app/gestion/albaranes/' }}">
+
+    {% csrf_token %}
+
+    <div class="card-body">
+      <div class="alert alert-info py-2 small">
+        El código interno del albarán se generará automáticamente
+        con formato YYAC00000, tomando el siguiente número
+        consecutivo real.
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small">
+          {{ form.non_field_errors|striptags }}
+        </div>
+      {% endif %}
+
+      <div class="row g-3">
+        {% if team_scope %}
+          <div class="col-md-6">
+            <label
+              class="form-label small text-muted"
+              for="id_team_id">
+              Empresa
+            </label>
+
+            <select
+              name="team_id"
+              id="id_team_id"
+              class="form-select form-select-sm"
+              required
+              data-reload-on-change="{% if albaran %}0{% else %}1{% endif %}">
+
+              {% if not albaran %}
+                <option
+                  value=""
+                  {% if not selected_team %}selected{% endif %}>
+                  -------- Selecciona empresa --------
+                </option>
+              {% endif %}
+
+              {% for t in team_scope %}
+                <option
+                  value="{{ t.id }}"
+                  {% if selected_team and t.id == selected_team.id %}selected{% endif %}>
+                  {{ t.name }}
+                </option>
+              {% endfor %}
+            </select>
+
+            {% if team_error %}
+              <div class="text-danger small mt-1">
+                {{ team_error }}
+              </div>
+            {% endif %}
+
+            <div class="form-text small">
+              El albarán, sus adjuntos y su actividad quedarán
+              asociados a esta empresa. El proveedor se selecciona
+              desde el catálogo global compartido y puede estar
+              almacenado históricamente bajo otra empresa sin cambiar
+              la empresa propietaria del albarán.
+            </div>
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% if field.field.widget.input_type == "checkbox" %}
+            <div class="col-md-3">
+              <div class="form-check mt-4">
+                {{ field }}
+
+                <label
+                  class="form-check-label"
+                  for="{{ field.id_for_label }}">
+                  {{ field.label }}
+                </label>
+              </div>
+
+              {% if field.errors %}
+                <div class="text-danger small">
+                  {{ field.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="col-md-6">
+              <label
+                class="form-label small text-muted"
+                for="{{ field.id_for_label }}">
+                {{ field.label }}
+              </label>
+
+              {{ field }}
+
+              {% if field.help_text %}
+                <div class="form-text small">
+                  {{ field.help_text }}
+                </div>
+              {% endif %}
+
+              {% if field.errors %}
+                <div class="text-danger small">
+                  {{ field.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        {% if not albaran %}
+          <div class="col-md-6">
+            <label
+              class="form-label small text-muted"
+              for="id_pdf_adjunto">
+              PDF del albarán
+            </label>
+
+            <input
+              type="file"
+              id="id_pdf_adjunto"
+              name="pdf_adjunto"
+              accept="application/pdf,.pdf"
+              class="form-control form-control-sm">
+
+            <div class="form-text small">
+              Opcional. Puedes adjuntar el PDF directamente
+              al crear el albarán.
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-end gap-2">
+      <a
+        href="{{ next_url|default:'/app/gestion/albaranes/' }}"
+        class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+
+      <button class="btn btn-primary">
+        {{ button_label }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const teamSelect = document.getElementById("id_team_id");
+
+    if (
+      teamSelect
+      && teamSelect.dataset.reloadOnChange === "1"
+    ) {
+      teamSelect.addEventListener("change", function () {
+        const url = new URL(window.location.href);
+
+        if (teamSelect.value) {
+          url.searchParams.set("team_id", teamSelect.value);
+        } else {
+          url.searchParams.delete("team_id");
+        }
+
+        url.hash = "";
+        window.location.assign(url.toString());
+      });
+    }
+
+    const fechaAlbaran = document.getElementById(
+      "id_fecha_albaran"
+    );
+
+    const fechaEntrega = document.getElementById(
+      "id_fecha_entrega_mercaderia"
+    );
+
+    if (!fechaAlbaran || !fechaEntrega) {
+      return;
+    }
+
+    let cambioProgramatico = false;
+
+    let entregaEditadaPorUsuario = Boolean(
+      fechaEntrega.value
+      && fechaAlbaran.value
+      && fechaEntrega.value !== fechaAlbaran.value
+    );
+
+    function marcarEntregaEditada() {
+      if (!cambioProgramatico) {
+        entregaEditadaPorUsuario = true;
+      }
+    }
+
+    fechaEntrega.addEventListener(
+      "input",
+      marcarEntregaEditada
+    );
+
+    fechaEntrega.addEventListener(
+      "change",
+      marcarEntregaEditada
+    );
+
+    function sincronizarFechaEntrega() {
+      if (entregaEditadaPorUsuario) {
+        return;
+      }
+
+      cambioProgramatico = true;
+      fechaEntrega.value = fechaAlbaran.value;
+      cambioProgramatico = false;
+    }
+
+    fechaAlbaran.addEventListener(
+      "input",
+      sincronizarFechaEntrega
+    );
+
+    fechaAlbaran.addEventListener(
+      "change",
+      sincronizarFechaEntrega
+    );
+  });
+</script>
+{% endblock %}

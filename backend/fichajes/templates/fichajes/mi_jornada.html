@@ -276,18 +276,28 @@
     <div class="col-12 col-md-6 col-xl-3">
       <div class="fj-card shadow-sm h-100">
         <h2 class="h6 mb-2">
-          <i class="bi bi-envelope-open me-1"></i> Correo
+          <i class="bi bi-envelope-open me-1"></i>
+          Correo
         </h2>
+
         <p class="small text-muted mb-3">
-          Enlace rápido al correo corporativo (configurable).
+          Tu correo corporativo dentro de INTASA Platform.
         </p>
+
         <div class="d-grid gap-2">
-          <a href="https://mail.ionos.es/" target="_blank" class="btn btn-outline-dark btn-sm">
-            Abrir correo
-          </a>
+          {% if perms.correo.use_correo %}
+            <a href="{% url 'correo:inicio' %}" class="btn btn-outline-dark btn-sm">
+              Abrir mi correo
+            </a>
+          {% else %}
+            <button type="button" class="btn btn-outline-secondary btn-sm" disabled>
+              No habilitado
+            </button>
+          {% endif %}
         </div>
       </div>
     </div>
+
   </div>
 </div>  {# fin container #}
 

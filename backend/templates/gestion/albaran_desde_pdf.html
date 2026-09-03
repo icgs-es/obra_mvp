@@ -1,0 +1,816 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Crear albarán desde PDF</h1>
+      <div class="text-muted small">Alta asistida con OCR y revisión humana. No se crea nada hasta confirmar.</div>
+    </div>
+    <a href="{{ next_url|default:'/app/gestion/albaranes/' }}" class="btn btn-outline-secondary btn-sm">Volver a albaranes</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if errors_review %}
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        {% for err in errors_review %}<li>{{ err }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        <input type="hidden" name="next" value="{{ next_url|default:'/app/gestion/albaranes/' }}">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="extract">
+        <div class="col-md-8">
+          <label class="form-label">PDF del albarán</label>
+
+        {# OCR_ALBARAN_PROVEEDOR_PLANTILLA_UI_V1 #}
+        <div class="row g-2 mb-3">
+          
+            
+            {# OCR_ALBARAN_EMPRESA_SELECTOR_V1 #}
+            <div class="col-md-3">
+              <label class="form-label">Empresa</label>
+              <select name="empresa_id" id="id_ocr_empresa_id" class="form-select" required>
+                {% for e in empresas %}
+                  <option value="{{ e.id }}"
+                          {% if selected_empresa_id|stringformat:"s" == e.id|stringformat:"s" %}selected{% endif %}>
+                    {{ e.nombre_empresa|default:e.team.name }}
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Empresa donde se creará el albarán.</div>
+            </div>
+
+            {# OCR_ALBARAN_AMBITO_ANTES_PROVEEDOR_V1 #}
+            <div class="col-md-3">
+              <label class="form-label">Ámbito</label>
+              <select name="ambito_gestion" id="id_ocr_ambito_gestion" class="form-select">
+                <option value="OBRA" {% if selected_ambito_gestion|default:"OBRA" == "OBRA" %}selected{% endif %}>Obra</option>
+                <option value="ADMINISTRACION" {% if selected_ambito_gestion == "ADMINISTRACION" %}selected{% endif %}>Administración</option>
+                <option value="COMERCIAL" {% if selected_ambito_gestion == "COMERCIAL" %}selected{% endif %}>Comercial</option>
+                <option value="GERENCIA" {% if selected_ambito_gestion == "GERENCIA" %}selected{% endif %}>Gerencia</option>
+                <option value="INFORMATICA" {% if selected_ambito_gestion == "INFORMATICA" %}selected{% endif %}>Informática</option>
+                <option value="VEHICULOS" {% if selected_ambito_gestion == "VEHICULOS" %}selected{% endif %}>Vehículos</option>
+                <option value="ALQUILERES" {% if selected_ambito_gestion == "ALQUILERES" %}selected{% endif %}>Alquileres</option>
+                <option value="SERVICIOS_GENERALES" {% if selected_ambito_gestion == "SERVICIOS_GENERALES" %}selected{% endif %}>Servicios generales</option>
+                <option value="OTROS" {% if selected_ambito_gestion == "OTROS" %}selected{% endif %}>Otros</option>
+              </select>
+              <div class="form-text">Filtra proveedores por ámbito.</div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Proveedor a leer</label>
+              <select name="proveedor_id" id="id_ocr_proveedor_id" class="form-select" required>
+                <option value="">Selecciona proveedor...</option>
+                {% for p in proveedores %}
+                  <option value="{{ p.id }}"
+                          data-ambito="{{ p.ambito_gestion|default:'OBRA' }}"
+                          data-team-id="{{ p.team_id }}"
+                          {% if selected_provider_id|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
+                    {{ p.nombre_comercial|default:p.nombre_fiscal }}{% if p.cif %} · {{ p.cif }}{% endif %}{% if p.team_id != selected_team_id %} · origen {{ p.team }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="form-text">El proveedor se decide antes del OCR. Si viene de legado, se copiará a la empresa seleccionada al usarlo.</div>
+            </div>
+
+          <div class="col-md-5">
+            <label class="form-label">Plantilla OCR</label>
+            <select name="plantilla_ocr_id" id="id_ocr_plantilla_id" class="form-select" required>
+              <option value="">Primero selecciona proveedor...</option>
+            </select>
+            <div class="form-text" id="id_ocr_plantilla_help">
+              Se cargarán las plantillas activas de albarán para ese proveedor.
+            </div>
+
+            {% if request.user.is_superuser %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-primary mt-2"
+                      id="id_ocr_crear_plantilla_btn"
+                      style="display:none;">
+                + Crear plantilla OCR para este proveedor
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="col-md-2 d-flex align-items-end">
+            <span class="badge text-bg-light border w-100 py-2" id="id_ocr_plantilla_estado">
+              Plantilla pendiente
+            </span>
+          </div>
+        </div>
+          <input type="file" name="archivo" accept="application/pdf,.pdf" class="form-control" required>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Leer PDF y revisar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if result or token %}
+    <div class="row g-3">
+      <div class="col-lg-5">
+        <div class="card">
+          <div class="card-header fw-semibold">Confirmar albarán</div>
+          <div class="card-body">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="_action" value="confirm">
+              <input type="hidden" name="token" value="{{ token }}">
+              <input type="hidden" name="empresa_id" value="{{ selected_empresa_id|default:'' }}">
+              <input type="hidden" name="proveedor" value="{{ selected_provider_id|default:'' }}">
+              <input type="hidden" name="plantilla_ocr_id" value="{{ selected_plantilla_ocr_id|default:'' }}">
+
+              <div class="mb-2">
+                <label class="form-label">Proveedor fijado antes del OCR</label>
+                {# OCR_ALBARAN_CONFIRM_PROVEEDOR_FIJADO_UI_V1 #}
+                <select name="proveedor_display" class="form-select form-select-sm" disabled>
+                  <option value="">Seleccionar proveedor...</option>
+                  {% for p in proveedores %}
+                    <option value="{{ p.id }}" {% if p.id == selected_provider_id %}selected{% endif %}>
+                      {{ p.nombre_comercial }} {% if p.cif %}· {{ p.cif }}{% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">Nº albarán proveedor</label>
+                <input type="text" name="num_albaran_proveedor" class="form-control form-control-sm" value="{{ initial.num_albaran_proveedor|default:'' }}" required>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">Fecha albarán</label>
+                <input type="date" name="fecha_albaran" class="form-control form-control-sm" value="{{ initial.fecha_albaran|default:'' }}">
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">Importe albarán</label>
+                <input type="text" name="importe_albaran" class="form-control form-control-sm" value="{{ initial.importe_albaran|default:'' }}">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Descripción / observaciones</label>
+                <textarea name="descripcion" rows="3" class="form-control form-control-sm">{{ initial.descripcion|default:'' }}</textarea>
+              </div>
+
+              {% if selected_plantilla_ocr %}
+                <div class="alert alert-info small">
+                  Plantilla OCR aplicada:
+                  <strong>{{ selected_plantilla_ocr.nombre }}</strong>
+                  · parser <code>{{ selected_plantilla_ocr.parser_key }}</code>.
+                  El proveedor no será cambiado por el OCR.
+                </div>
+              {% endif %}
+
+              <div class="alert alert-warning small">
+                Al confirmar se creará el albarán, se adjuntará el PDF y se guardará el OCR.
+              </div>
+
+              <button type="submit" class="btn btn-success w-100">Confirmar y crear albarán</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        {% if result %}
+          <div class="card mb-3">
+            <div class="card-header fw-semibold">Datos detectados</div>
+            <div class="card-body">
+              <table class="table table-sm">
+                <tr><th>Archivo</th><td>{{ result.archivo_original }}</td></tr>
+                <tr><th>Método</th><td>{{ result.text_result.method }} {% if result.text_result.ocr_used %}· OCR{% endif %}</td></tr>
+                <tr><th>Texto</th><td>{{ result.text_result.text_len }} caracteres</td></tr>
+                <tr><th>Confianza</th><td>{{ result.extraction.confidence }}</td></tr>
+                <tr><th>Número</th><td>{{ result.extraction.detected.numero_documento }}</td></tr>
+                <tr><th>Fecha</th><td>{{ result.extraction.detected.fecha }}</td></tr>
+                <tr><th>Total</th><td>{{ result.extraction.detected.total }}</td></tr>
+              </table>
+
+              <h6>Candidatos proveedor</h6>
+              <ul class="small">
+                {% for p in result.extraction.detected.proveedor_matches %}
+                  <li>#{{ p.id }} · {{ p.str }} {% if p.cif %}· {{ p.cif }}{% endif %}</li>
+                {% empty %}
+                  <li class="text-muted">Sin coincidencias.</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header fw-semibold">Texto extraído</div>
+            <div class="card-body">
+              <pre class="small bg-light p-2 border rounded" style="max-height:420px; overflow:auto;">{{ result.text_result.preview }}</pre>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .ocr-processing-box {
+    display: none;
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    border: 1px solid #f0c36d;
+    background: #fff3cd;
+    color: #6b4e00;
+    border-radius: 8px;
+    font-weight: 600;
+    animation: ocrBlink 1s linear infinite;
+  }
+
+  @keyframes ocrBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .45; }
+  }
+
+  .ocr-processing-box.show {
+    display: block;
+  }
+</style>
+
+
+<script>
+// OCR_TEMPLATE_SAFE_PROVIDER_DETECTION_V1
+function portalIntasaOcrTextOnly() {
+  const textareas = Array.from(document.querySelectorAll("textarea"));
+  const candidate = textareas.find(function (el) {
+    const value = el.value || el.textContent || "";
+    return value.includes("--- PAGE") || value.length > 200;
+  });
+
+  if (candidate) {
+    return candidate.value || candidate.textContent || "";
+  }
+
+  const blocks = Array.from(document.querySelectorAll("pre, code"));
+  const block = blocks.find(function (el) {
+    const value = el.innerText || "";
+    return value.includes("--- PAGE") || value.length > 200;
+  });
+
+  return block ? (block.innerText || "") : "";
+}
+
+function portalIntasaOcrLooksLikeJoma() {
+  const raw = portalIntasaOcrTextOnly();
+  const text = raw.toUpperCase();
+
+  if (text.includes("DIVELEC") || text.includes("DIVELEC SUMINISTROS")) {
+    return false;
+  }
+
+  return (
+    text.includes("JOMA, S.L") ||
+    text.includes("JOMA S.L") ||
+    text.includes("JOMA MATERIALES") ||
+    text.includes("EXCAVACIONES Y MAT") ||
+    text.includes("MAT. DE CONSTR. JOMA") ||
+    text.includes("CONSTR. JOMA")
+  );
+}
+</script>
+
+<script>
+(function () {
+  function getAction(form) {
+    const actionInput = form.querySelector('input[name="_action"]');
+    return actionInput ? actionInput.value : "";
+  }
+
+  function getMessage(action) {
+    if (action === "extract") {
+      return "Leyendo PDF con OCR... espera unos segundos.";
+    }
+    if (action === "confirm") {
+      return "Creando documento y guardando adjunto... no cierres esta ventana.";
+    }
+    return "Procesando... espera unos segundos.";
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("form").forEach(function (form) {
+      form.addEventListener("submit", function (event) {
+        if (form.dataset.ocrSubmitting === "1") {
+          return;
+        }
+
+        form.dataset.ocrSubmitting = "1";
+
+        const action = getAction(form);
+        const box = document.createElement("div");
+        box.className = "ocr-processing-box show";
+        box.textContent = getMessage(action);
+
+        form.insertBefore(box, form.firstChild);
+
+        form.querySelectorAll("button, input[type='submit']").forEach(function (btn) {
+          btn.disabled = true;
+          if (btn.tagName === "BUTTON") {
+            btn.dataset.originalText = btn.textContent;
+            btn.textContent = action === "extract" ? "Leyendo PDF..." : "Guardando...";
+          }
+        });
+      });
+    });
+  });
+})();
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // JOMA_ALBARAN_PROVIDER_SELECT_FIX_V1
+  const pageText = portalIntasaOcrTextOnly().toUpperCase();
+
+  const isJomaHeader = portalIntasaOcrLooksLikeJoma();
+
+  if (!isJomaHeader) {
+    return;
+  }
+
+  const selects = Array.from(document.querySelectorAll("select"));
+  const proveedorSelect = selects.find(function (select) {
+    const name = (select.getAttribute("name") || "").toLowerCase();
+    const id = (select.getAttribute("id") || "").toLowerCase();
+    return name.includes("proveedor") || id.includes("proveedor");
+  });
+
+  if (!proveedorSelect) {
+    return;
+  }
+
+  const options = Array.from(proveedorSelect.options || []);
+
+  const jomaOption = options.find(function (opt) {
+    const label = (opt.textContent || "").toUpperCase();
+    return label.includes("JOMA");
+  });
+
+  if (!jomaOption) {
+    return;
+  }
+
+  const previousOption = proveedorSelect.options[proveedorSelect.selectedIndex];
+  const previousLabel = previousOption ? (previousOption.textContent || "").trim() : "";
+
+  proveedorSelect.value = jomaOption.value;
+  jomaOption.selected = true;
+  proveedorSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+  let note = document.getElementById("joma-provider-fix-note");
+  if (!note) {
+    note = document.createElement("div");
+    note.id = "joma-provider-fix-note";
+    note.className = "alert alert-info mt-2";
+    note.innerHTML =
+      "Proveedor corregido automáticamente por cabecera JOMA. " +
+      "Anterior: <strong>" + previousLabel + "</strong>. " +
+      "Seleccionado: <strong>" + (jomaOption.textContent || "").trim() + "</strong>.";
+
+    proveedorSelect.closest(".card, form, .mb-3, div")?.appendChild(note);
+  }
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // JOMA_ALBARAN_NO_VALORADO_FIX_V1
+  const pageTextRaw = portalIntasaOcrTextOnly();
+  const pageText = pageTextRaw.toUpperCase();
+
+  const isJoma = portalIntasaOcrLooksLikeJoma();
+
+  if (!isJoma) return;
+
+  function findInputByNames(names) {
+    const inputs = Array.from(document.querySelectorAll("input, textarea"));
+    return inputs.find(function (input) {
+      const name = (input.getAttribute("name") || "").toLowerCase();
+      const id = (input.getAttribute("id") || "").toLowerCase();
+      return names.some(function (needle) {
+        return name.includes(needle) || id.includes(needle);
+      });
+    });
+  }
+
+  const numeroInput = findInputByNames([
+    "num_albaran",
+    "numero_albaran",
+    "albaran_proveedor",
+    "num_albaran_proveedor"
+  ]);
+
+  const importeInput = findInputByNames([
+    "importe_albaran",
+    "total",
+    "importe"
+  ]);
+
+  // En JOMA, el número aparece como 202606080 junto a la fecha.
+  // Evitamos capturar CIF/NIF u otros códigos.
+  let numeroDetectado = "";
+  const candidates = pageTextRaw.match(/\b20\d{7}\b/g) || [];
+  if (candidates.length) {
+    numeroDetectado = candidates[0];
+  }
+
+  if (numeroInput && numeroDetectado && !String(numeroInput.value || "").trim()) {
+    numeroInput.value = numeroDetectado;
+    numeroInput.dispatchEvent(new Event("input", { bubbles: true }));
+    numeroInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  // JOMA no valorado: columna Uds. con cantidades, columnas Precio/Importe vacías.
+  // El total mostrado por OCR es una cantidad, no un importe.
+  if (importeInput) {
+    importeInput.value = "0.00";
+    importeInput.dispatchEvent(new Event("input", { bubbles: true }));
+    importeInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  let note = document.getElementById("joma-no-valorado-fix-note");
+  if (!note && (numeroInput || importeInput)) {
+    note = document.createElement("div");
+    note.id = "joma-no-valorado-fix-note";
+    note.className = "alert alert-warning mt-2";
+    note.innerHTML =
+      "<strong>JOMA no valorado:</strong> se ha detectado Nº albarán " +
+      "<strong>" + (numeroDetectado || "pendiente") + "</strong> y se fuerza importe a " +
+      "<strong>0,00 €</strong> porque las columnas Precio e Importe están vacías. " +
+      "Las cifras 3,00 / 3,00 / 1,00 corresponden a unidades.";
+
+    const target = importeInput || numeroInput;
+    target.closest(".card, form, .mb-3, div")?.appendChild(note);
+  }
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // OCR_ALBARAN_PROVEEDOR_PLANTILLA_JS_V1
+
+  const proveedor = document.getElementById("id_ocr_proveedor_id");
+  const plantilla = document.getElementById("id_ocr_plantilla_id");
+  const help = document.getElementById("id_ocr_plantilla_help");
+  const estado = document.getElementById("id_ocr_plantilla_estado");
+  // OCR_ALBARAN_TOP_SELECTION_PERSIST_V1
+  const selectedPlantillaId = "{{ selected_plantilla_ocr_id|default:'' }}";
+
+  if (!proveedor || !plantilla) {
+    return;
+  }
+
+  const endpoint = "/app/gestion/ocr/plantillas-proveedor/?tipo_documento=ALBARAN&proveedor_id=";
+
+  function setEstado(text, cls) {
+    if (!estado) return;
+    estado.className = "badge w-100 py-2 " + (cls || "text-bg-light border");
+    estado.textContent = text;
+  }
+
+  function resetPlantillas(message) {
+    plantilla.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = message || "Selecciona proveedor...";
+    plantilla.appendChild(opt);
+    if (help) help.textContent = "Se cargarán las plantillas activas de albarán para ese proveedor.";
+    setEstado("Plantilla pendiente", "text-bg-light border");
+  }
+
+  async function cargarPlantillas() {
+    const proveedorId = proveedor.value || "";
+    resetPlantillas("Cargando plantillas...");
+
+    if (!proveedorId) {
+      resetPlantillas("Primero selecciona proveedor...");
+      return;
+    }
+
+    try {
+      const resp = await fetch(endpoint + encodeURIComponent(proveedorId), {
+        headers: {"X-Requested-With": "XMLHttpRequest"}
+      });
+
+      const data = await resp.json();
+
+      plantilla.innerHTML = "";
+
+      if (!data.ok) {
+        resetPlantillas("Error cargando plantillas");
+        if (help) help.textContent = data.message || "No se pudieron cargar plantillas.";
+        setEstado("Error", "text-bg-danger");
+        return;
+      }
+
+      if (!data.plantillas || data.plantillas.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Sin plantilla OCR activa";
+        plantilla.appendChild(opt);
+
+        if (help) {
+          help.textContent =
+            "Este proveedor no tiene plantilla de albarán. Se deberá usar OCR inicial solo para crear plantilla, no para importar directamente.";
+        }
+
+        setEstado("Sin plantilla", "text-bg-warning");
+        return;
+      }
+
+      const first = document.createElement("option");
+      first.value = "";
+      first.textContent = "Selecciona plantilla...";
+      plantilla.appendChild(first);
+
+      data.plantillas.forEach(function (p) {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent =
+          p.nombre +
+          (p.variante ? " · " + p.variante : "") +
+          (p.valorado_default ? " · valorado" : " · no valorado");
+        opt.dataset.parserKey = p.parser_key || "";
+        opt.dataset.valorado = p.valorado_default ? "1" : "0";
+        plantilla.appendChild(opt);
+      });
+
+      const selectedExists = selectedPlantillaId && data.plantillas.some(function (p) {
+        return String(p.id) === String(selectedPlantillaId);
+      });
+
+      if (selectedExists) {
+        plantilla.value = String(selectedPlantillaId);
+        setEstado("Plantilla seleccionada", "text-bg-success");
+      } else if (data.plantillas.length === 1) {
+        plantilla.value = String(data.plantillas[0].id);
+        setEstado("Plantilla seleccionada", "text-bg-success");
+      } else {
+        setEstado(data.plantillas.length + " plantillas", "text-bg-primary");
+      }
+
+      if (help) {
+        help.textContent = "Plantillas cargadas para " + (data.proveedor ? data.proveedor.nombre : "proveedor") + ".";
+      }
+
+    } catch (err) {
+      resetPlantillas("Error cargando plantillas");
+      if (help) help.textContent = "Error consultando plantillas OCR.";
+      setEstado("Error", "text-bg-danger");
+    }
+  }
+
+  proveedor.addEventListener("change", cargarPlantillas);
+
+  plantilla.addEventListener("change", function () {
+    if (plantilla.value) {
+      setEstado("Plantilla seleccionada", "text-bg-success");
+    }
+  });
+
+  const form = proveedor.closest("form");
+  if (form) {
+    form.addEventListener("submit", function (ev) {
+      const fileInput = form.querySelector('input[type="file"]');
+
+      if (fileInput && fileInput.value) {
+        if (!proveedor.value) {
+          ev.preventDefault();
+          alert("Selecciona proveedor antes de leer el PDF.");
+          proveedor.focus();
+          return;
+        }
+
+        if (!plantilla.value) {
+          ev.preventDefault();
+          alert("Selecciona una plantilla OCR antes de leer el PDF. Si el proveedor no tiene plantilla, primero hay que crearla.");
+          plantilla.focus();
+          return;
+        }
+      }
+    });
+  }
+
+  if (proveedor.value) {
+    cargarPlantillas();
+  }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // OCR_ALBARAN_CREAR_PLANTILLA_FAST_V1
+  const proveedor = document.getElementById("id_ocr_proveedor_id");
+  const plantilla = document.getElementById("id_ocr_plantilla_id");
+  const help = document.getElementById("id_ocr_plantilla_help");
+  const estado = document.getElementById("id_ocr_plantilla_estado");
+  const crearBtn = document.getElementById("id_ocr_crear_plantilla_btn");
+  const endpoint = "/app/gestion/ocr/plantillas/crear-rapida/";
+
+  if (!proveedor || !plantilla || !crearBtn) {
+    return;
+  }
+
+  function csrfToken() {
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input ? input.value : "";
+  }
+
+  function setEstado(text, cls) {
+    if (!estado) return;
+    estado.className = "badge w-100 py-2 " + (cls || "text-bg-light border");
+    estado.textContent = text;
+  }
+
+  function debeMostrarBoton() {
+    const txt = (plantilla.options[plantilla.selectedIndex]?.textContent || "").toLowerCase();
+    const sinPlantilla = txt.includes("sin plantilla");
+    crearBtn.style.display = sinPlantilla ? "inline-block" : "none";
+  }
+
+  proveedor.addEventListener("change", function () {
+    setTimeout(debeMostrarBoton, 700);
+  });
+
+  plantilla.addEventListener("change", debeMostrarBoton);
+  setTimeout(debeMostrarBoton, 900);
+
+  crearBtn.addEventListener("click", async function () {
+    const proveedorId = proveedor.value || "";
+
+    if (!proveedorId) {
+      alert("Selecciona proveedor antes de crear plantilla OCR.");
+      return;
+    }
+
+    if (!confirm("Crear plantilla OCR activa de ALBARÁN para este proveedor?")) {
+      return;
+    }
+
+    crearBtn.disabled = true;
+    crearBtn.textContent = "Creando plantilla...";
+
+    try {
+      const body = new URLSearchParams();
+      body.append("proveedor_id", proveedorId);
+      body.append("tipo_documento", "ALBARAN");
+      body.append("valorado_default", "1");
+
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken(),
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: body.toString()
+      });
+
+      const data = await resp.json();
+
+      if (!data.ok) {
+        alert(data.message || "No se pudo crear la plantilla OCR.");
+        return;
+      }
+
+      plantilla.innerHTML = "";
+
+      const opt = document.createElement("option");
+      opt.value = data.plantilla.id;
+      opt.textContent = data.plantilla.nombre + " · " + data.plantilla.parser_key;
+      opt.selected = true;
+      opt.dataset.parserKey = data.plantilla.parser_key || "";
+      opt.dataset.valorado = data.plantilla.valorado_default ? "1" : "0";
+
+      plantilla.appendChild(opt);
+
+      if (help) {
+        help.textContent = data.message || "Plantilla OCR creada.";
+      }
+
+      setEstado("Plantilla creada", "text-bg-success");
+      crearBtn.style.display = "none";
+    } catch (err) {
+      alert("Error creando plantilla OCR.");
+    } finally {
+      crearBtn.disabled = false;
+      crearBtn.textContent = "+ Crear plantilla OCR para este proveedor";
+    }
+  });
+});
+</script>
+
+
+<script>
+// OCR_ALBARAN_AMBITO_ANTES_PROVEEDOR_JS_V1
+document.addEventListener("DOMContentLoaded", function () {
+  const ambito = document.getElementById("id_ocr_ambito_gestion");
+  const proveedor = document.getElementById("id_ocr_proveedor_id");
+  if (!ambito || !proveedor) return;
+
+  function aplicarFiltroAmbito() {
+    const value = ambito.value || "OBRA";
+    Array.from(proveedor.options).forEach(function (opt) {
+      if (!opt.value) {
+        opt.hidden = false;
+        return;
+      }
+      const optAmbito = opt.dataset.ambito || "OBRA";
+      opt.hidden = optAmbito !== value;
+    });
+    const selected = proveedor.options[proveedor.selectedIndex];
+    if (selected && selected.hidden) {
+      proveedor.value = "";
+      proveedor.dispatchEvent(new Event("change"));
+    }
+  }
+
+  ambito.addEventListener("change", aplicarFiltroAmbito);
+  aplicarFiltroAmbito();
+});
+</script>
+
+
+
+<script>
+// OCR_ALBARAN_EMPRESA_RELOAD_JS_V1
+document.addEventListener("DOMContentLoaded", function () {
+  const empresa = document.getElementById("id_ocr_empresa_id");
+  const ambito = document.getElementById("id_ocr_ambito_gestion");
+
+  if (!empresa) return;
+
+  empresa.addEventListener("change", function () {
+    const url = new URL(window.location.href);
+    url.searchParams.set("empresa_id", empresa.value || "");
+    if (ambito) {
+      url.searchParams.set("ambito_gestion", ambito.value || "OBRA");
+    }
+    window.location.href = url.toString();
+  });
+});
+</script>
+
+
+<!-- OCR_ALBARAN_PRESERVAR_PROVEEDOR_V3 -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const selectedProviderId =
+    "{{ selected_provider_id|default:''|escapejs }}";
+
+  if (!selectedProviderId) return;
+
+  let attempts = 0;
+
+  function preserveProvider() {
+    attempts += 1;
+
+    document
+      .querySelectorAll(
+        'select[name="proveedor_id"], ' +
+        'select[name="proveedor"], ' +
+        'select[id*="proveedor"]'
+      )
+      .forEach(function (select) {
+        const option = Array.from(select.options).find(
+          function (item) {
+            return String(item.value) ===
+              String(selectedProviderId);
+          }
+        );
+
+        if (option) {
+          select.value = String(selectedProviderId);
+        }
+      });
+
+    if (attempts < 12) {
+      window.setTimeout(preserveProvider, 250);
+    }
+  }
+
+  preserveProvider();
+});
+</script>
+
+
+{% endblock %}

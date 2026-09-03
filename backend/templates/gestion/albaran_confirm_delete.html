@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+{# ALBARAN_DELETE_ANY_CLEAN_V2_INFO #}
+<div class="container-fluid py-3">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h1 class="h5 mb-3">Eliminar albarán</h1>
+
+      <p class="mb-2">
+        Vas a revisar la eliminación de
+        <strong>{{ albaran.cod_albaran }}</strong>.
+      </p>
+
+      <div class="small text-muted mb-3">
+        Nº proveedor:
+        <strong>{{ albaran.num_albaran_proveedor|default:"—" }}</strong>
+        · Proveedor:
+        <strong>{{ albaran.proveedor|default:"—" }}</strong>
+      </div>
+
+      <div class="alert alert-info">
+        Se puede eliminar cualquier albarán de la serie,
+        aunque no sea el último, siempre que esté completamente
+        limpio de relaciones con facturas, almacén y partidas de obra.
+        Las líneas limpias y los adjuntos se eliminarán automáticamente.
+        La numeración interna no retrocederá ni será reutilizada.
+      </div>
+
+      {% if bloqueos %}
+        <div class="alert alert-warning">
+          <div class="fw-semibold mb-2">
+            Este albarán no se puede eliminar.
+          </div>
+
+          <ul class="mb-0">
+            {% for bloqueo in bloqueos %}
+              <li>{{ bloqueo }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="alert alert-danger">
+          <div class="fw-semibold mb-2">
+            La eliminación será definitiva.
+          </div>
+
+          <div>
+            Líneas limpias que se eliminarán:
+            <strong>{{ numero_lineas|default:0 }}</strong>.
+          </div>
+
+          <div>
+            Adjuntos que se eliminarán:
+            <strong>{{ numero_adjuntos|default:0 }}</strong>.
+          </div>
+        </div>
+      {% endif %}
+
+      {% if lineas_revision %}
+        <div class="alert alert-danger">
+          <div class="fw-semibold mb-2">
+            Líneas con dependencias:
+          </div>
+
+          <ul class="mb-0">
+            {% for revision in lineas_revision %}
+              <li>
+                Línea {{ revision.line_number }}:
+                {% for bloqueo in revision.blockers %}
+                  {{ bloqueo.message }}{% if not forloop.last %}; {% endif %}
+                {% endfor %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="d-flex gap-2">
+        <a
+          href="{{ next_url|default:'/app/gestion/albaranes/' }}"
+          class="btn btn-outline-secondary"
+        >
+          Cancelar
+        </a>
+
+        {% if puede_eliminar %}
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+
+            <input
+              type="hidden"
+              name="next"
+              value="{{ next_url|default:'/app/gestion/albaranes/' }}"
+            >
+
+            <button
+              type="submit"
+              class="btn btn-danger"
+            >
+              Confirmar eliminación
+            </button>
+          </form>
+        {% else %}
+          <button
+            type="button"
+            class="btn btn-danger"
+            disabled
+          >
+            Eliminación bloqueada
+          </button>
+
+          <a
+            href="/app/gestion/albaranes/{{ albaran.id }}/editar/?next={{ next_url|urlencode }}"
+            class="btn btn-primary"
+          >
+            Editar albarán
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

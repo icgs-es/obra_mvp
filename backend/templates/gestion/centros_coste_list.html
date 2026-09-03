@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión · Centros de coste{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1">Centros de coste</h1>
+      <p class="text-muted mb-0">
+        Clasificación transversal de facturas y albaranes por empresa, ámbito, departamento u obra.
+      </p>
+    </div>
+    <a href="/app/gestion/" class="btn btn-outline-secondary btn-sm">
+      Volver a Gestión
+    </a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Centros</div>
+          <div class="h4 mb-0">{{ resumen.centros }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Facturas clasificadas</div>
+          <div class="h4 mb-0">{{ resumen.facturas }}</div>
+          <div class="small text-muted">{{ resumen.facturas_total|floatformat:2 }} €</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Albaranes clasificados</div>
+          <div class="h4 mb-0">{{ resumen.albaranes }}</div>
+          <div class="small text-muted">{{ resumen.albaranes_total|floatformat:2 }} €</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Uso operativo</div>
+          <div class="h6 mb-0">Compras / Administración</div>
+          <div class="small text-muted">Base para informes por centro.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" class="card card-body shadow-sm mb-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small">Tipo</label>
+        <select name="tipo" class="form-select form-select-sm">
+          {% for value,label in tipos %}
+            <option value="{{ value }}" {% if filtros.tipo == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label small">Buscar</label>
+        <input type="text" name="q" value="{{ filtros.q }}" class="form-control form-control-sm" placeholder="Código, nombre, obra, empresa...">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Activo</label>
+        <select name="activo" class="form-select form-select-sm">
+          <option value="" {% if filtros.activo == "" %}selected{% endif %}>Todos</option>
+          <option value="1" {% if filtros.activo == "1" %}selected{% endif %}>Activos</option>
+          <option value="0" {% if filtros.activo == "0" %}selected{% endif %}>Inactivos</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary btn-sm flex-fill">Filtrar</button>
+        <a href="/app/gestion/centros-coste/" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Empresa</th>
+            <th>Código</th>
+            <th>Centro de coste</th>
+            <th>Tipo</th>
+            <th>Obra vinculada</th>
+            <th class="text-end">Facturas</th>
+            <th class="text-end">Total facturas</th>
+            <th class="text-end">Albaranes</th>
+            <th class="text-end">Total albaranes</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for centro in centros %}
+            <tr>
+              <td>{{ centro.team }}</td>
+              <td><code>{{ centro.codigo }}</code></td>
+              <td>
+                <strong>{{ centro.nombre }}</strong>
+                {% if centro.observaciones %}
+                  <div class="small text-muted">{{ centro.observaciones|truncatechars:90 }}</div>
+                {% endif %}
+              </td>
+              <td><span class="badge bg-secondary">{{ centro.tipo }}</span></td>
+              <td>
+                {% if centro.obra_planificacion %}
+                  {{ centro.obra_planificacion.codigo }} · {{ centro.obra_planificacion.nombre }}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td class="text-end">{{ centro.facturas_count_ui }}</td>
+              <td class="text-end">{{ centro.facturas_total_ui|floatformat:2 }} €</td>
+              <td class="text-end">{{ centro.albaranes_count_ui }}</td>
+              <td class="text-end">{{ centro.albaranes_total_ui|floatformat:2 }} €</td>
+              <td>
+                {% if centro.activo %}
+                  <span class="badge bg-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">Inactivo</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" class="text-center text-muted py-4">No hay centros de coste con estos filtros.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

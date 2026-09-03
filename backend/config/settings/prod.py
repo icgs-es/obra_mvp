@@ -53,6 +53,10 @@ STATIC_URL = "/static/"
 MEDIA_URL  = "/media/"
 STATIC_ROOT = os.getenv("STATIC_ROOT", "/app/staticfiles")
 MEDIA_ROOT  = os.getenv("MEDIA_ROOT", "/app/media")
+INTASA_IA_PRIVATE_ROOT = os.getenv(
+    "INTASA_IA_PRIVATE_ROOT",
+    "/app/private_media/intasa_ia",
+)
 
 # WhiteNoise (sirve estáticos desde Django/Gunicorn si lo necesitas)
 if "django.middleware.security.SecurityMiddleware" not in MIDDLEWARE:
@@ -115,3 +119,15 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 60.0,
     }
 }
+
+
+# INTASA_PORTAL_DOMAIN_V1
+ALLOWED_HOSTS = list(dict.fromkeys([
+    *ALLOWED_HOSTS,
+    "portal.finaninvestgroup.com",
+]))
+
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
+    *CSRF_TRUSTED_ORIGINS,
+    "https://portal.finaninvestgroup.com",
+]))

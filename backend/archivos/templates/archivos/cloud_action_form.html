@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — INTASA Documents{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <h1 class="h5 mb-3">{{ title }}</h1>
+
+          <div class="mb-4">
+            <div>
+              Elemento:
+              <strong>{{ item.name }}</strong>
+            </div>
+
+            <div class="small text-muted text-break">
+              Ruta actual:
+              <strong>{{ current_path }}</strong>
+            </div>
+          </div>
+
+          {% if action == "rename" %}
+
+            <form method="post">
+              {% csrf_token %}
+
+              <input type="hidden"
+                     name="path"
+                     value="{{ current_path }}">
+
+              <input type="hidden"
+                     name="next"
+                     value="{{ cancel_url }}">
+
+              <div class="mb-4">
+                <label class="form-label"
+                       for="newName">
+                  Nuevo nombre
+                </label>
+
+                <input id="newName"
+                       type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{ item.name }}"
+                       maxlength="255"
+                       required
+                       autofocus>
+              </div>
+
+              <div class="d-flex justify-content-between">
+                <a href="{{ cancel_url }}"
+                   class="btn btn-outline-secondary">
+                  Cancelar
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                  Renombrar
+                </button>
+              </div>
+            </form>
+
+          {% else %}
+
+            <div class="mb-3">
+              <label class="form-label">
+                Selecciona la carpeta de destino
+              </label>
+
+              <nav aria-label="Ruta de destino">
+                <ol class="breadcrumb mb-2">
+                  {% for crumb in destination_breadcrumbs %}
+                    <li class="breadcrumb-item {% if forloop.last %}active{% endif %}">
+                      {% if forloop.last %}
+                        {{ crumb.name }}
+                      {% else %}
+                        <a href="?path={{ current_path|urlencode }}&amp;browse={{ crumb.path|urlencode }}&amp;next={{ cancel_url|urlencode }}">
+                          {{ crumb.name }}
+                        </a>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ol>
+              </nav>
+
+              <div class="list-group border rounded"
+                   style="max-height: 420px; overflow-y: auto;">
+
+                {% if browse_parent is not None %}
+                  <a class="list-group-item list-group-item-action"
+                     href="?path={{ current_path|urlencode }}&amp;browse={{ browse_parent|urlencode }}&amp;next={{ cancel_url|urlencode }}">
+                    ← Subir un nivel
+                  </a>
+                {% endif %}
+
+                {% for folder in browse_folders %}
+                  <a class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+                     href="?path={{ current_path|urlencode }}&amp;browse={{ folder.storage_key|urlencode }}&amp;next={{ cancel_url|urlencode }}">
+                    <span>📁</span>
+                    <span>{{ folder.name }}</span>
+                  </a>
+                {% empty %}
+                  <div class="list-group-item text-muted">
+                    No hay subcarpetas en este nivel.
+                  </div>
+                {% endfor %}
+              </div>
+
+              {% if browse_path %}
+                <div class="alert alert-light border mt-3 mb-0">
+                  Destino actual:
+                  <strong>{{ browse_path }}</strong>
+                </div>
+              {% endif %}
+            </div>
+
+            <form method="post">
+              {% csrf_token %}
+
+              <input type="hidden"
+                     name="path"
+                     value="{{ current_path }}">
+
+              <input type="hidden"
+                     name="next"
+                     value="{{ cancel_url }}">
+
+              <input type="hidden"
+                     name="destination_path"
+                     value="{{ browse_path }}">
+
+              <div class="d-flex justify-content-between gap-2">
+                <a href="{{ cancel_url }}"
+                   class="btn btn-outline-secondary">
+                  Cancelar
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary"
+                        {% if not can_move_here %}disabled{% endif %}>
+                  Mover aquí
+                </button>
+              </div>
+            </form>
+
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

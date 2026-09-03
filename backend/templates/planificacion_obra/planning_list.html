@@ -102,6 +102,11 @@
       p, .small, .text-secondary { font-size: 8px !important; }
       a { color: #000 !important; text-decoration: none !important; }
     }
+
+    @media print {
+      body.print-capitulo-resumen .planning-informe-capitulo { display: none !important; }
+      body.print-capitulo-informe .planning-resumen-agrupado { display: none !important; }
+    }
   </style>
 
 <div class="container-fluid py-3 planning-print-page">
@@ -115,13 +120,34 @@
     </div>
     <div class="d-flex gap-2">
       {% if selected_obra %}
-        <a href="{% url 'planificacion_obra:obra_detail' selected_obra.pk %}" class="btn btn-outline-secondary btn-sm">
-          Ficha de obra
-        </a>
+        {% if request.user.is_superuser or perms.planificacion_obra.view_tarearecursoreal %}
+          <a href="{% url 'planificacion_obra:materiales_asignados' %}?obra={{ selected_obra.pk }}" class="btn btn-outline-success btn-sm">
+            Materiales asignados
+          </a>
+        {% endif %}
+        
+        {# TAREA_MANUAL_PORTAL_PLANNING_BUTTON_V1 #}
+        {% if filtros.obra %}
+          {# PLANNING_NEW_TASK_CONTEXT_WITH_OBRA_V1 #}
+<a href="{% url 'planificacion_obra:obra_tarea_manual_create' filtros.obra %}?next={{ request.get_full_path|urlencode }}&amp;fase={{ filtros.fase|urlencode }}&amp;vivienda={{ filtros.vivienda|urlencode }}&amp;planta={{ filtros.planta|urlencode }}&amp;capitulo={{ filtros.capitulo|urlencode }}" class="btn btn-success btn-sm">
+            + Nueva tarea
+          </a>
+        {% else %}
+          {# PLANNING_NEW_TASK_CONTEXT_WITHOUT_OBRA_V1 #}
+<a href="{% url 'planificacion_obra:tarea_manual_create' %}?next={{ request.get_full_path|urlencode }}&amp;obra={{ filtros.obra|urlencode }}&amp;fase={{ filtros.fase|urlencode }}&amp;vivienda={{ filtros.vivienda|urlencode }}&amp;planta={{ filtros.planta|urlencode }}&amp;capitulo={{ filtros.capitulo|urlencode }}" class="btn btn-success btn-sm">
+            + Nueva tarea
+          </a>
+        {% endif %}
+
       {% endif %}
-      <a href="{% url 'planificacion_obra:obras_list' %}" class="btn btn-outline-secondary btn-sm">
-        Resumen de obras
-      </a>
+
+        {# PLANIFICACION_NAV_SIMPLE_PLANNING_BUTTON_V1 #}
+        {% if planning_bajar_nivel_url %}
+          <a href="{{ planning_bajar_nivel_url }}" class="btn btn-outline-primary btn-sm">
+            Bajar nivel
+          </a>
+        {% endif %}
+
       <a href="/app/planificacion-obra/asignaciones/" class="btn btn-outline-secondary btn-sm">
         Asignaciones
       </a>
@@ -278,17 +304,25 @@
       </div>
       <div class="small text-secondary">
           {% if vista_vivienda %}{% if vista_gantt %}<a class="btn btn-outline-primary btn-sm me-2" href="?obra={{ filtros.obra }}&fase={{ filtros.fase }}&vivienda={{ filtros.vivienda }}&planta={{ filtros.planta }}&capitulo={{ filtros.capitulo }}&partida={{ filtros.partida }}&agrupacion=detalle&limit={{ limit }}">Detalle por tarea</a>{% else %}<a class="btn btn-primary btn-sm me-2" href="?obra={{ filtros.obra }}&fase={{ filtros.fase }}&vivienda={{ filtros.vivienda }}&planta={{ filtros.planta }}&capitulo={{ filtros.capitulo }}&partida={{ filtros.partida }}&agrupacion=detalle&limit={{ limit }}&vista=gantt">Vista Gantt</a>{% endif %}{% endif %}
-          {% if selected_obra %}<button type="button" class="btn btn-outline-secondary btn-sm me-2 no-print" onclick="window.print()">Imprimir informe</button>{% endif %}
+          {% if selected_obra %}
+            {% if agrupacion == "capitulo" %}
+              <button type="button" class="btn btn-outline-secondary btn-sm me-2 no-print" onclick="printPlanningMode('capitulo-resumen')">Imprimir resumen</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm me-2 no-print" onclick="printPlanningMode('capitulo-informe')">Imprimir informe por capítulo</button>
+            {% else %}
+              <button type="button" class="btn btn-outline-secondary btn-sm me-2 no-print" onclick="printPlanningMode('normal')">Imprimir informe</button>
+            {% endif %}
+          {% endif %}
         Base cálculo: TareaObra + recursos previstos/reales recalculados
       </div>
     </div>
 
+      {% include "planificacion_obra/_resumen_viviendas_panel.html" %}
       {% include "planificacion_obra/_resumen_vivienda.html" %}
       {% if vista_gantt %}
       {% include "planificacion_obra/_gantt_vivienda.html" %}
       {% endif %}
     {% if agrupacion != "detalle" %}
-      <div class="card shadow-sm border-0 mb-3">
+      <div class="card shadow-sm border-0 mb-3 planning-resumen-agrupado">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
           <div>
             <strong>Resumen agrupado</strong>
@@ -345,7 +379,7 @@
     {% endif %}
 
     {% if agrupacion == "capitulo" %}
-      <div class="card shadow-sm border-0">
+      <div class="card shadow-sm border-0 planning-informe-capitulo">
         <div class="card-header bg-white">
           <strong>Informe por capítulo</strong>
           <div class="text-secondary small">Tareas agrupadas por capítulo, respetando el orden operativo de la vivienda.</div>
@@ -566,4 +600,14 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<script>
+function printPlanningMode(mode) {
+  document.body.classList.remove("print-capitulo-resumen", "print-capitulo-informe", "print-normal");
+  document.body.classList.add("print-" + mode);
+  window.print();
+  setTimeout(function () {
+    document.body.classList.remove("print-capitulo-resumen", "print-capitulo-informe", "print-normal");
+  }, 800);
+}
+</script>
 {% endblock %}

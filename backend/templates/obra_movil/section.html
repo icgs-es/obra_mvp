@@ -1,0 +1,85 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- OBRA_MOVIL_SECTION_V1 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi {{ section_icon }}"></i>
+    </span>
+    <div>
+      <h1 class="h3 mb-1">{{ section_title }}</h1>
+      <p class="mb-0 opacity-75">{{ section_subtitle }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6">Estado actual</h2>
+    <div class="row g-2">
+      <div class="col-6">
+        <div class="obra-mobile-stat">
+          <div class="label">Obras</div>
+          <div class="value">{{ obras_count }}</div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="obra-mobile-stat">
+          <div class="label">Almacenes</div>
+          <div class="value">{{ almacenes_count }}</div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="obra-mobile-stat">
+          <div class="label">Asignaciones hoy</div>
+          <div class="value">{{ asignaciones_hoy_count }}</div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="obra-mobile-stat">
+          <div class="label">Mov. hoy</div>
+          <div class="value">{{ movimientos_hoy_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="d-grid gap-2">
+  {% if section_key == "mortero" or section_key == "gasoil" %}
+  <!-- OBRA_MOVIL_SECTION_SHORTCUTS_V1 -->
+  <div class="d-grid gap-2 mb-3">
+    {% if section_key == "mortero" %}
+      <a class="btn btn-primary btn-lg rounded-4" href="{% url 'obra_movil:mortero_nuevo' %}">
+        <i class="bi bi-plus-circle me-1"></i> Movimiento mortero
+      </a>
+    {% elif section_key == "gasoil" %}
+      <a class="btn btn-primary btn-lg rounded-4" href="{% url 'obra_movil:gasoil_nuevo' %}">
+        <i class="bi bi-plus-circle me-1"></i> Movimiento gasoil
+      </a>
+    {% endif %}
+  </div>
+{% endif %}
+
+  {% if primary_url %}
+    <a class="btn btn-primary btn-lg rounded-4" href="{{ primary_url }}">
+      <i class="bi bi-arrow-right-circle me-1"></i> Abrir flujo actual
+    </a>
+  {% endif %}
+
+  {% if secondary_url %}
+    <a class="btn btn-outline-primary btn-lg rounded-4" href="{{ secondary_url }}">
+      Ver listado actual
+    </a>
+  {% endif %}
+
+  <a class="btn btn-light btn-lg rounded-4" href="{% url 'obra_movil:index' %}">
+    <i class="bi bi-chevron-left me-1"></i> Volver a Obra móvil
+  </a>
+</section>
+
+<div class="alert alert-info rounded-4 mt-3 mb-0">
+  Esta pantalla queda preparada como entrada móvil. La escritura específica se implementará en la siguiente fase, reutilizando los modelos actuales.
+</div>
+{% endblock %}

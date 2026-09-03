@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load planning_format %}
 
-{% block title %}Obra · Resumen de obras{% endblock %}
+{% block title %}Obra · Panel de obra{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-start mb-4">
   <div>
-    <h1 class="h3 mb-1">Resumen de obras</h1>
+    <h1 class="h3 mb-1">Panel de Obra</h1>
     <p class="text-secondary mb-0">
       {% if modo_todas %}
         Vista global de todas tus empresas permitidas.
@@ -17,8 +17,8 @@
   </div>
 
   <div class="d-flex gap-2">
-    <a href="{% url 'planificacion_obra:index' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-calendar-check"></i> Planificación
+    <a href="{% url 'planificacion_obra:planning_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-kanban"></i> Planning de obra
     </a>
   </div>
 </div>
@@ -72,6 +72,63 @@
     </div>
   </div>
 </div>
+
+  {# PI_PANEL_OBRA_UNIFICADO_TEMPLATE_V2 · KPIs técnicos integrados #}
+  <div class="row g-3 mb-4">
+    <div class="col-md-2 col-sm-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small mb-1">Empleados de obra</div>
+          <div class="h4 mb-0">{{ empleados_count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2 col-sm-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small mb-1">Unidades de obra</div>
+          <div class="h4 mb-0">{{ unidades_total_count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2 col-sm-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small mb-1">Capítulos</div>
+          <div class="h4 mb-0">{{ capitulos_count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2 col-sm-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small mb-1">Partidas</div>
+          <div class="h4 mb-0">{{ partidas_count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2 col-sm-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small mb-1">Tareas de obra</div>
+          <div class="h4 mb-0">{{ tareas_obra_count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2 col-sm-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small mb-1">Asignaciones</div>
+          <div class="h4 mb-0">{{ asignaciones_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <div class="row g-3 mb-4">
   <div class="col-lg-5">

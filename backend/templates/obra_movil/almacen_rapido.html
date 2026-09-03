@@ -1,0 +1,2475 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<!-- OBRA_MOVIL_ALM_UX2B_ACCESS_LIKE_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B1_BUSCADOR_ALMACEN_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B2_ORIGEN_CLARO_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B3_ALMACEN_LABEL_REAL_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B4_AGRUPAR_STOCK_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B5_SIN_ALMACEN_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B6_UNIDAD_ALMACEN_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B7_DESTINO_PLANIFICACION_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B8B_ROBUSTO_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B9_FLUJO_LINEAL_OK -->
+<!-- OBRA_MOVIL_ALM_UX2B10_CLEAR_LOAD_STATE_OK -->
+<!-- OBRA_MOVIL_ALM_UX2E1_V2_PLANIFICACION_PARTIDA_OK -->
+
+<!-- OBRA_MOVIL_ALM_UX2E1_V2_RENDERED_JS_OK -->
+<script id="alm2e1-v2-inline-rendered" data-alm2e1-v2-bound="1">
+(function () {
+  // _alm_ux2e1 rendered marker
+  // OBRA_MOVIL_ALM_UX2E1_V2_PLANIFICACION_PARTIDA_OK
+  var form = document.querySelector("form");
+  if (!form || form.getAttribute("data-alm2e1-v2-rendered-bound") === "1") return;
+  form.setAttribute("data-alm2e1-v2-rendered-bound", "1");
+
+  function norm(v) {
+    return String(v || "").trim().toUpperCase().replace(/\s+/g, "_");
+  }
+
+  function checkedValue(name) {
+    var el = form.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : "";
+  }
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function valueOf(id) {
+    var el = byId(id);
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function hiddenValue(name) {
+    var el = form.querySelector('[name="' + name + '"]');
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function requiresPartidaCompleta() {
+    var mov = norm(checkedValue("tipo_movimiento"));
+    var dest = norm(checkedValue("destino"));
+    return (mov === "SALIDA" || mov === "ROTURA") && dest === "PARTIDA";
+  }
+
+  function partidaCompleta() {
+    return Boolean(
+      valueOf("alm2DestObra") &&
+      valueOf("alm2DestEdificio") &&
+      valueOf("alm2DestVivienda") &&
+      valueOf("alm2DestPlanta") &&
+      valueOf("alm2DestCapitulo") &&
+      valueOf("alm2DestPartida") &&
+      hiddenValue("unidad_obra") &&
+      hiddenValue("partida")
+    );
+  }
+
+  function ensureWarningBox() {
+    var box = document.getElementById("alm2e1PartidaWarning");
+    if (box) return box;
+
+    var ref = document.getElementById("alm2DestPartida") || document.querySelector('[name="partida"]') || form;
+    box = document.createElement("div");
+    box.id = "alm2e1PartidaWarning";
+    box.className = "alm2-warning is-danger";
+    box.style.marginTop = "10px";
+    box.textContent = "Para enviar a vivienda / partida debes completar Obra → Edificio/Fase → Vivienda → Planta → Capítulo → Partida.";
+
+    if (ref && ref.parentNode) {
+      ref.parentNode.insertBefore(box, ref.nextSibling);
+    } else {
+      form.appendChild(box);
+    }
+
+    return box;
+  }
+
+  function submitButton() {
+    return form.querySelector('button[type="submit"], input[type="submit"]');
+  }
+
+  function refreshPartidaCompletaState() {
+    var required = requiresPartidaCompleta();
+    var complete = partidaCompleta();
+    var btn = submitButton();
+    var box = ensureWarningBox();
+
+    if (required && !complete) {
+      if (btn) {
+        btn.disabled = true;
+        btn.setAttribute("data-alm2e1-v2-disabled", "1");
+      }
+      box.style.display = "";
+      return false;
+    }
+
+    if (btn && btn.getAttribute("data-alm2e1-v2-disabled") === "1") {
+      btn.disabled = false;
+      btn.removeAttribute("data-alm2e1-v2-disabled");
+    }
+
+    box.style.display = "none";
+    return true;
+  }
+
+  form.addEventListener("change", refreshPartidaCompletaState, true);
+  form.addEventListener("input", refreshPartidaCompletaState, true);
+  form.addEventListener("click", function () {
+    setTimeout(refreshPartidaCompletaState, 30);
+  }, true);
+
+  form.addEventListener("submit", function (ev) {
+    if (!refreshPartidaCompletaState()) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ensureWarningBox().scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, true);
+
+  refreshPartidaCompletaState();
+  setTimeout(refreshPartidaCompletaState, 100);
+  setTimeout(refreshPartidaCompletaState, 400);
+})();
+</script>
+
+<!-- OBRA_MOVIL_ALM_UX2B8_RESET_SIN_ALMACEN_OK -->
+
+<style>
+  .alm2-page {
+    max-width: 780px;
+    margin: 18px auto 70px;
+  }
+
+  .alm2-header {
+    background: linear-gradient(135deg, #13284a, #2457d6);
+    color: #fff;
+    border-radius: 22px;
+    padding: 18px 20px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    box-shadow: 0 14px 32px rgba(0,0,0,.18);
+    margin-bottom: 14px;
+  }
+
+  .alm2-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.95);
+    color: #0d6efd;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    font-weight: 900;
+    flex: 0 0 auto;
+  }
+
+  .alm2-header h1 {
+    margin: 0;
+    font-size: 1.55rem;
+    font-weight: 950;
+  }
+
+  .alm2-header p {
+    margin: 2px 0 0;
+    opacity: .82;
+    font-weight: 700;
+  }
+
+  .alm2-back {
+    margin: 0 0 12px;
+  }
+
+  .alm2-back a {
+    text-decoration: none;
+    font-weight: 850;
+    color: #0d6efd;
+  }
+
+  .alm2-card {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.10);
+    border-radius: 20px;
+    box-shadow: 0 10px 26px rgba(0,0,0,.06);
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .alm2-section-title {
+    font-size: .82rem;
+    font-weight: 950;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    opacity: .72;
+    margin: 4px 0 8px;
+  }
+
+  .alm2-help {
+    font-size: .86rem;
+    opacity: .68;
+    margin: -4px 0 10px;
+  }
+
+  .alm2-type-grid,
+  .alm2-move-grid,
+  .alm2-dest-grid {
+    display: grid;
+    gap: 8px;
+  }
+
+  .alm2-type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .alm2-move-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .alm2-dest-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .alm2-choice {
+    border: 2px solid rgba(0,0,0,.14);
+    background: #fff;
+    border-radius: 16px;
+    min-height: 58px;
+    padding: 10px 12px;
+    font-weight: 950;
+    text-align: center;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .alm2-choice small {
+    display: block;
+    margin-top: 3px;
+    font-size: .74rem;
+    opacity: .68;
+    font-weight: 800;
+  }
+
+  .alm2-choice.is-active {
+    border-color: #0d6efd;
+    background: rgba(13,110,253,.08);
+    box-shadow: 0 0 0 4px rgba(13,110,253,.12);
+  }
+
+  .alm2-choice[data-move="SALIDA"].is-active {
+    border-color: #dc3545;
+    background: rgba(220,53,69,.08);
+  }
+
+  .alm2-choice[data-move="ENTRADA"].is-active {
+    border-color: #198754;
+    background: rgba(25,135,84,.08);
+  }
+
+  .alm2-search-wrap {
+    position: relative;
+  }
+
+  .alm2-search {
+    width: 100%;
+    min-height: 62px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,.18);
+    padding: 10px 14px;
+    font-size: 1.18rem;
+    font-weight: 900;
+  }
+
+  .alm2-results {
+    display: none;
+    position: absolute;
+    z-index: 90;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.18);
+    border-radius: 16px;
+    box-shadow: 0 18px 36px rgba(0,0,0,.20);
+    max-height: 292px;
+    overflow-y: auto;
+  }
+
+  .alm2-results.is-open {
+    display: block;
+  }
+
+  .alm2-result {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid rgba(0,0,0,.07);
+    background: #fff;
+    text-align: left;
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+
+  .alm2-result:hover,
+  .alm2-result:focus {
+    background: rgba(13,110,253,.08);
+    outline: none;
+  }
+
+  .alm2-result b {
+    display: block;
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .alm2-result span {
+    display: block;
+    margin-top: 3px;
+    font-size: .84rem;
+    opacity: .72;
+  }
+
+  .alm2-selected {
+    display: none;
+    border: 2px solid rgba(25,135,84,.25);
+    background: rgba(25,135,84,.06);
+    border-radius: 18px;
+    padding: 12px;
+    margin-top: 10px;
+  }
+
+  .alm2-selected.is-visible {
+    display: block;
+  }
+
+  .alm2-selected-name {
+    font-size: 1.12rem;
+    font-weight: 950;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+
+  .alm2-kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 8px;
+  }
+
+  .alm2-kpi {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 13px;
+    padding: 8px 9px;
+  }
+
+  .alm2-kpi b {
+    display: block;
+    font-size: .7rem;
+    text-transform: uppercase;
+    opacity: .62;
+  }
+
+  .alm2-kpi span {
+    display: block;
+    font-weight: 950;
+    margin-top: 2px;
+  }
+
+  .alm2-warehouses {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .alm2-wh {
+    border: 2px solid rgba(0,0,0,.14);
+    border-radius: 15px;
+    background: #fff;
+    padding: 10px 12px;
+    min-height: 56px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .alm2-wh strong {
+    display: block;
+    font-weight: 950;
+  }
+
+  .alm2-wh span {
+    display: block;
+    font-size: .84rem;
+    opacity: .72;
+    margin-top: 2px;
+  }
+
+  .alm2-wh.is-active {
+    border-color: #0d6efd;
+    background: rgba(13,110,253,.08);
+    box-shadow: 0 0 0 4px rgba(13,110,253,.12);
+  }
+
+  .alm2-warning {
+    margin-top: 10px;
+    border-radius: 13px;
+    padding: 10px 12px;
+    font-weight: 850;
+    background: rgba(255,193,7,.16);
+    border: 1px solid rgba(255,193,7,.42);
+  }
+
+  .alm2-warning.is-danger {
+    color: #842029;
+    background: rgba(220,53,69,.10);
+    border-color: rgba(220,53,69,.35);
+  }
+
+  .alm2-warning.is-ok {
+    color: #0f5132;
+    background: rgba(25,135,84,.10);
+    border-color: rgba(25,135,84,.30);
+  }
+
+  .alm2-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .alm2-field label {
+    font-weight: 850;
+    margin-bottom: 5px;
+  }
+
+  .alm2-field input,
+  .alm2-field select,
+  .alm2-field textarea {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 15px !important;
+    font-size: 1rem;
+  }
+
+  .alm2-field input[name="cantidad"] {
+    min-height: 66px;
+    text-align: center;
+    font-size: 1.45rem;
+    font-weight: 950;
+  }
+
+  .alm2-submit {
+    width: 100%;
+    min-height: 72px;
+    border-radius: 18px;
+    font-size: 1.15rem;
+    font-weight: 950;
+    position: sticky;
+    bottom: 10px;
+    z-index: 70;
+    box-shadow: 0 12px 26px rgba(0,0,0,.20);
+  }
+
+  .alm2-technical {
+    display: none !important;
+  }
+
+  .alm2-errors {
+    color: #842029;
+    background: rgba(220,53,69,.10);
+    border-radius: 12px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-weight: 800;
+  }
+
+  @media (min-width: 768px) {
+    .alm2-type-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .alm2-move-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .alm2-dest-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .alm2-grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .alm2-kpis {
+      grid-template-columns: repeat(4, minmax(0,1fr));
+    }
+
+    .alm2-warehouses {
+      grid-template-columns: repeat(2, minmax(0,1fr));
+    }
+  }
+
+  /* OBRA_MOVIL_ALM_UX2B1_BUSCADOR_ALMACEN_OK */
+  .alm2-result b {
+    font-size: 1.06rem;
+  }
+
+  .alm2-result span {
+    color: #4b5563;
+  }
+
+  .alm2-almacen-role {
+    font-weight: 950;
+    color: #0f172a;
+  }
+
+  .alm2-transfer-note {
+    margin-top: 8px;
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(13,110,253,.08);
+    border: 1px solid rgba(13,110,253,.22);
+    font-weight: 800;
+    font-size: .88rem;
+  }
+
+
+  /* OBRA_MOVIL_ALM_UX2B2_ORIGEN_CLARO_OK */
+  .alm2-wh-title {
+    font-size: .98rem;
+    line-height: 1.22;
+  }
+
+  .alm2-wh-resource {
+    display: block;
+    margin-top: 3px;
+    font-size: .84rem;
+    opacity: .78;
+    font-weight: 800;
+  }
+
+  .alm2-wh-stock {
+    display: block;
+    margin-top: 4px;
+    color: #0f5132;
+    font-weight: 950;
+  }
+
+
+  .alm2-wh-title.is-sin-almacen {
+    color: #842029;
+    font-weight: 950;
+  }
+
+  .alm2-card.is-hidden-by-operation {
+    display: none !important;
+  }
+
+  select[data-alm2-unidad-select="1"] {
+    font-weight: 850;
+  }
+
+  /* OBRA_MOVIL_ALM_UX2B7_DESTINO_PLANIFICACION_OK */
+  .alm2-plan-dest {
+    margin-top: 12px;
+    border: 1px solid rgba(13,110,253,.16);
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(13,110,253,.035);
+  }
+
+  .alm2-plan-dest-title {
+    font-weight: 950;
+    margin-bottom: 4px;
+  }
+
+  .alm2-plan-dest-help {
+    font-size: .86rem;
+    opacity: .72;
+    margin-bottom: 10px;
+  }
+
+  .alm2-plan-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .alm2-plan-field label {
+    font-weight: 850;
+    margin-bottom: 4px;
+  }
+
+  .alm2-plan-field select {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 14px;
+  }
+
+  .alm2-legacy-dest-field {
+    display: none !important;
+  }
+
+  @media (min-width: 768px) {
+    .alm2-plan-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+
+  /* OBRA_MOVIL_ALM_UX2B8_RESET_SIN_ALMACEN_OK */
+  .alm2-wh.is-sin-almacen {
+    border-color: rgba(220,53,69,.35);
+    background: rgba(220,53,69,.045);
+  }
+
+  .alm2-wh.is-sin-almacen.is-active {
+    border-color: #dc3545;
+    background: rgba(220,53,69,.10);
+    box-shadow: 0 0 0 4px rgba(220,53,69,.12);
+  }
+
+  .alm2-reset-note {
+    margin-top: 8px;
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(13,110,253,.08);
+    border: 1px solid rgba(13,110,253,.20);
+    font-weight: 800;
+    font-size: .86rem;
+  }
+
+
+  /* OBRA_MOVIL_ALM_UX2B8B_ROBUSTO_OK */
+  .alm2-wh.is-sin-almacen,
+  .alm2-wh[data-alm2-sin="1"] {
+    border-color: rgba(220,53,69,.38);
+    background: rgba(220,53,69,.05);
+  }
+
+  .alm2-wh.is-sin-almacen.is-active,
+  .alm2-wh[data-alm2-sin="1"].is-active {
+    border-color: #dc3545;
+    background: rgba(220,53,69,.12);
+    box-shadow: 0 0 0 4px rgba(220,53,69,.14);
+  }
+
+
+  /* OBRA_MOVIL_ALM_UX2B9_FLUJO_LINEAL_OK */
+  .alm2-gasoil-card {
+    display: none;
+  }
+  .alm2-gasoil-card.is-active {
+    display: block;
+    border-color: #7bbf3f;
+    background: #f6fff1;
+  }
+  .alm2-gasoil-card .alm2-section-title {
+    color: #2f6f16;
+  }
+  .alm2-gasoil-note {
+    margin: 0 0 12px;
+    font-size: 0.92rem;
+    color: #3c6b2c;
+    font-weight: 700;
+  }
+
+  .alm2-origin-flow-note {
+    margin-top: 8px;
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(13,110,253,.07);
+    border: 1px solid rgba(13,110,253,.20);
+    font-weight: 850;
+    font-size: .86rem;
+  }
+
+  .alm2-warning.is-flow {
+    background: rgba(13,110,253,.08);
+    border-color: rgba(13,110,253,.24);
+    color: #084298;
+  }
+
+</style>
+
+<div class="alm2-page">
+  <div class="alm2-back">
+    <a href="/app/obra-movil/">← Volver a Obra móvil</a>
+  </div>
+
+  <div class="alm2-header">
+    <div class="alm2-icon">▣</div>
+    <div>
+      <h1>Almacén rápido</h1>
+      <p>Alta de movimiento tipo Access: recurso, operación, almacén, cantidad y destino.</p>
+    </div>
+  </div>
+
+  <form method="post" id="alm2Form" autocomplete="off">
+    {% csrf_token %}
+
+    {# ALMACEN_RAPIDO_FORM_ERRORS_VISIBLE_V1 #}
+    {% if form.errors %}
+      <div
+        id="alm2ServerValidationErrors"
+        class="alm2-warning is-danger"
+        style="margin-bottom:14px;"
+      >
+        <strong>El movimiento NO se ha guardado.</strong>
+        <div style="margin-top:6px;">
+          Revisa los siguientes datos:
+        </div>
+        <ul style="margin:7px 0 0 18px; padding:0;">
+          {% for field in form %}
+            {% for error in field.errors %}
+              <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+      <div class="alm2-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="alm2-technical">
+      {{ form.tipo_recurso }}
+      {{ form.q_recurso }}
+      {{ form.recurso }}
+    </div>
+
+    <div class="alm2-card">
+      <div class="alm2-section-title">Tipo de recurso</div>
+      <div class="alm2-type-grid" id="alm2TypeGrid">
+        <button type="button" class="alm2-choice" data-type="MATERIAL">Material</button>
+        <button type="button" class="alm2-choice" data-type="MAQUINARIA">Maquinaria</button>
+        <button type="button" class="alm2-choice" data-type="HERRAMIENTA">Herramienta</button>
+        <button type="button" class="alm2-choice" data-type="EPIS">E.P.I.S.</button>
+      </div>
+
+      <div class="alm2-section-title" style="margin-top:14px;">Recurso / artículo</div>
+      <p class="alm2-help">Escribe como en Access. Ejemplo: TORNILLO, BROCA, TUBO...</p>
+
+      <div class="alm2-search-wrap">
+        <input id="alm2Search" class="alm2-search" type="text" placeholder="Buscar recurso..." autocomplete="off">
+        <div id="alm2Results" class="alm2-results"></div>
+      </div>
+
+      <div id="alm2Selected" class="alm2-selected">
+        <div class="alm2-selected-name" id="alm2SelectedName"></div>
+        <div class="alm2-kpis">
+          <div class="alm2-kpi"><b>Código</b><span id="alm2Code">—</span></div>
+          <div class="alm2-kpi"><b>Unidad</b><span id="alm2Unit">—</span></div>
+          <div class="alm2-kpi"><b>Stock total</b><span id="alm2StockTotal">0</span></div>
+          <div class="alm2-kpi"><b>Almacenes</b><span id="alm2WhCount">0</span></div>
+        </div>
+        <div id="alm2Warehouses" class="alm2-warehouses"></div>
+        <div id="alm2StockWarning" class="alm2-warning">Selecciona recurso para ver stock.</div>
+      </div>
+
+      {% if form.recurso.errors %}
+        <div class="alm2-errors">{{ form.recurso.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="alm2-card">
+      <div class="alm2-section-title">Operación</div>
+      <div class="alm2-move-grid" id="alm2MoveGrid">
+        {% for radio in form.tipo_movimiento %}
+          <button type="button" class="alm2-choice" data-radio-name="{{ radio.data.name }}" data-radio-value="{{ radio.data.value }}">
+            {{ radio.choice_label }}
+          </button>
+          <span class="alm2-technical">{{ radio.tag }}</span>
+        {% endfor %}
+      </div>
+      {% if form.tipo_movimiento.errors %}
+        <div class="alm2-errors">{{ form.tipo_movimiento.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="alm2-card">
+      <div class="alm2-section-title">Cantidad y fecha</div>
+      <div class="alm2-grid two">
+        <div class="alm2-field">
+          <label for="{{ form.cantidad.id_for_label }}">{{ form.cantidad.label }}</label>
+          {{ form.cantidad }}
+          {% if form.cantidad.errors %}<div class="alm2-errors">{{ form.cantidad.errors }}</div>{% endif %}
+        </div>
+
+        {% if form.unidad %}
+          <div class="alm2-field">
+            <label for="{{ form.unidad.id_for_label }}">{{ form.unidad.label }}</label>
+            {{ form.unidad }}
+            {% if form.unidad.errors %}<div class="alm2-errors">{{ form.unidad.errors }}</div>{% endif %}
+          </div>
+        {% endif %}
+
+        {# OBRA_MOVIL_ALMACEN_FECHA_OPERACION_V1 #}
+        <div class="alm2-field">
+          <label for="{{ form.fecha_movimiento.id_for_label }}">
+            Fecha de la operación
+          </label>
+          {{ form.fecha_movimiento }}
+          <div class="alm2-help">
+            Por defecto hoy. Puedes indicar una fecha anterior si el movimiento se realizó otro día.
+          </div>
+          {% if form.fecha_movimiento.errors %}
+            <div class="alm2-errors">
+              {{ form.fecha_movimiento.errors }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="alm2-field">
+          <label for="{{ form.hora_movimiento.id_for_label }}">
+            Hora
+          </label>
+          {{ form.hora_movimiento }}
+          <div class="alm2-help">
+            Opcional.
+          </div>
+          {% if form.hora_movimiento.errors %}
+            <div class="alm2-errors">
+              {{ form.hora_movimiento.errors }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="alm2-card" id="alm2AlmacenCard">
+      <div class="alm2-section-title" id="alm2AlmacenTitle">Almacén</div>
+      <p class="alm2-help" id="alm2AlmacenHelp">Para salida/rotura es origen. Para entrada/control es destino o almacén a regularizar.</p>
+      <div class="alm2-field">
+        <label for="{{ form.almacen.id_for_label }}">{{ form.almacen.label }}</label>
+        {{ form.almacen }}
+        {% if form.almacen.errors %}<div class="alm2-errors">{{ form.almacen.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="alm2-card" id="alm2DestinoCard">
+      <div class="alm2-section-title">Destino</div>
+      <p class="alm2-help">Solo se pide destino para salidas y roturas.</p>
+
+      <div class="alm2-dest-grid" id="alm2DestGrid">
+        {% for radio in form.destino %}
+          <button type="button" class="alm2-choice" data-radio-name="{{ radio.data.name }}" data-radio-value="{{ radio.data.value }}">
+            {{ radio.choice_label }}
+          </button>
+          <span class="alm2-technical">{{ radio.tag }}</span>
+        {% endfor %}
+      </div>
+
+      {% if form.destino.errors %}
+        <div class="alm2-errors">{{ form.destino.errors }}</div>
+      {% endif %}
+
+      
+      <div class="alm2-plan-dest alm2-dest-partida" id="alm2PlanDestino">
+        <div class="alm2-plan-dest-title">Destino de planificación</div>
+        <div class="alm2-plan-dest-help">Selecciona igual que en planificación: Obra → Edificio/Fase → Vivienda → Planta → Capítulo → Partida.</div>
+
+        <div class="alm2-plan-grid">
+          <div class="alm2-plan-field">
+            <label for="alm2DestObra">Obra</label>
+            <select id="alm2DestObra" class="form-select" data-alm2-plan="obra"></select>
+          </div>
+
+          <div class="alm2-plan-field">
+            <label for="alm2DestEdificio">Edificio / Fase</label>
+            <select id="alm2DestEdificio" class="form-select" data-alm2-plan="edificio"></select>
+          </div>
+
+          <div class="alm2-plan-field">
+            <label for="alm2DestVivienda">Vivienda</label>
+            <select id="alm2DestVivienda" class="form-select" data-alm2-plan="vivienda"></select>
+          </div>
+
+          <div class="alm2-plan-field">
+            <label for="alm2DestPlanta">Planta</label>
+            <select id="alm2DestPlanta" class="form-select" data-alm2-plan="planta"></select>
+          </div>
+
+          <div class="alm2-plan-field">
+            <label for="alm2DestCapitulo">Capítulo</label>
+            <select id="alm2DestCapitulo" class="form-select" data-alm2-plan="capitulo"></select>
+          </div>
+
+          <div class="alm2-plan-field">
+            <label for="alm2DestPartida">Partida</label>
+            <select id="alm2DestPartida" class="form-select" data-alm2-plan="partida"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="alm2-grid two" style="margin-top:12px;">
+        {% if form.unidad_obra %}
+          <div class="alm2-field alm2-dest-partida alm2-legacy-dest-field">
+            <label for="{{ form.unidad_obra.id_for_label }}">{{ form.unidad_obra.label }}</label>
+            {{ form.unidad_obra }}
+            {% if form.unidad_obra.errors %}<div class="alm2-errors">{{ form.unidad_obra.errors }}</div>{% endif %}
+          </div>
+        {% endif %}
+
+        {% if form.partida %}
+          <div class="alm2-field alm2-dest-partida alm2-legacy-dest-field">
+            <label for="{{ form.partida.id_for_label }}">{{ form.partida.label }}</label>
+            {{ form.partida }}
+            {% if form.partida.errors %}<div class="alm2-errors">{{ form.partida.errors }}</div>{% endif %}
+          </div>
+        {% endif %}
+
+        {% if form.empleado %}
+          <div class="alm2-field alm2-dest-persona">
+            <label for="{{ form.empleado.id_for_label }}">{{ form.empleado.label }}</label>
+            {{ form.empleado }}
+            {% if form.empleado.errors %}<div class="alm2-errors">{{ form.empleado.errors }}</div>{% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if form.vehiculo or form.kilometraje %}
+      <div class="alm2-card alm2-gasoil-card" id="alm2GasoilCard" data-alm2-marker="OBRA_MOVIL_ALM_GASOIL_VEHICULO_KM_OK">
+        <div class="alm2-section-title">Gasoil · vehículo y recarga</div>
+        <p class="alm2-gasoil-note">Para salida de GASOIL: indica vehículo/máquina, KM/HRS y quién recarga.</p>
+        <div class="alm2-grid two">
+          {% if form.vehiculo %}
+            <div class="alm2-field">
+              <label for="{{ form.vehiculo.id_for_label }}">{{ form.vehiculo.label }}</label>
+              {{ form.vehiculo }}
+            </div>
+          {% endif %}
+          {% if form.kilometraje %}
+            <div class="alm2-field">
+              <label for="{{ form.kilometraje.id_for_label }}">{{ form.kilometraje.label }}</label>
+              {{ form.kilometraje }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if form.observaciones %}
+      <div class="alm2-card">
+        <div class="alm2-section-title">Observaciones</div>
+        <div class="alm2-field">{{ form.observaciones }}</div>
+      </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary alm2-submit">Guardar movimiento</button>
+  </form>
+</div>
+
+{# ALMACEN_RAPIDO_DESTINO_POST_SYNC_V1 #}
+<script id="almacen-rapido-destino-post-sync-v1">
+(function () {
+  "use strict";
+
+  var form = document.getElementById("alm2Form");
+
+  if (!form) {
+    return;
+  }
+
+  if (
+    form.getAttribute(
+      "data-almacen-rapido-destino-post-sync-v1"
+    ) === "1"
+  ) {
+    return;
+  }
+
+  form.setAttribute(
+    "data-almacen-rapido-destino-post-sync-v1",
+    "1"
+  );
+
+  var visibleVivienda =
+    document.getElementById("alm2DestVivienda");
+
+  var visiblePartida =
+    document.getElementById("alm2DestPartida");
+
+  var technicalUnidad =
+    form.querySelector('[name="unidad_obra"]');
+
+  var technicalPartida =
+    form.querySelector('[name="partida"]');
+
+  function currentDestino() {
+    var checked = form.querySelector(
+      'input[name="destino"]:checked'
+    );
+
+    return checked
+      ? String(checked.value || "").trim().toUpperCase()
+      : "";
+  }
+
+  function syncDestinoTecnico() {
+    if (currentDestino() !== "PARTIDA") {
+      return true;
+    }
+
+    if (technicalUnidad && visibleVivienda) {
+      technicalUnidad.value =
+        String(visibleVivienda.value || "").trim();
+    }
+
+    if (technicalPartida && visiblePartida) {
+      technicalPartida.value =
+        String(visiblePartida.value || "").trim();
+    }
+
+    return Boolean(
+      technicalUnidad &&
+      technicalPartida &&
+      technicalUnidad.value &&
+      technicalPartida.value
+    );
+  }
+
+  function bindVisible(select) {
+    if (!select) {
+      return;
+    }
+
+    select.addEventListener(
+      "change",
+      function () {
+        /*
+         * Primera sincronización inmediata.
+         */
+        syncDestinoTecnico();
+
+        /*
+         * Segunda sincronización después de que el resto de listeners
+         * jerárquicos haya terminado de modificar selects.
+         */
+        window.setTimeout(
+          syncDestinoTecnico,
+          0
+        );
+      }
+    );
+  }
+
+  bindVisible(visibleVivienda);
+  bindVisible(visiblePartida);
+
+  /*
+   * Captura: esta sincronización ocurre antes de los submit handlers
+   * normales ya existentes en el template.
+   */
+  form.addEventListener(
+    "submit",
+    function () {
+      syncDestinoTecnico();
+    },
+    true
+  );
+
+  /*
+   * También cubrir formularios re-renderizados con valores.
+   */
+  syncDestinoTecnico();
+
+  window.setTimeout(
+    syncDestinoTecnico,
+    0
+  );
+})();
+</script>
+
+{{ form.resource_unit_map|json_script:"almacen-rapido-resource-units" }}
+<script>
+(function () {
+  "use strict";
+
+  var form = document.getElementById("alm2Form");
+  if (!form) return;
+
+  var typeSelect = form.querySelector('[name="tipo_recurso"]');
+  var qField = form.querySelector('[name="q_recurso"]');
+  var recursoSelect = form.querySelector('[name="recurso"]');
+  var almacenSelect = form.querySelector('[name="almacen"]');
+  var unidadObraSelect = form.querySelector('[name="unidad_obra"]');
+  var partidaSelect = form.querySelector('[name="partida"]');
+  var unidadField = form.querySelector('[name="unidad"]');
+  var almResourceField = form.querySelector('[name="recurso"]');
+  var almUnitDataNode = document.getElementById(
+    "almacen-rapido-resource-units"
+  );
+  var almResourceUnits = {};
+
+  if (almUnitDataNode) {
+    try {
+      almResourceUnits = JSON.parse(
+        almUnitDataNode.textContent || "{}"
+      ) || {};
+    } catch (error) {
+      almResourceUnits = {};
+    }
+  }
+
+  function syncResourceUnit() {
+    if (!almResourceField || !unidadField) {
+      return;
+    }
+
+    var resourceId = String(
+      almResourceField.value || ""
+    );
+
+    var resourceUnit = String(
+      almResourceUnits[resourceId] || ""
+    ).trim();
+
+    if (!resourceUnit) {
+      return;
+    }
+
+    unidadField.value = resourceUnit;
+
+    unidadField.dispatchEvent(
+      new Event(
+        "change",
+        { bubbles: true }
+      )
+    );
+  }
+
+  if (almResourceField) {
+    almResourceField.addEventListener(
+      "change",
+      syncResourceUnit
+    );
+  }
+
+  syncResourceUnit();
+  var cantidadInput = form.querySelector('[name="cantidad"]');
+
+  var search = document.getElementById("alm2Search");
+  var resultsBox = document.getElementById("alm2Results");
+  var selectedBox = document.getElementById("alm2Selected");
+  var whBox = document.getElementById("alm2Warehouses");
+  var warning = document.getElementById("alm2StockWarning");
+
+  var selectedItem = null;
+  var timer = null;
+  var controller = null;
+
+  function norm(v) {
+    return String(v || "").trim().toUpperCase().replace(/\s+/g, "_").replace(/[.\-]+/g, "_");
+  }
+
+  function esc(v) {
+    return String(v || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function toFloat(v) {
+    var n = parseFloat(String(v || "0").replace(",", "."));
+    return isNaN(n) ? 0 : n;
+  }
+
+  // OBRA_MOVIL_ALM_UX2B1_BUSCADOR_ALMACEN_OK
+  function cleanItemName(item) {
+    var raw = String((item && (item.nombre || item.text)) || "").replace(/\s+/g, " ").trim();
+
+    raw = raw.replace(/^(MATERIAL|MAQUINARIA|HERRAMIENTA|E\.?P\.?I\.?S\.?|EPIS|EPI)\s*[·\-]\s*/i, "");
+    raw = raw.replace(/^\d+\s*[·\-]\s*/i, "");
+    raw = raw.replace(/\s*[·\-]\s*(UD|UND|UNIDAD|M|ML|M2|M3|KG|L|ROLLO|CAJA|CAJAS|SACO|PORTE)\s*[·\-]?\s*Stock:\s*[-0-9.,]+\s*$/i, "");
+    raw = raw.replace(/\s*Stock:\s*[-0-9.,]+\s*$/i, "");
+
+    return raw || String((item && item.text) || "Recurso").trim();
+  }
+
+  function cleanItemMeta(item) {
+    if (!item) return "";
+
+    var tipo = item.tipo || "";
+    var codigo = item.codigo || item.id || "";
+    var unidad = item.unidad || "";
+    var stock = item.stock_total || "0";
+    var wh = item.almacenes_count || 0;
+
+    var parts = [];
+
+    if (tipo) parts.push(tipo);
+    if (codigo) parts.push(codigo);
+    if (unidad) parts.push(unidad);
+
+    parts.push("Stock: " + stock);
+    parts.push(wh + " almacén" + (wh === 1 ? "" : "es"));
+
+    return parts.join(" · ");
+  }
+
+  function cleanWarehouseLabel(a) {
+    if (!a) return "Obra · Almacén";
+
+    var label = String(a.label || "").replace(/\s+/g, " ").trim();
+    if (label && label.toLowerCase() !== "none") return label;
+
+    var obra = String(a.obra || "").replace(/\s+/g, " ").trim();
+    var almacen = String(a.nombre || a.almacen || "").replace(/\s+/g, " ").trim();
+
+    if (!almacen || almacen.toLowerCase() === "none" || almacen.toLowerCase() === "almacén" || almacen.toLowerCase() === "almacen") {
+      almacen = "SIN ALMACÉN";
+    }
+
+    if (!obra || obra.toLowerCase() === "none") return almacen;
+
+    return obra + " · " + almacen;
+  }
+
+  function stockPositive(a) {
+    return toFloat(a && (a.stock_numeric !== undefined ? a.stock_numeric : a.stock)) > 0;
+  }
+
+  function warehouseOriginHtml(a, item) {
+    var resourceName = cleanItemName(item);
+    return '' +
+      '<span class="alm2-wh-title ' + (cleanWarehouseLabel(a) === "SIN ALMACÉN" ? "is-sin-almacen" : "") + '">' + esc(cleanWarehouseLabel(a)) + '</span>' +
+      '<span class="alm2-wh-resource">' + esc(resourceName) + '</span>' +
+      '<span class="alm2-wh-stock">Stock origen: ' + esc(a.stock || "0") + '</span>';
+  }
+
+  function allWarehouseOptions() {
+    if (!almacenSelect) return [];
+
+    return Array.prototype.slice.call(almacenSelect.options)
+      .filter(function (o) { return String(o.value || "").trim(); })
+      .map(function (o) {
+        return {
+          id: String(o.value),
+          nombre: String(o.textContent || "").replace(/\s+/g, " ").trim(),
+          stock: ""
+        };
+      });
+  }
+
+  function isEntradaControl() {
+    var move = currentMove();
+    return move === "ENTRADA" || move === "CONTROL_STOCK" || move === "CONTROL";
+  }
+
+  function updateAlmacenText() {
+    var title = document.getElementById("alm2AlmacenTitle");
+    var help = document.getElementById("alm2AlmacenHelp");
+    var card = document.getElementById("alm2AlmacenCard");
+    var move = currentMove();
+
+    if (!title || !help) return;
+
+    if (move === "ENTRADA") {
+      if (card) card.classList.remove("is-hidden-by-operation");
+      title.textContent = "Almacén destino";
+      help.textContent = "Después de elegir ubicación actual/origen arriba, indica el almacén donde entra o se regulariza el recurso.";
+    } else if (move === "CONTROL_STOCK" || move === "CONTROL") {
+      if (card) card.classList.remove("is-hidden-by-operation");
+      title.textContent = "Almacén destino / regularización";
+      help.textContent = "Después de elegir ubicación actual/origen arriba, indica el almacén donde queda el stock real contado.";
+    } else {
+      // En SALIDA/ROTURA no mostrar otro select de almacén.
+      // El almacén origen se selecciona arriba, en la combinación recurso + almacén + stock.
+      if (card) card.classList.add("is-hidden-by-operation");
+      title.textContent = "Almacén origen";
+      help.textContent = "Selecciona el origen en la tarjeta del recurso.";
+    }
+  }
+
+  function apiUrl(q) {
+    var path = window.location.pathname;
+    if (!path.endsWith("/")) path += "/";
+    return path + "articulos/?q=" + encodeURIComponent(q || "") + "&tipo_recurso=" + encodeURIComponent(typeSelect ? typeSelect.value : "");
+  }
+
+  function setSelectOption(select, value, text) {
+    if (!select || value === undefined || value === null || value === "") return;
+
+    var opt = Array.prototype.slice.call(select.options).filter(function (o) {
+      return String(o.value) === String(value);
+    })[0];
+
+    if (!opt) {
+      opt = document.createElement("option");
+      opt.value = value;
+      select.appendChild(opt);
+    }
+
+    if (text) opt.textContent = text;
+    select.value = String(value);
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function setUnidadFromItem(item) {
+    if (!unidadField || !item) return;
+
+    var unidad = String(item.unidad || "").trim().toUpperCase();
+
+    if (!unidad) return;
+
+    setSelectOption(unidadField, unidad, unidad);
+  }
+
+  function setActiveButtons(container, valueAttr, value) {
+    Array.prototype.slice.call(container.querySelectorAll("[data-" + valueAttr + "]")).forEach(function (btn) {
+      btn.classList.toggle("is-active", String(btn.getAttribute("data-" + valueAttr)) === String(value));
+    });
+  }
+
+  function initTypeButtons() {
+    var grid = document.getElementById("alm2TypeGrid");
+    if (!grid || !typeSelect) return;
+
+    if (!typeSelect.value) typeSelect.value = "MATERIAL";
+    setActiveButtons(grid, "type", typeSelect.value);
+
+    Array.prototype.slice.call(grid.querySelectorAll("[data-type]")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        typeSelect.value = btn.getAttribute("data-type");
+        typeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        setActiveButtons(grid, "type", typeSelect.value);
+
+        if (search) search.value = "";
+        if (qField) qField.value = "";
+        if (recursoSelect) recursoSelect.value = "";
+
+        selectedItem = null;
+        selectedBox.classList.remove("is-visible");
+        resultsBox.classList.remove("is-open");
+      });
+    });
+  }
+
+  function initRadioButtons(gridId) {
+    var grid = document.getElementById(gridId);
+    if (!grid) return;
+
+    function refresh() {
+      Array.prototype.slice.call(grid.querySelectorAll("[data-radio-name]")).forEach(function (btn) {
+        var name = btn.getAttribute("data-radio-name");
+        var value = btn.getAttribute("data-radio-value");
+        var checked = form.querySelector('input[name="' + name + '"][value="' + value + '"]:checked');
+        btn.classList.toggle("is-active", !!checked);
+      });
+    }
+
+    Array.prototype.slice.call(grid.querySelectorAll("[data-radio-name]")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var name = btn.getAttribute("data-radio-name");
+        var value = btn.getAttribute("data-radio-value");
+        var radio = form.querySelector('input[name="' + name + '"][value="' + value + '"]');
+
+        if (radio) {
+          radio.checked = true;
+          radio.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+
+        refresh();
+        refreshVisibility();
+        updateAlmacenText();
+        if (selectedItem) renderWarehouses(selectedItem);
+        refreshStockWarning();
+      });
+    });
+
+    refresh();
+  }
+
+  function currentMove() {
+    var checked = form.querySelector('input[name="tipo_movimiento"]:checked');
+    return checked ? norm(checked.value) : "";
+  }
+
+  function currentDest() {
+    var checked = form.querySelector('input[name="destino"]:checked');
+    return checked ? norm(checked.value) : "";
+  }
+
+  function setBoxVisible(selector, visible) {
+    Array.prototype.slice.call(document.querySelectorAll(selector)).forEach(function (el) {
+      el.style.display = visible ? "" : "none";
+      Array.prototype.slice.call(el.querySelectorAll("input,select,textarea")).forEach(function (field) {
+        field.disabled = !visible;
+      });
+    });
+  }
+
+  function refreshVisibility() {
+    var move = currentMove();
+    var dest = currentDest();
+
+    var asksDest = !(move === "ENTRADA" || move === "CONTROL_STOCK" || move === "CONTROL");
+    var destinoCard = document.getElementById("alm2DestinoCard");
+
+    if (destinoCard) destinoCard.style.display = asksDest ? "" : "none";
+
+    setBoxVisible(".alm2-dest-partida", asksDest && dest === "PARTIDA");
+    setBoxVisible(".alm2-dest-persona", asksDest && dest === "PERSONA");
+
+    if (asksDest && dest === "PARTIDA") {
+      loadDestinoPlanificacion("visibility");
+    }
+  }
+
+  function renderResults(list) {
+    if (!list || !list.length) {
+      resultsBox.innerHTML = '<button type="button" class="alm2-result"><b>Sin resultados</b><span>Prueba con menos letras o cambia el tipo.</span></button>';
+      resultsBox.classList.add("is-open");
+      return;
+    }
+
+    resultsBox.innerHTML = list.map(function (item, idx) {
+      var stock = item.stock_total || "0";
+      var wh = item.almacenes_count || 0;
+
+      return '' +
+        '<button type="button" class="alm2-result" data-idx="' + idx + '">' +
+          '<b>' + esc(cleanItemName(item)) + '</b>' +
+          '<span>' + esc(cleanItemMeta(item)) + '</span>' +
+        '</button>';
+    }).join("");
+
+    resultsBox.classList.add("is-open");
+
+    Array.prototype.slice.call(resultsBox.querySelectorAll("[data-idx]")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var idx = parseInt(btn.getAttribute("data-idx"), 10);
+        selectItem(list[idx]);
+      });
+    });
+  }
+
+  function searchNow() {
+    var q = search.value.trim();
+
+    if (qField) qField.value = q;
+
+    if (q.length < 1) {
+      resultsBox.classList.remove("is-open");
+      resultsBox.innerHTML = "";
+      return;
+    }
+
+    if (controller) controller.abort();
+    controller = new AbortController();
+
+    resultsBox.classList.add("is-open");
+    resultsBox.innerHTML = '<button type="button" class="alm2-result"><b>Buscando...</b></button>';
+
+    fetch(apiUrl(q), { credentials: "same-origin", signal: controller.signal })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        renderResults(data.results || []);
+      })
+      .catch(function (err) {
+        if (err && err.name === "AbortError") return;
+        resultsBox.innerHTML = '<button type="button" class="alm2-result"><b>No se pudo buscar</b><span>Recarga o prueba con menos letras.</span></button>';
+      });
+  }
+
+  function selectItem(item) {
+    if (!item || !item.id) return;
+
+    alm2b8bClearVisibleErrors();
+
+    selectedItem = item;
+
+    setSelectOption(recursoSelect, item.id, item.text || item.nombre || item.id);
+
+    if (search) {
+      search.value = "";
+      search.placeholder = "Buscar otro recurso...";
+    }
+
+    if (qField) qField.value = cleanItemName(item);
+
+    resultsBox.classList.remove("is-open");
+
+    document.getElementById("alm2SelectedName").textContent = cleanItemName(item);
+    document.getElementById("alm2Code").textContent = item.codigo || item.id || "—";
+    document.getElementById("alm2Unit").textContent = item.unidad || "—";
+    setUnidadFromItem(item);
+    document.getElementById("alm2StockTotal").textContent = item.stock_total || "0";
+    document.getElementById("alm2WhCount").textContent = item.almacenes_count || "0";
+
+    selectedBox.classList.add("is-visible");
+
+    renderWarehouses(item);
+    refreshStockWarning();
+  }
+
+  function renderWarehouses(item) {
+    // OBRA_MOVIL_ALM_UX2B9_FLUJO_LINEAL_OK
+    // La parte superior siempre representa la ubicación actual/origen del recurso.
+    // Nunca se convierte en almacén destino. El destino se elige más abajo.
+    var almacenes = item && item.almacenes ? item.almacenes : [];
+
+    updateAlmacenText();
+
+    whBox.innerHTML = "";
+
+    var origenes = almacenes.filter(function (a) {
+      var stock = toFloat(a && (a.stock_numeric !== undefined ? a.stock_numeric : a.stock));
+      var label = cleanWarehouseLabel(a);
+      var isSin = (typeof alm2b8bTextIsSinAlmacen === "function" && alm2b8bTextIsSinAlmacen(label))
+        || !!(a && a.is_sin_almacen);
+
+      return Math.abs(stock) > 0.000001 || isSin;
+    });
+
+    if (!origenes.length) {
+      whBox.innerHTML = '<div class="alm2-warning is-danger">Este recurso no tiene ubicación ni stock localizado. Para regularizarlo, usa Entrada o C. Stock y elige almacén destino abajo.</div>';
+      return;
+    }
+
+    origenes.forEach(function (a) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+
+      var label = cleanWarehouseLabel(a);
+      var isSin = (typeof alm2b8bTextIsSinAlmacen === "function" && alm2b8bTextIsSinAlmacen(label))
+        || !!(a && a.is_sin_almacen);
+
+      btn.className = "alm2-wh" + (isSin ? " is-sin-almacen" : "");
+      btn.setAttribute("data-almacen-id", a.id || "");
+
+      if (isSin) {
+        btn.setAttribute("data-alm2-sin", "1");
+      }
+
+      btn.innerHTML = warehouseOriginHtml(a, item);
+
+      btn.addEventListener("click", function () {
+        Array.prototype.slice.call(document.querySelectorAll(".alm2-wh")).forEach(function (other) {
+          other.classList.remove("is-active");
+        });
+
+        btn.classList.add("is-active");
+
+        form.removeAttribute("data-alm2-sin-almacen-selected");
+        form.removeAttribute("data-alm2-selected-origin-stock");
+
+        var stock = String((a && (a.stock_numeric !== undefined ? a.stock_numeric : a.stock)) || "0");
+
+        if (isSin) {
+          form.setAttribute("data-alm2-sin-almacen-selected", "1");
+          form.setAttribute("data-alm2-selected-origin-stock", stock);
+
+          if (almacenSelect) {
+            almacenSelect.value = "";
+            almacenSelect.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+
+          if (warning) {
+            warning.className = "alm2-warning is-flow";
+            warning.textContent = "SIN ALMACÉN seleccionado como ubicación actual. Continúa con Entrada o C. Stock y elige almacén destino abajo.";
+          }
+
+          return;
+        }
+
+        form.setAttribute("data-alm2-selected-origin-stock", stock);
+
+        if (a && a.id) {
+          setSelectOption(almacenSelect, a.id, label);
+        }
+
+        refreshWarehouseButtons();
+        refreshStockWarning();
+        loadDestinoPlanificacion("almacen");
+      });
+
+      whBox.appendChild(btn);
+    });
+
+    if (origenes.length === 1) {
+      var first = origenes[0];
+      var firstLabel = cleanWarehouseLabel(first);
+      var firstIsSin = (typeof alm2b8bTextIsSinAlmacen === "function" && alm2b8bTextIsSinAlmacen(firstLabel))
+        || !!(first && first.is_sin_almacen);
+
+      if (!firstIsSin && first.id) {
+        setSelectOption(almacenSelect, first.id, firstLabel);
+      }
+    }
+
+    whBox.insertAdjacentHTML(
+      "beforeend",
+      '<div class="alm2-origin-flow-note">Paso 2: selecciona la ubicación actual/origen del recurso. Después elige operación y destino.</div>'
+    );
+
+    refreshWarehouseButtons();
+  }
+
+  function refreshWarehouseButtons() {
+    var current = almacenSelect ? String(almacenSelect.value || "") : "";
+    var sinSelected = form.getAttribute("data-alm2-sin-almacen-selected") === "1";
+
+    Array.prototype.slice.call(document.querySelectorAll(".alm2-wh")).forEach(function (btn) {
+      var id = String(btn.getAttribute("data-almacen-id") || "");
+      var isSin = btn.classList.contains("is-sin-almacen");
+
+      if (id) {
+        btn.classList.toggle("is-active", id === current);
+      } else if (isSin && sinSelected) {
+        btn.classList.add("is-active");
+      } else if (!id) {
+        btn.classList.remove("is-active");
+      }
+    });
+  }
+
+
+  // OBRA_MOVIL_ALM_UX2B7_DESTINO_PLANIFICACION_OK
+  var planDestinoLoading = false;
+
+  function planSelect(id) {
+    return document.getElementById(id);
+  }
+
+  function fillPlanSelect(select, items, placeholder, keepValue, autoOne) {
+    if (!select) return;
+
+    var current = keepValue ? String(select.value || "") : "";
+
+    select.innerHTML = "";
+
+    var empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = placeholder || "Selecciona...";
+    select.appendChild(empty);
+
+    (items || []).forEach(function (item) {
+      var opt = document.createElement("option");
+      opt.value = String(item.id || "");
+      opt.textContent = String(item.text || item.label || item.id || "");
+      select.appendChild(opt);
+    });
+
+    if (current && Array.prototype.slice.call(select.options).some(function (o) { return o.value === current; })) {
+      select.value = current;
+    } else if (autoOne && items && items.length === 1) {
+      select.value = String(items[0].id || "");
+    } else {
+      select.value = "";
+    }
+
+    select.disabled = !(items && items.length);
+  }
+
+  function destinoPlanParams() {
+    var params = new URLSearchParams();
+
+    if (almacenSelect && almacenSelect.value) params.set("almacen", almacenSelect.value);
+
+    var obra = planSelect("alm2DestObra");
+    var edificio = planSelect("alm2DestEdificio");
+    var vivienda = planSelect("alm2DestVivienda");
+    var planta = planSelect("alm2DestPlanta");
+    var capitulo = planSelect("alm2DestCapitulo");
+    var partida = planSelect("alm2DestPartida");
+
+    if (obra && obra.value) params.set("obra", obra.value);
+    if (edificio && edificio.value) params.set("edificio", edificio.value);
+    if (vivienda && vivienda.value) params.set("vivienda", vivienda.value);
+    if (planta && planta.value) params.set("planta", planta.value);
+    if (capitulo && capitulo.value) params.set("capitulo", capitulo.value);
+    if (partida && partida.value) params.set("partida", partida.value);
+
+    return params;
+  }
+
+  function destinoPlanApiUrl() {
+    var path = window.location.pathname;
+    if (!path.endsWith("/")) path += "/";
+    return path + "destino-planificacion/?" + destinoPlanParams().toString();
+  }
+
+  function syncDestinoHiddenFields() {
+    var vivienda = planSelect("alm2DestVivienda");
+    var partida = planSelect("alm2DestPartida");
+
+    if (unidadObraSelect && vivienda) {
+      if (vivienda.value) {
+        var text = vivienda.options[vivienda.selectedIndex] ? vivienda.options[vivienda.selectedIndex].textContent : vivienda.value;
+        setSelectOption(unidadObraSelect, vivienda.value, text);
+      } else {
+        unidadObraSelect.value = "";
+      }
+    }
+
+    if (partidaSelect && partida) {
+      if (partida.value) {
+        var textP = partida.options[partida.selectedIndex] ? partida.options[partida.selectedIndex].textContent : partida.value;
+        setSelectOption(partidaSelect, partida.value, textP);
+      } else {
+        partidaSelect.value = "";
+      }
+    }
+  }
+
+  function resetDestinoLower(level) {
+    var order = ["obra", "edificio", "vivienda", "planta", "capitulo", "partida"];
+    var ids = {
+      obra: "alm2DestObra",
+      edificio: "alm2DestEdificio",
+      vivienda: "alm2DestVivienda",
+      planta: "alm2DestPlanta",
+      capitulo: "alm2DestCapitulo",
+      partida: "alm2DestPartida"
+    };
+
+    var idx = order.indexOf(level);
+
+    order.forEach(function (name, pos) {
+      if (pos > idx) {
+        var el = planSelect(ids[name]);
+        if (el) el.value = "";
+      }
+    });
+
+    if (level === "edificio" || level === "vivienda" || level === "obra") {
+      if (unidadObraSelect) unidadObraSelect.value = "";
+    }
+
+    if (level !== "partida") {
+      if (partidaSelect) partidaSelect.value = "";
+    }
+  }
+
+  function loadDestinoPlanificacion(changed) {
+    var dest = currentDest();
+    var move = currentMove();
+
+    if (!(dest === "PARTIDA") || move === "ENTRADA" || move === "CONTROL_STOCK" || move === "CONTROL") {
+      return;
+    }
+
+    if (planDestinoLoading) return;
+    planDestinoLoading = true;
+
+    fetch(destinoPlanApiUrl(), { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data || !data.ok) return;
+
+        var obra = planSelect("alm2DestObra");
+        var edificio = planSelect("alm2DestEdificio");
+        var vivienda = planSelect("alm2DestVivienda");
+        var planta = planSelect("alm2DestPlanta");
+        var capitulo = planSelect("alm2DestCapitulo");
+        var partida = planSelect("alm2DestPartida");
+
+        fillPlanSelect(obra, data.obras || [], "Selecciona una obra...", true, true);
+        fillPlanSelect(edificio, data.edificios || [], "Selecciona edificio/fase...", true, false);
+        fillPlanSelect(vivienda, data.viviendas || [], "Selecciona vivienda...", true, false);
+        fillPlanSelect(planta, data.plantas || [], "Selecciona planta...", true, false);
+        fillPlanSelect(capitulo, data.capitulos || [], "Selecciona capítulo...", true, false);
+        fillPlanSelect(partida, data.partidas || [], "Selecciona partida...", true, false);
+
+        if (data.selected) {
+          if (obra && data.selected.obra && !obra.value) obra.value = String(data.selected.obra);
+          if (edificio && data.selected.edificio && !edificio.value) edificio.value = String(data.selected.edificio);
+          if (vivienda && data.selected.vivienda && !vivienda.value) vivienda.value = String(data.selected.vivienda);
+          if (planta && data.selected.planta && !planta.value) planta.value = String(data.selected.planta);
+          if (capitulo && data.selected.capitulo && !capitulo.value) capitulo.value = String(data.selected.capitulo);
+          if (partida && data.selected.partida && !partida.value) partida.value = String(data.selected.partida);
+        }
+
+        syncDestinoHiddenFields();
+      })
+      .catch(function () {})
+      .finally(function () {
+        planDestinoLoading = false;
+      });
+  }
+
+  function initDestinoPlanificacion() {
+    var map = [
+      ["alm2DestObra", "obra"],
+      ["alm2DestEdificio", "edificio"],
+      ["alm2DestVivienda", "vivienda"],
+      ["alm2DestPlanta", "planta"],
+      ["alm2DestCapitulo", "capitulo"],
+      ["alm2DestPartida", "partida"]
+    ];
+
+    map.forEach(function (pair) {
+      var el = planSelect(pair[0]);
+      if (!el) return;
+
+      el.addEventListener("change", function () {
+        resetDestinoLower(pair[1]);
+        syncDestinoHiddenFields();
+        loadDestinoPlanificacion(pair[1]);
+      });
+    });
+
+    loadDestinoPlanificacion("init");
+  }
+
+
+
+  // OBRA_MOVIL_ALM_UX2B8_RESET_SIN_ALMACEN_OK
+  function isSinAlmacenLabel(label) {
+    var value = String(label || "")
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    return value === "SIN ALMACEN";
+  }
+
+  function isSinAlmacenItem(a) {
+    return !!(a && (a.is_sin_almacen || isSinAlmacenLabel(cleanWarehouseLabel(a))));
+  }
+
+  function clearServerErrorsForNewSearch() {
+    Array.prototype.slice.call(form.querySelectorAll(".alm2-errors, .errorlist")).forEach(function (el) {
+      el.remove();
+    });
+  }
+
+  function clearPlanDestino() {
+    ["alm2DestObra", "alm2DestEdificio", "alm2DestVivienda", "alm2DestPlanta", "alm2DestCapitulo", "alm2DestPartida"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+  }
+
+  function clearFieldValue(field) {
+    if (!field) return;
+
+    if (field.tagName && field.tagName.toLowerCase() === "select") {
+      field.value = "";
+    } else {
+      field.value = "";
+    }
+
+    field.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function resetForNewResourceSearch() {
+    selectedItem = null;
+
+    form.removeAttribute("data-alm2-sin-almacen-selected");
+    form.removeAttribute("data-alm2-selected-origin-stock");
+
+    if (selectedBox) selectedBox.classList.remove("is-visible");
+    if (whBox) whBox.innerHTML = "";
+    if (resultsBox) resultsBox.classList.remove("is-open");
+
+    clearServerErrorsForNewSearch();
+
+    clearFieldValue(recursoSelect);
+    clearFieldValue(almacenSelect);
+    clearFieldValue(unidadField);
+    clearFieldValue(unidadObraSelect);
+    clearFieldValue(partidaSelect);
+
+    var empleado = form.querySelector('[name="empleado"]');
+    clearFieldValue(empleado);
+
+    clearPlanDestino();
+
+    if (warning) {
+      warning.className = "alm2-warning";
+      warning.textContent = "Selecciona recurso para ver stock.";
+    }
+
+    refreshWarehouseButtons();
+  }
+
+  function selectWarehouseOrigin(a, item, btn) {
+    var label = cleanWarehouseLabel(a);
+    var id = String((a && a.id) || "").trim();
+
+    form.removeAttribute("data-alm2-sin-almacen-selected");
+    form.removeAttribute("data-alm2-selected-origin-stock");
+
+    Array.prototype.slice.call(document.querySelectorAll(".alm2-wh")).forEach(function (other) {
+      other.classList.remove("is-active");
+    });
+
+    if (btn) btn.classList.add("is-active");
+
+    if (isSinAlmacenItem(a)) {
+      form.setAttribute("data-alm2-sin-almacen-selected", "1");
+      form.setAttribute("data-alm2-selected-origin-stock", String((a && (a.stock_numeric !== undefined ? a.stock_numeric : a.stock)) || "0"));
+    }
+
+    if (id) {
+      setSelectOption(almacenSelect, id, label);
+    } else {
+      clearFieldValue(almacenSelect);
+    }
+
+    refreshWarehouseButtons();
+    refreshStockWarning();
+    loadDestinoPlanificacion("almacen");
+  }
+
+
+
+  // OBRA_MOVIL_ALM_UX2B8B_ROBUSTO_OK
+  function alm2b8bNorm(value) {
+    return String(value || "")
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function alm2b8bTextIsSinAlmacen(value) {
+    return alm2b8bNorm(value).indexOf("SIN ALMACEN") >= 0;
+  }
+
+  function alm2b8bClearVisibleErrors() {
+    Array.prototype.slice.call(document.querySelectorAll(".alm2-errors, .errorlist")).forEach(function (el) {
+      el.remove();
+    });
+  }
+
+  function alm2b8bClearDependentControls() {
+    selectedItem = null;
+
+    form.removeAttribute("data-alm2-sin-almacen-selected");
+    form.removeAttribute("data-alm2-selected-origin-stock");
+
+    if (selectedBox) selectedBox.classList.remove("is-visible");
+    if (whBox) whBox.innerHTML = "";
+
+    if (recursoSelect) recursoSelect.value = "";
+    if (almacenSelect) almacenSelect.value = "";
+    if (unidadField) unidadField.value = "";
+    if (unidadObraSelect) unidadObraSelect.value = "";
+    if (partidaSelect) partidaSelect.value = "";
+
+    var empleado = form.querySelector('[name="empleado"]');
+    if (empleado) empleado.value = "";
+
+    ["alm2DestObra", "alm2DestEdificio", "alm2DestVivienda", "alm2DestPlanta", "alm2DestCapitulo", "alm2DestPartida"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    if (warning) {
+      warning.className = "alm2-warning";
+      warning.textContent = "Selecciona recurso para ver stock.";
+    }
+
+    alm2b8bClearVisibleErrors();
+    refreshWarehouseButtons();
+  }
+
+  function alm2b8bStockFromButton(btn) {
+    var txt = btn ? btn.textContent || "" : "";
+    var m = txt.match(/Stock\s+origen\s*:\s*([-0-9.,]+)/i);
+    return m ? m[1] : "0";
+  }
+
+  function alm2b8bSelectSinAlmacenButton(btn) {
+    if (!btn) return;
+
+    Array.prototype.slice.call(document.querySelectorAll(".alm2-wh")).forEach(function (other) {
+      other.classList.remove("is-active");
+    });
+
+    btn.classList.add("is-active");
+    btn.classList.add("is-sin-almacen");
+    btn.setAttribute("data-alm2-sin", "1");
+
+    form.setAttribute("data-alm2-sin-almacen-selected", "1");
+    form.setAttribute("data-alm2-selected-origin-stock", alm2b8bStockFromButton(btn));
+
+    if (almacenSelect) {
+      almacenSelect.value = "";
+      almacenSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    if (warning) {
+      warning.className = "alm2-warning";
+      warning.textContent = "SIN ALMACÉN seleccionado. Úsalo para regularizar: cambia a C. Stock o Entrada y elige un almacén real.";
+    }
+  }
+
+  function alm2b8bBindSearchReset() {
+    if (!search || search.getAttribute("data-alm2b8b-reset-bound") === "1") return;
+
+    search.setAttribute("data-alm2b8b-reset-bound", "1");
+
+    search.addEventListener("focus", function () {
+      alm2b8bClearVisibleErrors();
+    }, true);
+
+    search.addEventListener("input", function () {
+      alm2b8bClearDependentControls();
+    }, true);
+  }
+
+  function alm2b8bBindSinAlmacenDelegation() {
+    if (!whBox || whBox.getAttribute("data-alm2b8b-sin-bound") === "1") return;
+
+    whBox.setAttribute("data-alm2b8b-sin-bound", "1");
+
+    whBox.addEventListener("click", function (ev) {
+      var btn = ev.target.closest ? ev.target.closest(".alm2-wh") : null;
+      if (!btn) return;
+
+      var isSin = btn.getAttribute("data-alm2-sin") === "1"
+        || btn.classList.contains("is-sin-almacen")
+        || alm2b8bTextIsSinAlmacen(btn.textContent || "");
+
+      if (!isSin) return;
+
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+
+      alm2b8bSelectSinAlmacenButton(btn);
+    }, true);
+  }
+
+
+  function selectedWarehouseStock() {
+    if (!selectedItem || !almacenSelect) return 0;
+
+    var manualStock = form.getAttribute("data-alm2-selected-origin-stock");
+    if (manualStock !== null && manualStock !== "") {
+      return toFloat(manualStock);
+    }
+
+    var id = String(almacenSelect.value || "");
+    var found = (selectedItem.almacenes || []).filter(function (a) {
+      return String(a.id || "") === id;
+    })[0];
+
+    return found ? toFloat(found.stock) : 0;
+  }
+
+  function refreshStockWarning() {
+    if (!warning) return;
+
+    if (!selectedItem) {
+      warning.className = "alm2-warning";
+      warning.textContent = "Selecciona recurso para ver stock.";
+      return;
+    }
+
+    var move = currentMove();
+    var qty = cantidadInput ? toFloat(cantidadInput.value) : 0;
+    var stock = selectedWarehouseStock();
+
+    if (move === "ENTRADA") {
+      warning.className = "alm2-warning is-flow";
+      warning.textContent = "Entrada: confirma ubicación actual/origen arriba y selecciona almacén destino abajo.";
+      return;
+    }
+
+    if (move === "CONTROL_STOCK" || move === "CONTROL") {
+      warning.className = "alm2-warning is-flow";
+      warning.textContent = "Regularización: confirma ubicación actual/origen arriba y selecciona almacén destino/regularización abajo.";
+      return;
+    }
+
+    if (!(selectedItem.almacenes || []).length) {
+      warning.className = "alm2-warning is-danger";
+      warning.textContent = "Sin stock localizado. Revisa antes de guardar una salida.";
+      return;
+    }
+
+    if (form.getAttribute("data-alm2-sin-almacen-selected") === "1" && (!almacenSelect || !almacenSelect.value)) {
+      warning.className = "alm2-warning";
+      warning.textContent = "SIN ALMACÉN seleccionado: sirve para regularizar. Para guardar salida directa hará falta almacén real.";
+      return;
+    }
+
+    if (!almacenSelect || !almacenSelect.value) {
+      warning.className = "alm2-warning";
+      warning.textContent = "Selecciona el almacén de origen.";
+      return;
+    }
+
+    if (qty > stock && stock > 0) {
+      warning.className = "alm2-warning is-danger";
+      warning.textContent = "Aviso: la cantidad supera el stock de este almacén. El movimiento se guardará igualmente y el stock resultante podrá quedar negativo.";
+      return;
+    }
+
+    warning.className = "alm2-warning is-ok";
+    warning.textContent = "Stock en almacén seleccionado: " + stock + ".";
+  }
+
+  search.addEventListener("input", function () {
+    resetForNewResourceSearch();
+
+    clearTimeout(timer);
+    timer = setTimeout(searchNow, 180);
+  });
+
+  search.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      var first = resultsBox.querySelector("[data-idx]");
+      if (first) first.click();
+    }
+  });
+
+  document.addEventListener("click", function (ev) {
+    if (!ev.target.closest(".alm2-search-wrap")) {
+      resultsBox.classList.remove("is-open");
+    }
+  });
+
+  if (cantidadInput) {
+    cantidadInput.addEventListener("input", refreshStockWarning);
+  }
+
+  if (almacenSelect) {
+    almacenSelect.addEventListener("change", function () {
+      refreshWarehouseButtons();
+      refreshStockWarning();
+    });
+  }
+
+  Array.prototype.slice.call(form.querySelectorAll('input[name="tipo_movimiento"], input[name="destino"]')).forEach(function (el) {
+    el.addEventListener("change", function () {
+      refreshVisibility();
+      refreshStockWarning();
+    });
+  });
+
+  initTypeButtons();
+  initRadioButtons("alm2MoveGrid");
+  initRadioButtons("alm2DestGrid");
+  alm2b8bBindSearchReset();
+  alm2b8bBindSinAlmacenDelegation();
+  initDestinoPlanificacion();
+  updateAlmacenText();
+  refreshVisibility();
+
+  // OBRA_MOVIL_ALM_UX2B10_CLEAR_LOAD_STATE_OK
+  function alm2b10SetRadioByText(name, wantedText) {
+    var wanted = alm2b8bNorm ? alm2b8bNorm(wantedText) : String(wantedText || "").toUpperCase();
+
+    var radios = Array.prototype.slice.call(form.querySelectorAll('input[name="' + name + '"]'));
+
+    radios.forEach(function (radio) {
+      var value = alm2b8bNorm ? alm2b8bNorm(radio.value) : String(radio.value || "").toUpperCase();
+      radio.checked = value.indexOf(wanted) >= 0;
+    });
+
+    Array.prototype.slice.call(document.querySelectorAll('[data-radio-name="' + name + '"]')).forEach(function (btn) {
+      var value = alm2b8bNorm ? alm2b8bNorm(btn.getAttribute("data-radio-value")) : String(btn.getAttribute("data-radio-value") || "").toUpperCase();
+      btn.classList.toggle("is-active", value.indexOf(wanted) >= 0);
+    });
+  }
+
+  function alm2b10ClearStickyBackendState(reason) {
+    if (!search) return;
+
+    var hasSearchText = String(search.value || "").trim().length > 0;
+    var selectedVisible = selectedBox && selectedBox.classList.contains("is-visible");
+
+    // Solo limpiar estado pegado cuando la pantalla entra sin recurso activo.
+    if (hasSearchText || selectedVisible) return;
+
+    if (typeof alm2b8bClearVisibleErrors === "function") {
+      alm2b8bClearVisibleErrors();
+    }
+
+    selectedItem = null;
+
+    form.removeAttribute("data-alm2-sin-almacen-selected");
+    form.removeAttribute("data-alm2-selected-origin-stock");
+
+    if (selectedBox) selectedBox.classList.remove("is-visible");
+    if (resultsBox) resultsBox.classList.remove("is-open");
+    if (whBox) whBox.innerHTML = "";
+
+    if (recursoSelect) recursoSelect.value = "";
+    if (almacenSelect) almacenSelect.value = "";
+    if (unidadField) unidadField.value = "";
+    if (unidadObraSelect) unidadObraSelect.value = "";
+    if (partidaSelect) partidaSelect.value = "";
+
+    var empleado = form.querySelector('[name="empleado"]');
+    if (empleado) empleado.value = "";
+
+    var cantidad = form.querySelector('[name="cantidad"]');
+    if (cantidad) cantidad.value = "";
+
+    ["alm2DestObra", "alm2DestEdificio", "alm2DestVivienda", "alm2DestPlanta", "alm2DestCapitulo", "alm2DestPartida"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    alm2b10SetRadioByText("tipo_movimiento", "SALIDA");
+    alm2b10SetRadioByText("destino", "PARTIDA");
+
+    if (warning) {
+      warning.className = "alm2-warning";
+      warning.textContent = "Selecciona recurso para ver stock.";
+    }
+
+    if (typeof refreshWarehouseButtons === "function") refreshWarehouseButtons();
+    if (typeof updateAlmacenText === "function") updateAlmacenText();
+    if (typeof refreshVisibility === "function") refreshVisibility();
+  }
+
+  // Ejecutar varias veces porque algunos navegadores restauran inputs después del primer render.
+  alm2b10ClearStickyBackendState("init");
+  setTimeout(function () { alm2b10ClearStickyBackendState("timeout-50"); }, 50);
+  setTimeout(function () { alm2b10ClearStickyBackendState("timeout-250"); }, 250);
+
+  window.addEventListener("pageshow", function () {
+    alm2b10ClearStickyBackendState("pageshow");
+  });
+
+})();
+</script>
+{% endblock %}
+
+<script>
+(function () {
+  // OBRA_MOVIL_ALM_UX2E1_V2_PLANIFICACION_PARTIDA_OK
+  var form = document.querySelector("form");
+  if (!form || form.getAttribute("data-alm2e1-v2-bound") === "1") return;
+  form.setAttribute("data-alm2e1-v2-bound", "1");
+
+  function norm(v) {
+    return String(v || "").trim().toUpperCase().replace(/\s+/g, "_");
+  }
+
+  function checkedValue(name) {
+    var el = form.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : "";
+  }
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function valueOf(id) {
+    var el = byId(id);
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function hiddenValue(name) {
+    var el = form.querySelector('[name="' + name + '"]');
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function requiresPartidaCompleta() {
+    var mov = norm(checkedValue("tipo_movimiento"));
+    var dest = norm(checkedValue("destino"));
+    return (mov === "SALIDA" || mov === "ROTURA") && dest === "PARTIDA";
+  }
+
+  function partidaCompleta() {
+    return Boolean(
+      valueOf("alm2DestObra") &&
+      valueOf("alm2DestEdificio") &&
+      valueOf("alm2DestVivienda") &&
+      valueOf("alm2DestPlanta") &&
+      valueOf("alm2DestCapitulo") &&
+      valueOf("alm2DestPartida") &&
+      hiddenValue("unidad_obra") &&
+      hiddenValue("partida")
+    );
+  }
+
+  function ensureWarningBox() {
+    var box = document.getElementById("alm2e1PartidaWarning");
+    if (box) return box;
+
+    var ref = document.getElementById("alm2DestPartida") || form;
+    box = document.createElement("div");
+    box.id = "alm2e1PartidaWarning";
+    box.className = "alm2-warning is-danger";
+    box.style.marginTop = "10px";
+    box.textContent = "Para enviar a vivienda / partida debes completar Obra → Edificio/Fase → Vivienda → Planta → Capítulo → Partida.";
+
+    if (ref && ref.parentNode) {
+      ref.parentNode.insertBefore(box, ref.nextSibling);
+    } else {
+      form.appendChild(box);
+    }
+
+    return box;
+  }
+
+  function submitButton() {
+    return form.querySelector('button[type="submit"], input[type="submit"]');
+  }
+
+  function refreshPartidaCompletaState() {
+    var required = requiresPartidaCompleta();
+    var complete = partidaCompleta();
+    var btn = submitButton();
+    var box = ensureWarningBox();
+
+    if (required && !complete) {
+      if (btn) {
+        btn.disabled = true;
+        btn.setAttribute("data-alm2e1-v2-disabled", "1");
+      }
+      box.style.display = "";
+      return false;
+    }
+
+    if (btn && btn.getAttribute("data-alm2e1-v2-disabled") === "1") {
+      btn.disabled = false;
+      btn.removeAttribute("data-alm2e1-v2-disabled");
+    }
+
+    box.style.display = "none";
+    return true;
+  }
+
+  form.addEventListener("change", refreshPartidaCompletaState, true);
+  form.addEventListener("input", refreshPartidaCompletaState, true);
+  form.addEventListener("click", function () {
+    setTimeout(refreshPartidaCompletaState, 30);
+  }, true);
+
+  form.addEventListener("submit", function (ev) {
+    if (!refreshPartidaCompletaState()) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ensureWarningBox().scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, true);
+
+  refreshPartidaCompletaState();
+  setTimeout(refreshPartidaCompletaState, 100);
+  setTimeout(refreshPartidaCompletaState, 400);
+})();
+</script>
+
+
+<script id="alm-gasoil-vehiculo-km-v1">
+(function () {
+  var MARKER = "OBRA_MOVIL_ALM_GASOIL_VEHICULO_KM_OK";
+
+  function norm(v) {
+    return String(v || "").trim().toUpperCase();
+  }
+
+  function selectedRadio(name) {
+    return document.querySelector('input[name="' + name + '"]:checked');
+  }
+
+  function setRadio(name, value) {
+    var radio = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+    if (!radio) return;
+    radio.checked = true;
+    radio.dispatchEvent(new Event("change", { bubbles: true }));
+    var btn = document.querySelector('[data-radio-name="' + name + '"][data-radio-value="' + value + '"]');
+    if (btn) btn.click();
+  }
+
+  function selectedRecursoText() {
+    var select = document.querySelector('[name="recurso"]');
+    if (!select) return "";
+    var opt = select.options[select.selectedIndex];
+    return opt ? opt.textContent || "" : "";
+  }
+
+  function isGasoilSelected() {
+    var select = document.querySelector('[name="recurso"]');
+    var value = select ? String(select.value || "") : "";
+    var text = norm(selectedRecursoText());
+    var selectedName = norm((document.getElementById("alm2SelectedName") || {}).textContent || "");
+
+    return (
+      value === "4247" ||
+      text.indexOf("· 167 · GASOIL ·") !== -1 ||
+      selectedName.indexOf("· 167 · GASOIL ·") !== -1 ||
+      text === "GASOIL" ||
+      selectedName === "GASOIL"
+    );
+  }
+
+  function setEmpleadoLabel(isGasoil) {
+    var empleado = document.querySelector('[name="empleado"]');
+    if (!empleado) return;
+    var label = document.querySelector('label[for="' + empleado.id + '"]');
+    if (!label) return;
+
+    if (!label.getAttribute("data-original-label")) {
+      label.setAttribute("data-original-label", label.textContent || "Persona");
+    }
+
+    label.textContent = isGasoil ? "Quién recarga" : label.getAttribute("data-original-label");
+  }
+
+  function refreshGasoilUx() {
+    var gasoil = isGasoilSelected();
+    var card = document.getElementById("alm2GasoilCard");
+
+    if (card) {
+      card.classList.toggle("is-active", gasoil);
+    }
+
+    setEmpleadoLabel(gasoil);
+
+    if (gasoil) {
+      setRadio("tipo_movimiento", "SALIDA");
+      setRadio("destino", "PERSONA");
+
+      var vehiculo = document.querySelector('[name="vehiculo"]');
+      if (vehiculo) {
+        vehiculo.setAttribute("required", "required");
+      }
+
+      var km = document.querySelector('[name="kilometraje"]');
+      if (km) {
+        km.setAttribute("required", "required");
+      }
+    } else {
+      var vehiculoOff = document.querySelector('[name="vehiculo"]');
+      if (vehiculoOff) vehiculoOff.removeAttribute("required");
+
+      var kmOff = document.querySelector('[name="kilometraje"]');
+      if (kmOff) kmOff.removeAttribute("required");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("alm2Form");
+    if (!form) return;
+
+    form.setAttribute("data-" + MARKER.toLowerCase().replaceAll("_", "-"), "1");
+
+    ["recurso", "tipo_movimiento", "destino"].forEach(function (name) {
+      Array.prototype.slice.call(document.querySelectorAll('[name="' + name + '"]')).forEach(function (el) {
+        el.addEventListener("change", refreshGasoilUx);
+        el.addEventListener("input", refreshGasoilUx);
+      });
+    });
+
+    document.addEventListener("click", function () {
+      setTimeout(refreshGasoilUx, 80);
+    });
+
+    setTimeout(refreshGasoilUx, 100);
+    setTimeout(refreshGasoilUx, 500);
+  });
+})();
+</script>
+

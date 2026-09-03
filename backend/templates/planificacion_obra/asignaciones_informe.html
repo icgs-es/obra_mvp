@@ -3,6 +3,134 @@
 {% block title %}Informe de planificación{% endblock %}
 
 {% block content %}
+
+<style>
+/* INFORME_ASIGNACIONES_COMPACTO_V2 */
+/* FIX_ASIGNACIONES_INFORME_COMPACTO_V6 */
+.
+    <div class="pi-applied-filters pi-applied-filters-v13">
+      {% for filtro in applied_filters_pairs_v13 %}
+        <div class="pi-applied-filter" title="{{ filtro.0 }}: {{ filtro.1 }}">
+          <span>{{ filtro.0 }}:</span>
+          <strong>{{ filtro.1 }}</strong>
+        </div>
+      {% empty %}
+        <div class="pi-applied-filter">
+          <span>Periodo:</span>
+          <strong>{{ filters.desde|default:"-" }} — {{ filters.hasta|default:"-" }}</strong>
+        </div>
+      {% endfor %}
+    </div>
+
+informe-asignaciones-compact {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: .74rem;
+}
+
+.informe-asignaciones-compact th,
+.informe-asignaciones-compact td {
+  padding: .22rem .32rem !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.15 !important;
+}
+
+.informe-asignaciones-compact .col-fecha { width: 72px; }
+.informe-asignaciones-compact .col-empleado { width: 150px; }
+.informe-asignaciones-compact .col-obra { width: 145px; }
+.informe-asignaciones-compact .col-edificio { width: 92px; }
+.informe-asignaciones-compact .col-vivienda { width: 72px; }
+.informe-asignaciones-compact .col-planta { width: 60px; }
+.informe-asignaciones-compact .col-capitulo { width: 125px; }
+.informe-asignaciones-compact .col-trabajo { width: 230px; }
+.informe-asignaciones-compact .col-estado { width: 82px; }
+.informe-asignaciones-compact .col-horas { width: 64px; text-align: right; }
+.informe-asignaciones-compact .col-importe { width: 82px; text-align: right; }
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  .informe-asignaciones-compact {
+    font-size: .64rem !important;
+  }
+
+  .informe-asignaciones-compact th,
+  .informe-asignaciones-compact td {
+    padding: .14rem .2rem !important;
+    line-height: 1.05 !important;
+  }
+}
+</style>
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_PROFESIONAL_V7 */
+.pi-report-card {
+  overflow: hidden !important;
+  border: 1px solid #d6dee8;
+  border-radius: 14px;
+  background: #fff;
+  padding: .45rem;
+}
+
+.pi-report-card .table-responsive {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+
+.informe-asignaciones-compact {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+  font-size: .66rem !important;
+}
+
+.informe-asignaciones-compact th,
+.informe-asignaciones-compact td {
+  padding: .16rem .18rem !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.informe-asignaciones-compact .col-fecha { width: 6% !important; }
+.informe-asignaciones-compact .col-empleado { width: 12.5% !important; }
+.informe-asignaciones-compact .col-obra { width: 9% !important; }
+.informe-asignaciones-compact .col-edificio { width: 8% !important; }
+.informe-asignaciones-compact .col-vivienda { width: 5.5% !important; }
+.informe-asignaciones-compact .col-planta { width: 5.5% !important; }
+.informe-asignaciones-compact .col-capitulo { width: 5% !important; }
+.informe-asignaciones-compact .col-trabajo { width: 25% !important; }
+.informe-asignaciones-compact .col-estado { width: 6.5% !important; }
+.informe-asignaciones-compact .col-horas { width: 5% !important; }
+.informe-asignaciones-compact .col-importe { width: 6.5% !important; }
+
+@media print {
+  .pi-report-card .table-responsive {
+    overflow: visible !important;
+  }
+
+  .informe-asignaciones-compact {
+    font-size: .56rem !important;
+  }
+
+  .informe-asignaciones-compact th,
+  .informe-asignaciones-compact td {
+    padding: .09rem .12rem !important;
+    line-height: 1.02 !important;
+  }
+}
+</style>
+
+
 <style>
 .pi-report-page {
   padding: 24px 28px;
@@ -333,14 +461,13 @@
 
 </style>
 
-<div class="pi-report-page">
+<div class="pi-report-page asignaciones-report-page">
 
   <div class="pi-print-header">
     <div>
       <div class="pi-print-brand">Intasa Platform</div>
       <h1>Informe de planificación de obra</h1>
-      <p>Periodo {{ fecha_desde|date:"d/m/Y" }} — {{ fecha_hasta|date:"d/m/Y" }}</p>
-    </div>
+</div>
     <div class="pi-print-meta">
       <strong>Generado</strong>
       <span>{% now "d/m/Y H:i" %}</span>
@@ -348,15 +475,8 @@
   </div>
 
 
-  <div class="pi-report-header mb-3 d-flex justify-content-between align-items-start">
-    <div>
-      <h1 class="h3 mb-1">Informe de planificación</h1>
-      <p class="text-muted mb-0">
-        Periodo {{ fecha_desde|date:"d/m/Y" }} — {{ fecha_hasta|date:"d/m/Y" }}
-      </p>
-    </div>
-
-    <div class="pi-report-actions d-flex gap-2">
+  <div class="pi-report-header asignaciones-report-header mb-3 d-flex justify-content-between align-items-start">
+<div class="pi-report-actions asignaciones-report-actions d-flex gap-2">
       <a href="{% url 'planificacion_obra:asignaciones_gantt' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn-outline-primary btn-sm">
         Gantt
       </a>
@@ -369,7 +489,18 @@
     </div>
   </div>
 
-  <form id="pi-report-filter-form" method="get" class="pi-report-filters mb-3">
+  <div class="pi-print-filter-line-v14 asignaciones-report-period">
+    {{ filtros_linea_superior_v14 }}
+  </div>
+
+  <details class="asignaciones-report-filter-disclosure mb-3" open>
+    <summary class="asignaciones-report-filter-toggle d-md-none btn btn-outline-primary w-100">
+      <span>Filtros</span>
+      <span class="asignaciones-report-filter-state">Abiertos</span>
+      {% if request.GET %}<span class="badge text-bg-primary">Activos</span>{% endif %}
+    </summary>
+
+  <form id="pi-report-filter-form" method="get" class="pi-report-filters asignaciones-report-filters">
     <div class="row g-3 align-items-end">
       <div class="col-md-2">
         <label class="form-label">Desde</label>
@@ -470,80 +601,154 @@
       </div>
     </div>
   </form>
+  </details>
 
-  <div class="pi-report-kpis mb-3">
-    <div class="pi-report-kpi">
+  <div class="pi-report-kpis asignaciones-report-kpis mb-3">
+    <div class="pi-report-kpi asignaciones-report-kpi">
       <span>Asignaciones</span>
       <strong>{{ total_asignaciones }}</strong>
     </div>
-    <div class="pi-report-kpi">
+    <div class="pi-report-kpi asignaciones-report-kpi">
       <span>Empleados</span>
       <strong>{{ total_empleados }}</strong>
     </div>
-    <div class="pi-report-kpi">
+    <div class="pi-report-kpi asignaciones-report-kpi">
       <span>Viviendas</span>
       <strong>{{ total_viviendas }}</strong>
     </div>
-    <div class="pi-report-kpi">
+    <div class="pi-report-kpi asignaciones-report-kpi">
       <span>Horas planificadas</span>
       <strong>{{ total_horas }}</strong>
     </div>
+      <div class="pi-report-kpi asignaciones-report-kpi asignaciones-report-kpi-total">
+        <span>Importe total (€)</span>
+        <strong>{{ total_importe_display|default:"0,00 €" }}</strong>
+      </div>
   </div>
 
-  <div class="pi-report-card">
-    {% if rows %}
-      <table class="pi-report-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Horario</th>
-            <th>Empleado</th>
-            <th>Ubicación</th>
-            <th>Trabajo</th>
-            <th>Estado</th>
-            <th>Horas</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in rows %}
-            <tr>
-              <td>
-                <div class="pi-report-main">{{ row.fecha|date:"d/m/Y" }}</div>
-                {% if row.fecha_fin and row.fecha_fin != row.fecha %}
-                  <div class="pi-report-muted">hasta {{ row.fecha_fin|date:"d/m/Y" }}</div>
-                {% endif %}
-              </td>
-              <td>{{ row.horario }}</td>
-              <td>
-                <div class="pi-report-main">{{ row.empleado }}</div>
-              </td>
-              <td>
-                <div class="pi-report-main">{{ row.vivienda }} · {{ row.planta }}</div>
-                <div class="pi-report-muted">{{ row.obra }} · {{ row.edificio }}</div>
-              </td>
-              <td>
-                <div class="pi-report-main">{{ row.capitulo }}</div>
-                <div class="pi-report-muted">{{ row.partida }}</div>
-              </td>
-              <td>
-                <div class="pi-report-main">{{ row.estado }}</div>
-                <div class="pi-report-muted">{{ row.origen }}</div>
-              </td>
-              <td>
-                <div class="pi-report-main">{{ row.horas }}</div>
-                {% if row.coste %}
-                  <div class="pi-report-muted">{{ row.coste }} €</div>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <div class="pi-report-empty">
-        No hay asignaciones para el periodo y filtros seleccionados.
+  <style>
+/* ASIGNACIONES_INFORME_FILAS_COMPLETAS_SCROLL_V20 */
+
+/*
+ * En pantalla el informe completo queda contenido en una zona desplazable.
+ * El navegador mantiene todas las filas en el DOM.
+ */
+@media screen {
+  .pi-report-table-scroll-v20 {
+    max-height: 68vh;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+
+  .pi-report-table-scroll-v20 thead th {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: #ffffff;
+  }
+}
+
+/*
+ * Al imprimir no existe ningún recorte:
+ * se imprimen todas las filas del periodo seleccionado.
+ */
+@media print {
+  .pi-report-table-scroll-v20 {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+  }
+
+  .pi-report-table-scroll-v20 thead th {
+    position: static !important;
+  }
+}
+</style>
+
+<div class="pi-report-card asignaciones-report-results">
+<div class="table-responsive pi-report-table-scroll-v20 asignaciones-report-table-wrap">
+  <table class="table table-sm table-striped table-hover align-middle informe-asignaciones-compact">
+    <colgroup>
+      <col class="col-fecha">
+      <col class="col-empleado">
+      <col class="col-obra">
+      <col class="col-edificio">
+      <col class="col-vivienda">
+      <col class="col-planta">
+      <col class="col-capitulo">
+      <col class="col-trabajo">
+      <col class="col-estado">
+      <col class="col-horas">
+      <col class="col-importe">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Empleado</th>
+        <th>Obra</th>
+        <th>Edif./Fase</th>
+        <th>Vivienda</th>
+        <th>Planta</th>
+        <th>Capítulo</th>
+        <th>Trabajo</th>
+        <th>Estado</th>
+        <th class="text-end">Horas</th>
+        <th class="text-end">Importe</th>
+      </tr>
+    </thead>
+    <tbody>
+            {% for row in rows %}
+              <tr>
+                <td>{% if row.fecha %}{{ row.fecha|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                <td title="{{ row.empleado|default:"-" }}">{{ row.empleado|default:"-" }}</td>
+                <td title="{{ row.obra|default:"-" }}">{{ row.obra|default:"-" }}</td>
+                <td title="{{ row.edificio|default:"-" }}">{{ row.edificio|default:"-" }}</td>
+                <td>{{ row.vivienda|default:"-" }}</td>
+                <td>{{ row.planta|default:"-" }}</td>
+                <td title="{{ row.capitulo_display|default:"-" }}">{{ row.capitulo_display|default:"-" }}</td>
+                <td title="{{ row.trabajo_display|default:"-" }}">{{ row.trabajo_display|default:"-" }}</td>
+                <td>{{ row.estado|default:"-" }}</td>
+                <td class="text-end">{{ row.horas_display|default:"0,00" }}</td>
+                <td class="text-end">{{ row.importe_display|default:"0,00 €" }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="11" class="text-center text-muted py-3">No hay asignaciones para el periodo y filtros seleccionados.</td>
+              </tr>
+            {% endfor %}
+</tbody>
+  </table>
+</div>
+
+<div class="asignaciones-report-mobile-cards" aria-label="Asignaciones">
+  {% for row in rows %}
+    <article class="asignaciones-report-assignment-card">
+      <header class="asignaciones-report-card-header">
+        <strong>{{ row.empleado|default:"-" }}</strong>
+        <span class="badge text-bg-light asignaciones-report-status">{{ row.estado|default:"-" }}</span>
+      </header>
+      <div class="asignaciones-report-card-highlights">
+        <div><span>Horas</span><strong>{{ row.horas_display|default:"0,00" }}</strong></div>
+        <div><span>Importe</span><strong>{{ row.importe_display|default:"0,00 €" }}</strong></div>
       </div>
-    {% endif %}
+      <dl class="asignaciones-report-card-details">
+        <div><dt>Fecha</dt><dd>{% if row.fecha %}{{ row.fecha|date:"d/m/Y" }}{% else %}-{% endif %}</dd></div>
+        <div><dt>Obra</dt><dd>{{ row.obra|default:"-" }}</dd></div>
+        <div><dt>Edificio / Fase</dt><dd>{{ row.edificio|default:"-" }}</dd></div>
+        <div><dt>Vivienda</dt><dd>{{ row.vivienda|default:"-" }}</dd></div>
+        <div><dt>Planta</dt><dd>{{ row.planta|default:"-" }}</dd></div>
+        <div><dt>Capítulo</dt><dd>{{ row.capitulo_display|default:"-" }}</dd></div>
+        <div class="asignaciones-report-card-work"><dt>Trabajo</dt><dd>{{ row.trabajo_display|default:"-" }}</dd></div>
+      </dl>
+    </article>
+  {% empty %}
+    <div class="asignaciones-report-empty text-muted">No hay asignaciones para el periodo y filtros seleccionados.</div>
+  {% endfor %}
+</div>
+
   </div>
   <div class="pi-print-footer">
     Informe generado desde Intasa Platform · Planificación de obra
@@ -552,6 +757,7 @@
 
 <script id="pi-report-dependent-filters-script">
 document.addEventListener("DOMContentLoaded", function () {
+  document.body.classList.add("asignaciones-report-active");
   const obra = document.getElementById("report-filter-obra");
   const edificio = document.getElementById("report-filter-edificio");
   const vivienda = document.getElementById("report-filter-vivienda");
@@ -663,4 +869,659 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 </script>
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_PRINT_V8 */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 7mm 7mm 8mm 7mm;
+  }
+
+  html,
+  body {
+    width: 297mm !important;
+    min-width: 297mm !important;
+    max-width: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    font-size: 9px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .pi-report-page,
+  .pi-report-page * {
+    visibility: visible;
+  }
+
+  .pi-report-page {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 283mm !important;
+    max-width: 283mm !important;
+    min-width: 283mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    transform: none !important;
+    zoom: 1 !important;
+  }
+
+  .container,
+  .container-fluid,
+  main,
+  .main,
+  .content,
+  .app-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  nav,
+  aside,
+  header.navbar,
+  .navbar,
+  .sidebar,
+  .breadcrumb,
+  .no-print,
+  .btn,
+  button,
+  form,
+  .pi-report-actions,
+  .pi-report-filters {
+    display: none !important;
+  }
+
+  .pi-report-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin: 0 0 4mm 0 !important;
+    padding: 0 0 2mm 0 !important;
+    border-bottom: 1px solid #222 !important;
+  }
+
+  .pi-report-header h1,
+  .pi-report-header h2,
+  h1 {
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+    margin: 0 0 2mm 0 !important;
+  }
+
+  .pi-report-header p,
+  .pi-report-header small {
+    font-size: 9px !important;
+    margin: 0 !important;
+  }
+
+  .pi-report-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 2mm !important;
+    margin: 0 0 3mm 0 !important;
+  }
+
+  .pi-report-kpi {
+    border: 1px solid #bbb !important;
+    border-radius: 0 !important;
+    padding: 2mm !important;
+    min-height: 0 !important;
+    background: #fff !important;
+  }
+
+  .pi-report-kpi span {
+    font-size: 7px !important;
+    text-transform: uppercase !important;
+    color: #555 !important;
+    display: block !important;
+    margin: 0 0 1mm 0 !important;
+  }
+
+  .pi-report-kpi strong {
+    font-size: 13px !important;
+    line-height: 1 !important;
+  }
+
+  .pi-report-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .pi-report-card .table-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  table.informe-asignaciones-compact {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: 6.8px !important;
+    line-height: 1.05 !important;
+  }
+
+  table.informe-asignaciones-compact thead {
+    display: table-header-group !important;
+  }
+
+  table.informe-asignaciones-compact tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  table.informe-asignaciones-compact th,
+  table.informe-asignaciones-compact td {
+    border: 1px solid #d6d6d6 !important;
+    padding: 1px 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+  }
+
+  table.informe-asignaciones-compact th {
+    font-weight: 700 !important;
+    background: #f1f3f5 !important;
+  }
+
+  table.informe-asignaciones-compact .col-fecha { width: 6.5% !important; }
+  table.informe-asignaciones-compact .col-empleado { width: 12% !important; }
+  table.informe-asignaciones-compact .col-obra { width: 8.5% !important; }
+  table.informe-asignaciones-compact .col-edificio { width: 8% !important; }
+  table.informe-asignaciones-compact .col-vivienda { width: 5.5% !important; }
+  table.informe-asignaciones-compact .col-planta { width: 5.5% !important; }
+  table.informe-asignaciones-compact .col-capitulo { width: 4.5% !important; }
+  table.informe-asignaciones-compact .col-trabajo { width: 27% !important; }
+  table.informe-asignaciones-compact .col-estado { width: 5.5% !important; }
+  table.informe-asignaciones-compact .col-horas { width: 4.5% !important; }
+  table.informe-asignaciones-compact .col-importe { width: 7% !important; }
+
+  .pi-print-footer {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    margin-top: 3mm !important;
+    padding-top: 2mm !important;
+    border-top: 1px solid #ccc !important;
+    font-size: 7px !important;
+    text-align: right !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_FILTROS_CAPITULO_V9 */
+.pi-applied-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: .45rem 0 .65rem 0;
+  padding: .5rem .6rem;
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.pi-applied-filter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .25rem;
+  max-width: 100%;
+  font-size: .78rem;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.pi-applied-filter span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pi-applied-filter strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+@media print {
+  .pi-applied-filters {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1.5mm !important;
+    margin: 0 0 3mm 0 !important;
+    padding: 2mm !important;
+    border: 1px solid #bbb !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+
+  .pi-applied-filter {
+    font-size: 7.5px !important;
+    line-height: 1.05 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .pi-applied-filter span,
+  .pi-applied-filter strong {
+    display: inline !important;
+  }
+
+  /* Nota: la URL inferior la añade el navegador si está activado "encabezados y pies de página". */
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_FINAL_V11 */
+.informe-asignaciones-compact .col-capitulo { width: 9% !important; }
+.informe-asignaciones-compact .col-trabajo { width: 20% !important; }
+
+@media print {
+  table.informe-asignaciones-compact .col-capitulo { width: 9% !important; }
+  table.informe-asignaciones-compact .col-trabajo { width: 20% !important; }
+
+  .pi-applied-filters {
+    margin-bottom: 2mm !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_FILTROS_TEMPLATE_V13 */
+.pi-applied-filters:not(.pi-applied-filters-v13) {
+  display: none !important;
+}
+
+.pi-applied-filters-v13 {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: .45rem 0 .65rem 0;
+  padding: .5rem .6rem;
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.pi-applied-filters-v13 .pi-applied-filter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .25rem;
+  max-width: 100%;
+  font-size: .78rem;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.pi-applied-filters-v13 .pi-applied-filter span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pi-applied-filters-v13 .pi-applied-filter strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+@media print {
+  .pi-applied-filters:not(.pi-applied-filters-v13) {
+    display: none !important;
+  }
+
+  .pi-applied-filters-v13 {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1.5mm !important;
+    margin: 0 0 3mm 0 !important;
+    padding: 2mm !important;
+    border: 1px solid #bbb !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+
+  .pi-applied-filters-v13 .pi-applied-filter {
+    font-size: 7.5px !important;
+    line-height: 1.05 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_PRINT_FILTERS_V14 */
+.pi-print-filter-line-v14 {
+  display: block;
+  width: 100%;
+  margin: .35rem 0 .65rem 0;
+  padding: .45rem .6rem;
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+@media print {
+  .pi-print-filter-line-v14 {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    margin: 0 0 3mm 0 !important;
+    padding: 2mm !important;
+    border: 1px solid #999 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 8.5px !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+
+  .pi-applied-filters,
+  .pi-applied-filters-v13 {
+    display: none !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_REMOVE_DUPLICATE_HEADER_V15 */
+
+/* Cabecera duplicada antigua del cuerpo del informe */
+.pi-report-page > h1,
+.pi-report-page > h2,
+.pi-report-page > .pi-report-title,
+.pi-report-page > .pi-report-subtitle,
+.pi-report-page > .pi-report-period,
+.pi-report-page > .report-title,
+.pi-report-page > .report-subtitle {
+  display: none !important;
+}
+
+/* Mantener visible cabecera principal y línea compacta de filtros */
+.pi-report-header,
+.pi-report-header *,
+.pi-print-filter-line-v14 {
+  display: revert;
+}
+
+@media print {
+  .pi-report-page > h1,
+  .pi-report-page > h2,
+  .pi-report-page > .pi-report-title,
+  .pi-report-page > .pi-report-subtitle,
+  .pi-report-page > .pi-report-period,
+  .pi-report-page > .report-title,
+  .pi-report-page > .report-subtitle {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .pi-print-filter-line-v14 {
+    margin-top: 0 !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_HEADER_IMPORTE_V16 */
+.pi-report-kpis {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+@media print {
+  .pi-report-kpis {
+    grid-template-columns: repeat(5, 1fr) !important;
+  }
+
+  .pi-report-page > .card:empty,
+  .pi-report-page > .pi-report-card:empty {
+    display: none !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_EMPTY_KPI_V17 */
+
+/* Valores KPI alineados a la derecha */
+.pi-report-kpi {
+  text-align: left !important;
+}
+
+.pi-report-kpi strong {
+  display: block !important;
+  width: 100% !important;
+  text-align: right !important;
+}
+
+/* Evitar huecos/contenedores vacíos residuales en impresión */
+.pi-print-filter-line-v14 {
+  margin-top: 0 !important;
+}
+
+@media print {
+  .pi-report-kpi {
+    text-align: left !important;
+  }
+
+  .pi-report-kpi strong {
+    display: block !important;
+    width: 100% !important;
+    text-align: right !important;
+  }
+
+  .pi-report-page > div:empty,
+  .pi-report-page > section:empty,
+  .pi-report-page > .card:empty,
+  .pi-report-page > .pi-report-card:empty {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .pi-report-header + div:empty,
+  .pi-report-header + section:empty {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_PRINT_HEADER_V18 */
+
+/* KPI: etiqueta izquierda, valor derecha */
+.pi-report-kpis .pi-report-kpi span {
+  display: block !important;
+  text-align: left !important;
+}
+
+.pi-report-kpis .pi-report-kpi strong {
+  display: block !important;
+  width: 100% !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* En impresión, el header de acciones queda vacío porque se ocultan botones */
+@media print {
+  .pi-report-header {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .pi-report-actions {
+    display: none !important;
+  }
+
+  .pi-report-kpis .pi-report-kpi span {
+    display: block !important;
+    text-align: left !important;
+  }
+
+  .pi-report-kpis .pi-report-kpi strong {
+    display: block !important;
+    width: 100% !important;
+    text-align: right !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+
+  .pi-print-filter-line-v14 {
+    margin-top: 0 !important;
+  }
+}
+</style>
+
+
+
+<style>
+/* FIX_ASIGNACIONES_INFORME_PERIODO_DUPLICADO_V19 */
+@media print {
+  .pi-print-header p {
+    display: none !important;
+  }
+
+  .pi-print-filter-line-v14 {
+    margin-top: 0 !important;
+  }
+}
+</style>
+
+
+<style>
+/* PI_INFORME_EMPLEADO_WIDTH_V4 */
+.informe-asignaciones-compact .col-fecha { width: 6% !important; }
+.informe-asignaciones-compact .col-empleado { width: 17% !important; }
+.informe-asignaciones-compact .col-obra { width: 7.5% !important; }
+.informe-asignaciones-compact .col-edificio { width: 7% !important; }
+.informe-asignaciones-compact .col-vivienda { width: 5% !important; }
+.informe-asignaciones-compact .col-planta { width: 5% !important; }
+.informe-asignaciones-compact .col-capitulo { width: 8% !important; }
+.informe-asignaciones-compact .col-trabajo { width: 19% !important; }
+.informe-asignaciones-compact .col-estado { width: 5% !important; }
+.informe-asignaciones-compact .col-horas { width: 5% !important; }
+.informe-asignaciones-compact .col-importe { width: 6% !important; }
+
+@media print {
+  table.informe-asignaciones-compact .col-fecha { width: 6% !important; }
+  table.informe-asignaciones-compact .col-empleado { width: 17% !important; }
+  table.informe-asignaciones-compact .col-obra { width: 7.5% !important; }
+  table.informe-asignaciones-compact .col-edificio { width: 7% !important; }
+  table.informe-asignaciones-compact .col-vivienda { width: 5% !important; }
+  table.informe-asignaciones-compact .col-planta { width: 5% !important; }
+  table.informe-asignaciones-compact .col-capitulo { width: 8% !important; }
+  table.informe-asignaciones-compact .col-trabajo { width: 19% !important; }
+  table.informe-asignaciones-compact .col-estado { width: 5% !important; }
+  table.informe-asignaciones-compact .col-horas { width: 5% !important; }
+  table.informe-asignaciones-compact .col-importe { width: 6% !important; }
+}
+</style>
+
+
+<style>
+/* PI_INFORME_SIN_HORARIO_LINE_V5 */
+.informe-asignaciones-compact .col-fecha { width: 6% !important; }
+.informe-asignaciones-compact .col-empleado { width: 18% !important; }
+.informe-asignaciones-compact .col-obra { width: 8% !important; }
+.informe-asignaciones-compact .col-edificio { width: 7.5% !important; }
+.informe-asignaciones-compact .col-vivienda { width: 5% !important; }
+.informe-asignaciones-compact .col-planta { width: 5% !important; }
+.informe-asignaciones-compact .col-capitulo { width: 8.5% !important; }
+.informe-asignaciones-compact .col-trabajo { width: 22% !important; }
+.informe-asignaciones-compact .col-estado { width: 5% !important; }
+.informe-asignaciones-compact .col-horas { width: 5% !important; }
+.informe-asignaciones-compact .col-importe { width: 6% !important; }
+
+@media print {
+  table.informe-asignaciones-compact .col-fecha { width: 6% !important; }
+  table.informe-asignaciones-compact .col-empleado { width: 18% !important; }
+  table.informe-asignaciones-compact .col-obra { width: 8% !important; }
+  table.informe-asignaciones-compact .col-edificio { width: 7.5% !important; }
+  table.informe-asignaciones-compact .col-vivienda { width: 5% !important; }
+  table.informe-asignaciones-compact .col-planta { width: 5% !important; }
+  table.informe-asignaciones-compact .col-capitulo { width: 8.5% !important; }
+  table.informe-asignaciones-compact .col-trabajo { width: 22% !important; }
+  table.informe-asignaciones-compact .col-estado { width: 5% !important; }
+  table.informe-asignaciones-compact .col-horas { width: 5% !important; }
+  table.informe-asignaciones-compact .col-importe { width: 6% !important; }
+}
+</style>
+
+<!-- PI_INFORME_SIN_HORARIO_LINE_V5 -->
+
+<style>
+/* PI_INFORME_SIN_HORARIO_LINE_V6 */
+.informe-asignaciones-compact .col-fecha { width: 6% !important; }
+.informe-asignaciones-compact .col-empleado { width: 18% !important; }
+.informe-asignaciones-compact .col-obra { width: 8% !important; }
+.informe-asignaciones-compact .col-edificio { width: 7.5% !important; }
+.informe-asignaciones-compact .col-vivienda { width: 5% !important; }
+.informe-asignaciones-compact .col-planta { width: 5% !important; }
+.informe-asignaciones-compact .col-capitulo { width: 8.5% !important; }
+.informe-asignaciones-compact .col-trabajo { width: 22% !important; }
+.informe-asignaciones-compact .col-estado { width: 5% !important; }
+.informe-asignaciones-compact .col-horas { width: 5% !important; }
+.informe-asignaciones-compact .col-importe { width: 6% !important; }
+</style>
+
+<!-- PI_INFORME_SIN_HORARIO_LINE_V6 -->
+<style>
+{% include "planificacion_obra/_responsive_productividad.css" %}
+</style>
 {% endblock %}

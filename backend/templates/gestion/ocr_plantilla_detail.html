@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ plantilla.nombre }}</h1>
+      <div class="text-muted small">
+        {{ plantilla.tipo_documento }} · {{ plantilla.proveedor.nombre_fiscal|default:plantilla.proveedor.nombre_comercial }} · {{ plantilla.team.nombre|default:plantilla.team.name }}
+      </div>
+    </div>
+    <a href="{% url 'gestion:ocr_plantillas_list' %}" class="btn btn-outline-secondary">Volver</a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card card-body">
+        <h2 class="h6">Datos principales</h2>
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Código</dt><dd class="col-sm-8"><code>{{ plantilla.codigo }}</code></dd>
+          <dt class="col-sm-4">Parser key</dt><dd class="col-sm-8"><code>{{ plantilla.parser_key }}</code></dd>
+          <dt class="col-sm-4">Tipo documento</dt><dd class="col-sm-8">{{ plantilla.tipo_documento }}</dd>
+          <dt class="col-sm-4">Variante</dt><dd class="col-sm-8">{{ plantilla.variante|default:"-" }}</dd>
+          <dt class="col-sm-4">Prioridad</dt><dd class="col-sm-8">{{ plantilla.prioridad }}</dd>
+          <dt class="col-sm-4">Valorado</dt><dd class="col-sm-8">{% if plantilla.valorado_default %}Sí{% else %}No{% endif %}</dd>
+          <dt class="col-sm-4">Estado</dt>
+          <dd class="col-sm-8">
+            {% if plantilla.activa %}
+              <span class="badge bg-success">Activa</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Inactiva</span>
+            {% endif %}
+          </dd>
+          <dt class="col-sm-4">Creada</dt><dd class="col-sm-8">{{ plantilla.creado_en }}</dd>
+          <dt class="col-sm-4">Actualizada</dt><dd class="col-sm-8">{{ plantilla.actualizado_en }}</dd>
+        </dl>
+      </div>
+
+      <div class="card card-body mt-3">
+        <h2 class="h6">Configuración JSON</h2>
+        <pre class="bg-light p-3 rounded small mb-0">{{ plantilla.config_json }}</pre>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card card-body">
+        <h2 class="h6">Detector y descripción</h2>
+        <p class="mb-2"><strong>Detector texto</strong></p>
+        <pre class="bg-light p-2 rounded small">{{ plantilla.detector_texto|default:"-" }}</pre>
+        <p class="mb-2"><strong>Descripción</strong></p>
+        <div class="text-muted">{{ plantilla.descripcion|linebreaksbr|default:"-" }}</div>
+      </div>
+
+      {% if request.user.is_superuser %}
+      <div class="card card-body mt-3">
+        <h2 class="h6">Acciones seguras</h2>
+
+        <form method="post" action="{% url 'gestion:ocr_plantilla_toggle_activa' plantilla.id %}" class="mb-2">
+          {% csrf_token %}
+          {% if plantilla.activa %}
+            <button class="btn btn-outline-warning w-100">Desactivar plantilla</button>
+          {% else %}
+            <button class="btn btn-outline-success w-100">Activar plantilla</button>
+          {% endif %}
+        </form>
+
+        <form method="post" action="{% url 'gestion:ocr_plantilla_duplicar' plantilla.id %}">
+          {% csrf_token %}
+          <button class="btn btn-outline-primary w-100">Duplicar / crear versión inactiva</button>
+        </form>
+
+        <div class="form-text mt-2">
+          Duplicar crea una nueva plantilla inactiva con sufijo v2/v3. No afecta a producción hasta activarla.
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

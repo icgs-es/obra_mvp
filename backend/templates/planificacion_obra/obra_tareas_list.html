@@ -10,6 +10,9 @@
   <a href="{% url 'planificacion_obra:obras_list' %}" class="btn btn-sm btn-outline-secondary">
     Obras
   </a>
+  <a href="{% url 'planificacion_obra:obra_tarea_manual_create' obra.pk %}" class="btn btn-sm btn-success">
+    <i class="bi bi-plus-circle"></i> Nueva tarea
+  </a>
 </div>
 
 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -27,7 +30,7 @@
     <div class="row g-3">
       <div class="col-md-3">
         <label class="form-label">Buscar</label>
-        <input type="text" name="q" value="{{ filtros.q }}" class="form-control" placeholder="Unidad, vivienda, partida...">
+        <input type="text" name="q" value="{{ filtros.q }}" class="form-control" placeholder="Tarea, unidad, vivienda, partida...">
       </div>
 
       <div class="col-md-2">
@@ -111,6 +114,7 @@
           <th class="text-end">Previsto</th>
           <th class="text-end">Real</th>
           <th>Incid.</th>
+          <th class="text-end">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -127,16 +131,54 @@
             </td>
             <td>{{ tarea.legacy_cod_fase }}</td>
             <td>
-              {{ tarea.capitulo.nombre|default:tarea.legacy_capitulo }}
-              <div class="small text-secondary">
-                {{ tarea.partida.nombre|default:tarea.legacy_partida }}
-              </div>
+              {% if tarea.programacion %}
+                <strong>{{ tarea.programacion }}</strong>
+                {% if tarea.raw_data.origen == "portal_manual" %}
+                  <span class="badge bg-success ms-1">Manual</span>
+                {% endif %}
+                <div class="small text-secondary">
+                  {{ tarea.capitulo.nombre|default:tarea.legacy_capitulo }} · {{ tarea.partida.nombre|default:tarea.legacy_partida }}
+                </div>
+              {% else %}
+                {{ tarea.capitulo.nombre|default:tarea.legacy_capitulo }}
+                <div class="small text-secondary">
+                  {{ tarea.partida.nombre|default:tarea.legacy_partida }}
+                </div>
+              {% endif %}
             </td>
             <td>{{ tarea.inicio_tarea|default:"—" }}</td>
             <td>{{ tarea.fin_tarea|default:"—" }}</td>
             <td>{{ tarea.inicio_real|default:"—" }}</td>
             <td>{{ tarea.fin_real|default:"—" }}</td>
-            <td class="text-end">{{ tarea.porcentaje_completado|default:"0" }} %</td>
+            {# TAREA_AVANCE_INLINE_EDIT_V1_1 #}
+            <td class="text-end">
+              <form method="post"
+                    action="{% url 'planificacion_obra:tarea_avance_update' tarea.pk %}"
+                    class="d-inline-flex align-items-center justify-content-end gap-1">
+                {% csrf_token %}
+
+                <input type="hidden"
+                       name="next"
+                       value="{{ request.get_full_path }}">
+
+                <input type="number"
+                       name="porcentaje_completado"
+                       value="{{ tarea.porcentaje_completado|default:'0' }}"
+                       min="{{ tarea.porcentaje_completado|default:'0' }}"
+                       max="100"
+                       step="0.01"
+                       required
+                       style="width:84px; min-height:32px; padding:3px 6px;">
+
+                <span>%</span>
+
+                <button type="submit"
+                        class="btn btn-outline-primary btn-sm"
+                        title="Actualizar avance">
+                  ✓
+                </button>
+              </form>
+            </td>
             <td class="text-end">{{ tarea.importe_tarea|default:"0"|floatformat:2 }} €</td>
             <td class="text-end">{{ tarea.importe_tarea_real|default:"0"|floatformat:2 }} €</td>
             <td>
@@ -146,10 +188,15 @@
                 <span class="text-secondary">—</span>
               {% endif %}
             </td>
+            <td class="text-end">
+              <a href="{% url 'planificacion_obra:planning_tarea_detail' tarea.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">
+                Ver
+              </a>
+            </td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="11" class="text-center text-secondary py-4">
+            <td colspan="12" class="text-center text-secondary py-4">
               No hay tareas con estos filtros.
             </td>
           </tr>

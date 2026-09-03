@@ -7,6 +7,10 @@ def health(request):
     return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
+    path("app/informes/", include(("informes.urls", "informes"), namespace="informes")),
+    # COMPARATIVAS_PRESUPUESTOS_URL_V1
+    path("app/gestion/comparativas/", include("comparativas.urls")),
+    path("app/gestion/", include(("apps.gestion.urls", "gestion"), namespace="gestion")),
     # Health
     path("health", health, name="health"),
 
@@ -17,10 +21,25 @@ urlpatterns = [
     # Auth
     path("accounts/", include("django.contrib.auth.urls")),
 
+    path(
+        "app/ayuda/",
+        include(
+            ("ayuda.urls", "ayuda"),
+            namespace="ayuda",
+        ),
+    ),
+
+    # INTASA IA V1A
+    path("app/ia/", include(("intasa_ia.urls", "intasa_ia"), namespace="intasa_ia")),
+
+    # Correo corporativo
+    path("app/correo/", include(("correo.urls", "correo"), namespace="correo")),
+
     # Portal (Mi jornada) bajo /app/
     path("app/", include(("portal.urls", "portal"), namespace="portal")),
 
     # Planificación de Obra
+    path("app/obra-movil/", include(("obra_movil.urls", "obra_movil"), namespace="obra_movil")),
     path("app/planificacion-obra/", include(("planificacion_obra.urls", "planificacion_obra"), namespace="planificacion_obra")),
 
     # Tareas y Agenda

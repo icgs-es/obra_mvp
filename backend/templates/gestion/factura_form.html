@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .factura-fast-form {
+    font-size: .88rem;
+  }
+  .factura-fast-form .card {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .07);
+  }
+  .factura-fast-form .card-header {
+    background: #fff;
+    border-bottom: 1px solid #eef2f7;
+    font-weight: 700;
+  }
+  .factura-fast-form .form-label {
+    margin-bottom: .18rem;
+  }
+  .factura-fast-form textarea {
+    min-height: 82px;
+  }
+  .factura-fast-form .sticky-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    border-top: 1px solid #eef2f7;
+  }
+</style>
+
+<div class="container-fluid py-3 factura-fast-form">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ title }}</h1>
+      <div class="text-muted small">
+        {% if factura %}
+          Empresa: <strong>{{ factura.team.name }}</strong>
+        {% elif modo_todas %}
+          Alta rápida · selecciona empresa, proveedor e importes principales.
+        {% elif team %}
+          Empresa activa: <strong>{{ team.name }}</strong>
+        {% endif %}
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      {% if factura %}
+        <a href="{{ return_url|default:'/app/gestion/facturas/' }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+      {% else %}
+        <a href="{{ return_url|default:'/app/gestion/facturas/' }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {# FACTURA_FORM_NEXT_FILTER_V2 #}
+    <input type="hidden" name="next" value="{{ return_url|default:'/app/gestion/facturas/' }}">
+    {{ form.archivo.as_hidden }}
+    {{ form.archivo1.as_hidden }}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header">Cabecera</div>
+      <div class="card-body">
+      <div class="alert alert-info py-2 small">
+        El código interno de la factura se generará automáticamente con formato YYFC00000, tomando el siguiente número consecutivo real.
+      </div>
+        <div class="row g-3">
+            {% if factura and team_scope %}
+            {# GESTION_FACTURA_FORM_CAMBIO_EMPRESA_V1 #}
+            <div class="col-md-4">
+              <label class="form-label small text-muted">Empresa</label>
+              <select name="team_id" class="form-select form-select-sm">
+                {% for t in team_scope %}
+                  <option value="{{ t.id }}" {% if selected_team and t.id == selected_team.id %}selected{% endif %}>{{ t.name }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text small">
+                Permite mover la factura a otra empresa. El proveedor se ajustará por CIF si existe equivalente.
+              </div>
+            </div>
+            {% endif %}
+
+
+          {% if modo_todas and not factura %}
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Empresa</label>
+            <select name="team_id" class="form-select form-select-sm" onchange="window.location='/app/gestion/facturas/nueva/?team_id=' + this.value;">
+              {% for t in team_scope %}
+                <option value="{{ t.id }}" {% if selected_team and t.id == selected_team.id %}selected{% endif %}>{{ t.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text small">Cambia la empresa para filtrar proveedores.</div>
+          </div>
+          {% endif %}
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.cod_factura.label }}</label>
+            {{ form.cod_factura }}
+            <div class="form-text small">Vacío = código automático.</div>
+            {% if form.cod_factura.errors %}<div class="text-danger small">{{ form.cod_factura.errors|striptags }}</div>{% endif %}
+          </div>
+
+          
+          {# GESTION_FACTURA_FORM_AMBITO_ANTES_PROVEEDOR_V1 #}
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.ambito_gestion.label }}</label>
+            {{ form.ambito_gestion }}
+            <div class="form-text small">Filtra los proveedores.</div>
+            {% if form.ambito_gestion.errors %}<div class="text-danger small">{{ form.ambito_gestion.errors|striptags }}</div>{% endif %}
+          </div>
+<div class="col-md-5">
+            <label class="form-label small text-muted">{{ form.proveedor.label }}</label>
+            {{ form.proveedor }}
+            {% if form.proveedor.errors %}<div class="text-danger small">{{ form.proveedor.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.num_factura_proveedor.label }}</label>
+            {{ form.num_factura_proveedor }}
+            {% if form.num_factura_proveedor.errors %}<div class="text-danger small">{{ form.num_factura_proveedor.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.fecha_emision.label }}</label>
+            {{ form.fecha_emision }}
+            {% if form.fecha_emision.errors %}<div class="text-danger small">{{ form.fecha_emision.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">Importes</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label small text-muted">{{ form.importe_base_imponible.label }}</label>
+            {{ form.importe_base_imponible }}
+            {% if form.importe_base_imponible.errors %}<div class="text-danger small">{{ form.importe_base_imponible.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">{{ form.iva_porcentaje.label }}</label>
+            {{ form.iva_porcentaje }}
+            {% if form.iva_porcentaje.errors %}<div class="text-danger small">{{ form.iva_porcentaje.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">{{ form.importe_iva.label }}</label>
+            {{ form.importe_iva }}
+            {% if form.importe_iva.errors %}<div class="text-danger small">{{ form.importe_iva.errors|striptags }}</div>{% endif %}
+          </div>
+
+          {% if can_manage_retention %}
+            <div class="col-md-2">
+              <label class="form-label small text-muted">{{ form.retencion_porcentaje.label }}</label>
+              {{ form.retencion_porcentaje }}
+              {% if form.retencion_porcentaje.errors %}<div class="text-danger small">{{ form.retencion_porcentaje.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small text-muted">{{ form.retencion.label }}</label>
+              {{ form.retencion }}
+              {% if form.retencion.errors %}<div class="text-danger small">{{ form.retencion.errors|striptags }}</div>{% endif %}
+            </div>
+          {% elif factura.retencion %}
+            <div class="col-md-2"><label class="form-label small text-muted">Retención</label><div class="form-control form-control-sm text-end bg-light">{{ factura.retencion }}</div></div>
+          {% endif %}
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">{{ form.importe_factura.label }}</label>
+            {{ form.importe_factura }}
+            {% if form.importe_factura.errors %}<div class="text-danger small">{{ form.importe_factura.errors|striptags }}</div>{% endif %}
+          </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">Control</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.estado.label }}</label>
+            {{ form.estado }}
+            {% if form.estado.errors %}<div class="text-danger small">{{ form.estado.errors|striptags }}</div>{% endif %}
+          </div>
+
+          {# FACTURA_PLAN_CANONICO_UI_V1B_FIX2 #}
+          <div class="col-12">
+            <div class="alert alert-info border mb-0 d-flex flex-wrap justify-content-between align-items-center gap-3">
+              <div>
+                <strong>Pagos y vencimientos centralizados.</strong>
+                <div class="small mt-1">
+                  El estado de pago, las fechas de vencimiento,
+                  los importes pagados y la forma de pago se gestionan
+                  exclusivamente desde el plan de pagos.
+                </div>
+                <div class="small mt-2">
+                  <a
+                    href="/app/gestion/facturacion/ayuda/"
+                    class="text-decoration-none"
+                  >
+                    {# FACTURACION_AYUDA_FORM_V1C #}
+                    Ver ayuda de facturación
+                  </a>
+                </div>
+              </div>
+
+              {% if factura %}
+                <a
+                  href="/app/gestion/facturas/{{ factura.id }}/pagos/plan/"
+                  class="btn btn-primary btn-sm"
+                >
+                  Gestionar plan de pagos
+                </a>
+              {% else %}
+                <span class="small text-muted">
+                  Guarda primero la factura para crear su plan de pagos.
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            {% if not factura %}
+              <label class="form-label small text-muted">PDF inicial</label>
+              <input type="file" name="archivo_pdf" accept="application/pdf,.pdf" class="form-control form-control-sm">
+              <div class="form-text small">Opcional. También puedes adjuntarlo después desde el detalle.</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label small text-muted">{{ form.observaciones.label }}</label>
+            {{ form.observaciones }}
+            {% if form.observaciones.errors %}<div class="text-danger small">{{ form.observaciones.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-12 d-flex flex-wrap gap-4">
+            <div class="form-check">{{ form.asignada }} <label class="form-check-label">{{ form.asignada.label }}</label></div>
+            {% if can_manage_retention %}<div class="form-check">{{ form.tiene_retencion }} <label class="form-check-label">{{ form.tiene_retencion.label }}</label></div>{% endif %}
+            <div class="form-check">{{ form.generado_albaran }} <label class="form-check-label">{{ form.generado_albaran.label }}</label></div>
+            <div class="form-check">{{ form.certificada }} <label class="form-check-label">{{ form.certificada.label }}</label></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white sticky-actions d-flex justify-content-end gap-2 py-3">
+      <a href="{{ return_url|default:'/app/gestion/facturas/' }}" class="btn btn-outline-secondary">Cancelar</a>
+      {% if not factura %}
+        <button class="btn btn-outline-primary" name="_action" value="linea">Guardar y añadir línea</button>
+        <button class="btn btn-outline-secondary" name="_action" value="pdf">Guardar e ir a PDF</button>
+      {% endif %}
+      <button class="btn btn-primary" name="_action" value="detail">{{ button_label }}</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  const formaPagoDias = {
+    "CONTADO": 0,
+    "PAGARE 30 D.F.F.": 30,
+    "PAGARE 60 D.F.F.": 60,
+    "PAGARE 90 D.F.F.": 90,
+    "RECIBO DOMICILIADO 30 D.F.F.": 30,
+    "RECIBO DOMICILIADO 60 D.F.F.": 60,
+    "TARJETA CREDITO": 0,
+    "TRANSFERENCIA": 0,
+    "TRANSFERENCIA 30 D.F.F.": 30,
+    "TRANSFERENCIA 45 D.F.F.": 45,
+    "TRANSFERENCIA 60 D.F.F.": 60,
+    "4 MESES": 120
+  };
+
+  function el(id) { return document.getElementById(id); }
+
+  function parseNumber(input) {
+    if (!input || input.value === "") return 0;
+    let raw = String(input.value).replace(/€/g, "").replace(/\s/g, "");
+    if (raw.includes(",") && raw.includes(".")) {
+      raw = raw.lastIndexOf(",") > raw.lastIndexOf(".")
+        ? raw.replace(/\./g, "").replace(",", ".")
+        : raw.replace(/,/g, "");
+    } else if (raw.includes(",")) {
+      raw = raw.replace(",", ".");
+    }
+    return Number(raw) || 0;
+  }
+
+  function setNumber(input, value) {
+    if (!input) return;
+    input.value = Number(value || 0).toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function addDaysIso(isoDate, days) {
+    if (!isoDate) return "";
+    const d = new Date(isoDate + "T00:00:00");
+    if (Number.isNaN(d.getTime())) return "";
+    d.setDate(d.getDate() + Number(days || 0));
+    return d.toISOString().slice(0, 10);
+  }
+
+  function todayIso() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function recalcImportes(recalculateIva) {
+    const baseInput = el("id_importe_base_imponible");
+    const ivaPctInput = el("id_iva_porcentaje");
+    const ivaInput = el("id_importe_iva");
+    const retPctInput = el("id_retencion_porcentaje");
+    const retInput = el("id_retencion");
+    const totalInput = el("id_importe_factura");
+    const tieneRetInput = el("id_tiene_retencion");
+    const pagadaInput = el("id_factura_pagada");
+    const importePagadoInput = el("id_importe_pagado");
+    const fechaRealPagoInput = el("id_fecha_real_pago");
+    const estadoInput = el("id_estado");
+
+    const base = parseNumber(baseInput);
+    const ivaPct = parseNumber(ivaPctInput);
+    const retencionActiva = !tieneRetInput || tieneRetInput.checked;
+    const retPct = retencionActiva ? parseNumber(retPctInput) : 0;
+
+    const iva = recalculateIva
+      ? Math.round((base * ivaPct / 100) * 100) / 100
+      : parseNumber(ivaInput);
+    const retencion = Math.round((base * retPct / 100) * 100) / 100;
+    const total = Math.round((base + iva - retencion) * 100) / 100;
+
+    setNumber(ivaInput, iva);
+    setNumber(retInput, retencion);
+    setNumber(totalInput, total);
+
+    const estadoPagada = estadoInput && String(estadoInput.value || "").toUpperCase() === "PAGADA";
+    const debeMarcarPagada = (pagadaInput && pagadaInput.checked) || estadoPagada;
+
+    if (debeMarcarPagada) {
+      if (pagadaInput) pagadaInput.checked = true;
+      setNumber(importePagadoInput, total);
+      if (fechaRealPagoInput && !fechaRealPagoInput.value) fechaRealPagoInput.value = todayIso();
+      if (estadoInput) estadoInput.value = "PAGADA";
+    }
+  }
+
+  function syncRetencionState(focusPercentage) {
+    const tieneRetInput = el("id_tiene_retencion");
+    const retPctInput = el("id_retencion_porcentaje");
+    const activa = Boolean(tieneRetInput && tieneRetInput.checked);
+
+    if (retPctInput) {
+      retPctInput.disabled = !activa;
+      if (!activa) setNumber(retPctInput, 0);
+    }
+    recalcImportes(false);
+    if (activa && focusPercentage && retPctInput) {
+      window.setTimeout(function () { retPctInput.focus(); retPctInput.select(); }, 0);
+    }
+
+  }
+
+  function recalcFechaPago() {
+    const fechaInput = el("id_fecha_emision");
+    const formaInput = el("id_forma_pago");
+    const fechaPagoInput = el("id_fecha_pago_segun_contrato");
+
+    if (!fechaInput || !formaInput || !fechaPagoInput) return;
+
+    const forma = formaInput.value || "";
+    if (!Object.prototype.hasOwnProperty.call(formaPagoDias, forma)) return;
+
+    fechaPagoInput.value = addDaysIso(fechaInput.value, formaPagoDias[forma]);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const retentionDefaults = {{ retention_provider_defaults|default:"{}"|safe }};
+    let retentionTouched = Boolean(el("id_retencion_porcentaje") && parseNumber(el("id_retencion_porcentaje")) !== 0);
+    ["id_importe_base_imponible", "id_iva_porcentaje"].forEach(function (id) {
+      const node = el(id);
+      if (node) {
+        node.addEventListener("input", function () { recalcImportes(true); });
+        node.addEventListener("change", function () { recalcImportes(true); });
+      }
+    });
+
+    ["id_retencion_porcentaje", "id_factura_pagada", "id_estado"].forEach(function (id) {
+      const node = el(id);
+      if (node) {
+        node.addEventListener("input", function () { recalcImportes(false); });
+        node.addEventListener("change", function () { recalcImportes(false); });
+      }
+    });
+
+    const retPctNode = el("id_retencion_porcentaje");
+    if (retPctNode) retPctNode.addEventListener("input", function () { retentionTouched = true; });
+    const tieneRetNode = el("id_tiene_retencion");
+    if (tieneRetNode) tieneRetNode.addEventListener("change", function () { syncRetencionState(true); });
+    const proveedorNode = el("id_proveedor");
+    if (proveedorNode) proveedorNode.addEventListener("change", function () {
+      if (!retentionTouched && retPctNode && Object.prototype.hasOwnProperty.call(retentionDefaults, proveedorNode.value)) {
+        setNumber(retPctNode, retentionDefaults[proveedorNode.value]);
+        if (tieneRetNode && parseNumber(retPctNode) !== 0) tieneRetNode.checked = true;
+        syncRetencionState(false);
+      }
+    });
+
+    ["id_fecha_emision", "id_forma_pago"].forEach(function (id) {
+      const node = el(id);
+      if (node) node.addEventListener("change", recalcFechaPago);
+    });
+
+    syncRetencionState(false);
+
+    // FACTURA_FECHA_CONTRATO_NO_OVERWRITE_ON_LOAD_V1
+    // No pisar una fecha de pago contractual existente o editada manualmente.
+    // Solo autocalcular si el campo está vacío.
+    const fechaPagoContratoInput = el("id_fecha_pago_segun_contrato");
+    if (fechaPagoContratoInput && !fechaPagoContratoInput.value) {
+      recalcFechaPago();
+    }
+  });
+})();
+</script>
+
+
+<script>
+// GESTION_FACTURA_AMBITO_RELOAD_JS_V1
+document.addEventListener("DOMContentLoaded", function () {
+  const ambito = document.getElementById("id_ambito_gestion");
+  if (!ambito) return;
+
+  // GESTION_FACTURA_EDIT_NO_RELOAD_AMBITO_V1
+  // En edición no recargar al cambiar ámbito: permite guardar el POST real.
+  if (/\/app\/gestion\/facturas\/\d+\/editar\/?$/.test(window.location.pathname)) {
+    return;
+  }
+  ambito.addEventListener("change", function () {
+    const url = new URL(window.location.href);
+    url.searchParams.set("ambito_gestion", ambito.value || "OBRA");
+    const teamSelect = document.querySelector('select[name="team_id"]');
+    if (teamSelect && teamSelect.value) {
+      url.searchParams.set("team_id", teamSelect.value);
+    }
+    window.location.href = url.toString();
+  });
+});
+</script>
+
+{% endblock %}

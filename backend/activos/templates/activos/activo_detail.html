@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-4" style="max-width:580px;">
+  <h5>Detalle de activo</h5>
+  <ul class="list-group mb-3">
+    <li class="list-group-item"><strong>ID:</strong> {{ activo.id }}</li>
+    <li class="list-group-item"><strong>Código externo:</strong> {{ activo.codigo_externo }}</li>
+    <li class="list-group-item"><strong>Nombre:</strong> {{ activo.nombre|default:"-" }}</li>
+    <li class="list-group-item"><strong>Tipo activo:</strong> {{ activo.get_tipo_activo_display|default:activo.tipo_activo }}</li>
+    <li class="list-group-item"><strong>Estado:</strong> {{ activo.get_estado_operativo_display|default:activo.estado_operativo|default:"-" }}</li>
+    <li class="list-group-item"><strong>Team:</strong> {{ activo.team }}</li>
+  </ul>
+  <a href="{% url 'activos:update' activo.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
+  <a href="{% url 'activos:delete' activo.id %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+  <a href="{% url 'activos:list' %}" class="btn btn-sm btn-secondary">Volver al listado</a>
+</div>
+{% endblock %}

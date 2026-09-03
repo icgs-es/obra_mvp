@@ -1,0 +1,1147 @@
+<!-- INTASA_CORREO_V1F1_FLOATING_DOCK -->
+<div
+  id="intasa-correo-dock"
+  class="intasa-correo-dock"
+  data-frame-url="{% url 'correo:inicio' %}?dock=1"
+  data-count-url="{% url 'correo:contador_flotante' %}"
+  hidden
+>
+  <div
+    class="intasa-correo-dock-header"
+    title="Arrastra esta barra para mover la ventana"
+  >
+    <div class="d-flex align-items-center gap-2 min-w-0">
+      <i
+        class="bi bi-grip-vertical text-secondary intasa-correo-dock-grip"
+        aria-hidden="true"
+      ></i>
+
+      <i class="bi bi-envelope-paper text-primary"></i>
+
+      <div class="min-w-0">
+        <div class="fw-semibold small">
+          Correo corporativo
+        </div>
+
+        <div class="intasa-correo-dock-account">
+          {{ correo_dock_account.direccion }}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-1">
+      <a
+        href="{% url 'correo:inicio' %}"
+        class="btn btn-light btn-sm intasa-correo-dock-control"
+        title="Abrir correo completo"
+        aria-label="Abrir correo completo"
+      >
+        <i class="bi bi-box-arrow-up-right"></i>
+      </a>
+
+      <button
+        type="button"
+        id="intasa-correo-dock-reload"
+        class="btn btn-light btn-sm intasa-correo-dock-control"
+        title="Actualizar bandeja"
+        aria-label="Actualizar bandeja"
+      >
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+
+      <button
+        type="button"
+        id="intasa-correo-dock-minimize"
+        class="btn btn-light btn-sm intasa-correo-dock-control"
+        title="Minimizar"
+        aria-label="Minimizar"
+      >
+        <i class="bi bi-dash-lg"></i>
+      </button>
+
+      <button
+        type="button"
+        id="intasa-correo-dock-close"
+        class="btn btn-light btn-sm intasa-correo-dock-control"
+        title="Cerrar"
+        aria-label="Cerrar"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="intasa-correo-dock-body">
+    <iframe
+      id="intasa-correo-dock-frame"
+      title="Bandeja de correo corporativo"
+      loading="lazy"
+    ></iframe>
+  </div>
+</div>
+
+<button
+  type="button"
+  id="intasa-correo-dock-launcher"
+  class="intasa-correo-dock-launcher"
+  aria-label="Abrir correo corporativo"
+  aria-expanded="false"
+  title="Correo corporativo"
+>
+  <i class="bi bi-envelope-fill"></i>
+
+  <span
+    id="intasa-correo-dock-badge"
+    class="intasa-correo-dock-badge"
+    hidden
+  ></span>
+</button>
+
+<style>
+  .intasa-correo-dock-launcher {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 1075;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #fff;
+    box-shadow:
+      0 0.65rem 1.8rem
+      rgba(13, 110, 253, 0.34);
+    font-size: 1.35rem;
+  }
+
+  .intasa-correo-dock-launcher:hover,
+  .intasa-correo-dock-launcher:focus {
+    background: #0b5ed7;
+    color: #fff;
+    outline: 0;
+  }
+
+  .intasa-correo-dock-badge {
+    position: absolute;
+    top: -0.3rem;
+    right: -0.35rem;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 0.3rem;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: #dc3545;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .intasa-correo-dock-badge:not([hidden]) {
+    display: inline-flex;
+  }
+
+  .intasa-correo-dock {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1090;
+    width: min(
+      1180px,
+      calc(100vw - 2rem)
+    );
+    height: min(
+      800px,
+      calc(100vh - 2rem)
+    );
+    overflow: hidden;
+    border: 1px solid #ced4da;
+    border-radius: 0.85rem;
+    background: #fff;
+    box-shadow:
+      0 1rem 3rem
+      rgba(15, 23, 42, 0.28);
+  }
+
+  .intasa-correo-dock.is-minimized {
+    width: min(
+      440px,
+      calc(100vw - 2rem)
+    );
+    height: auto;
+  }
+
+  .intasa-correo-dock-header {
+    height: 3.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.65rem;
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
+  }
+
+  .intasa-correo-dock-account {
+    max-width: 300px;
+    overflow: hidden;
+    color: #6c757d;
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .intasa-correo-dock-control {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .intasa-correo-dock-body {
+    height: calc(100% - 3.25rem);
+    background: #fff;
+  }
+
+  .intasa-correo-dock.is-minimized
+  .intasa-correo-dock-body {
+    display: none;
+  }
+
+  .intasa-correo-dock iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #fff;
+  }
+
+  @media (max-width: 767.98px) {
+    .intasa-correo-dock-launcher {
+      right: 0.85rem;
+      bottom: 0.85rem;
+    }
+
+    .intasa-correo-dock {
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .intasa-correo-dock.is-minimized {
+      top: auto;
+      right: 0.5rem;
+      bottom: 0.5rem;
+      left: 0.5rem;
+      width: auto;
+      height: auto;
+      border: 1px solid #ced4da;
+      border-radius: 0.7rem;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  const dock = document.getElementById(
+    "intasa-correo-dock"
+  );
+
+  const launcher = document.getElementById(
+    "intasa-correo-dock-launcher"
+  );
+
+  const badge = document.getElementById(
+    "intasa-correo-dock-badge"
+  );
+
+  const iframe = document.getElementById(
+    "intasa-correo-dock-frame"
+  );
+
+  const closeButton = document.getElementById(
+    "intasa-correo-dock-close"
+  );
+
+  const minimizeButton = document.getElementById(
+    "intasa-correo-dock-minimize"
+  );
+
+  const reloadButton = document.getElementById(
+    "intasa-correo-dock-reload"
+  );
+
+  if (
+    !dock
+    || !launcher
+    || !badge
+    || !iframe
+  ) {
+    return;
+  }
+
+  const countUrl = dock.dataset.countUrl;
+  const frameUrl = dock.dataset.frameUrl;
+
+  const cacheKey = (
+    "intasaCorreoFloatingCountV1"
+  );
+
+  const cacheLifetime = (
+    15 * 60 * 1000
+  );
+
+  const openPollInterval = (
+    5 * 60 * 1000
+  );
+
+  let requestInProgress = false;
+  let pollingTimer = null;
+
+  function readCache() {
+    try {
+      const parsed = JSON.parse(
+        window.localStorage.getItem(
+          cacheKey
+        )
+        || "null"
+      );
+
+      if (
+        !parsed
+        || typeof parsed !== "object"
+      ) {
+        return null;
+      }
+
+      return parsed;
+
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeCache(count) {
+    try {
+      window.localStorage.setItem(
+        cacheKey,
+        JSON.stringify(
+          {
+            count: count,
+            timestamp: Date.now()
+          }
+        )
+      );
+    } catch (error) {
+      // El correo sigue funcionando sin localStorage.
+    }
+  }
+
+  function renderCount(count) {
+    const safeCount = Math.max(
+      0,
+      Number(count) || 0
+    );
+
+    if (safeCount <= 0) {
+      badge.hidden = true;
+      badge.textContent = "";
+      launcher.title = (
+        "Correo corporativo"
+      );
+      return;
+    }
+
+    badge.textContent = (
+      safeCount > 99
+        ? "99+"
+        : String(safeCount)
+    );
+
+    badge.hidden = false;
+
+    launcher.title = (
+      safeCount
+      + (
+        safeCount === 1
+          ? " mensaje sin leer"
+          : " mensajes sin leer"
+      )
+    );
+  }
+
+  function cacheIsFresh(cache) {
+    return Boolean(
+      cache
+      && Number.isFinite(
+        Number(cache.timestamp)
+      )
+      && (
+        Date.now()
+        - Number(cache.timestamp)
+        < cacheLifetime
+      )
+    );
+  }
+
+  async function refreshCount(force) {
+    if (
+      requestInProgress
+      || document.visibilityState
+        === "hidden"
+    ) {
+      return;
+    }
+
+    const cache = readCache();
+
+    if (
+      !force
+      && cacheIsFresh(cache)
+    ) {
+      renderCount(
+        cache.count
+      );
+
+      return;
+    }
+
+    requestInProgress = true;
+
+    try {
+      const response = await fetch(
+        countUrl,
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": (
+              "XMLHttpRequest"
+            )
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (
+        !response.ok
+        || !data.ok
+      ) {
+        throw new Error(
+          data.error
+          || "No se pudo actualizar el correo."
+        );
+      }
+
+      const count = Math.max(
+        0,
+        Number(data.no_leidos) || 0
+      );
+
+      renderCount(count);
+      writeCache(count);
+
+    } catch (error) {
+      if (cache) {
+        renderCount(
+          cache.count
+        );
+      }
+
+    } finally {
+      requestInProgress = false;
+    }
+  }
+
+  function ensureFrameLoaded() {
+    if (!iframe.getAttribute("src")) {
+      iframe.setAttribute(
+        "src",
+        frameUrl
+      );
+    }
+  }
+
+  function stopPolling() {
+    if (pollingTimer) {
+      window.clearInterval(
+        pollingTimer
+      );
+
+      pollingTimer = null;
+    }
+  }
+
+  function startPolling() {
+    stopPolling();
+
+    pollingTimer = window.setInterval(
+      function () {
+        if (
+          !dock.hidden
+          && !dock.classList.contains(
+            "is-minimized"
+          )
+        ) {
+          refreshCount(true);
+        }
+      },
+      openPollInterval
+    );
+  }
+
+  function openDock() {
+    dock.hidden = false;
+
+    dock.classList.remove(
+      "is-minimized"
+    );
+
+    launcher.hidden = true;
+
+    launcher.setAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    ensureFrameLoaded();
+    refreshCount(true);
+    startPolling();
+  }
+
+  function closeDock() {
+    dock.hidden = true;
+    launcher.hidden = false;
+
+    launcher.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+    stopPolling();
+    refreshCount(true);
+  }
+
+  function toggleMinimize() {
+    const minimized = (
+      dock.classList.toggle(
+        "is-minimized"
+      )
+    );
+
+    minimizeButton.title = (
+      minimized
+        ? "Restaurar"
+        : "Minimizar"
+    );
+
+    minimizeButton.setAttribute(
+      "aria-label",
+      minimizeButton.title
+    );
+
+    minimizeButton.innerHTML = (
+      minimized
+        ? '<i class="bi bi-chevron-up"></i>'
+        : '<i class="bi bi-dash-lg"></i>'
+    );
+
+    if (minimized) {
+      stopPolling();
+    } else {
+      refreshCount(true);
+      startPolling();
+    }
+  }
+
+  launcher.addEventListener(
+    "click",
+    openDock
+  );
+
+  closeButton.addEventListener(
+    "click",
+    closeDock
+  );
+
+  minimizeButton.addEventListener(
+    "click",
+    toggleMinimize
+  );
+
+  reloadButton.addEventListener(
+    "click",
+    function () {
+      ensureFrameLoaded();
+
+      try {
+        iframe.contentWindow
+          .location.reload();
+      } catch (error) {
+        iframe.setAttribute(
+          "src",
+          frameUrl
+          + "&refresh="
+          + Date.now()
+        );
+      }
+
+      refreshCount(true);
+    }
+  );
+
+  iframe.addEventListener(
+    "load",
+    function () {
+      refreshCount(true);
+    }
+  );
+
+  document.addEventListener(
+    "keydown",
+    function (event) {
+      if (
+        event.key === "Escape"
+        && !dock.hidden
+      ) {
+        closeDock();
+      }
+    }
+  );
+
+  window.addEventListener(
+    "storage",
+    function (event) {
+      if (
+        event.key !== cacheKey
+      ) {
+        return;
+      }
+
+      const cache = readCache();
+
+      if (cache) {
+        renderCount(
+          cache.count
+        );
+      }
+    }
+  );
+
+  document.addEventListener(
+    "visibilitychange",
+    function () {
+      if (
+        document.visibilityState
+        === "visible"
+      ) {
+        refreshCount(false);
+      }
+    }
+  );
+
+  const cached = readCache();
+
+  if (cached) {
+    renderCount(
+      cached.count
+    );
+  }
+
+  window.setTimeout(
+    function () {
+      refreshCount(false);
+    },
+    1500
+  );
+})();
+</script>
+
+
+<!-- INTASA_CORREO_V1F3_DRAGGABLE_DOCK -->
+<style>
+  @media (min-width: 768px) {
+    .intasa-correo-dock-header {
+      cursor: move;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .intasa-correo-dock-header button,
+    .intasa-correo-dock-header a {
+      cursor: pointer;
+    }
+
+    .intasa-correo-dock.is-dragging {
+      opacity: 0.98;
+      box-shadow:
+        0 1.25rem 3.5rem
+        rgba(15, 23, 42, 0.34);
+    }
+
+    .intasa-correo-dock-grip {
+      font-size: 1.15rem;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .intasa-correo-dock-grip {
+      display: none;
+    }
+
+    .intasa-correo-dock-header {
+      cursor: default;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  const dock = document.getElementById(
+    "intasa-correo-dock"
+  );
+
+  const header = dock
+    ? dock.querySelector(
+        ".intasa-correo-dock-header"
+      )
+    : null;
+
+  const launcher = document.getElementById(
+    "intasa-correo-dock-launcher"
+  );
+
+  const minimizeButton = document.getElementById(
+    "intasa-correo-dock-minimize"
+  );
+
+  if (
+    !dock
+    || !header
+    || !launcher
+  ) {
+    return;
+  }
+
+  const storageKey = (
+    "intasaCorreoDockPositionV1"
+  );
+
+  const desktopQuery = window.matchMedia(
+    "(min-width: 768px)"
+  );
+
+  let dragging = null;
+
+  function isDesktop() {
+    return desktopQuery.matches;
+  }
+
+  function readPosition() {
+    try {
+      const value = JSON.parse(
+        window.localStorage.getItem(
+          storageKey
+        )
+        || "null"
+      );
+
+      if (
+        !value
+        || typeof value !== "object"
+        || !Number.isFinite(
+          Number(value.left)
+        )
+        || !Number.isFinite(
+          Number(value.top)
+        )
+      ) {
+        return null;
+      }
+
+      return {
+        left: Number(value.left),
+        top: Number(value.top)
+      };
+
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function savePosition(
+    left,
+    top
+  ) {
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify(
+          {
+            left: left,
+            top: top
+          }
+        )
+      );
+    } catch (error) {
+      // La ventana sigue funcionando sin localStorage.
+    }
+  }
+
+  function clearPosition() {
+    try {
+      window.localStorage.removeItem(
+        storageKey
+      );
+    } catch (error) {
+      // Sin acción.
+    }
+  }
+
+  function viewportPosition(
+    left,
+    top,
+    width,
+    height
+  ) {
+    const margin = 8;
+
+    const maxLeft = Math.max(
+      margin,
+      window.innerWidth
+      - width
+      - margin
+    );
+
+    const maxTop = Math.max(
+      margin,
+      window.innerHeight
+      - height
+      - margin
+    );
+
+    return {
+      left: Math.min(
+        Math.max(
+          margin,
+          left
+        ),
+        maxLeft
+      ),
+      top: Math.min(
+        Math.max(
+          margin,
+          top
+        ),
+        maxTop
+      )
+    };
+  }
+
+  function setDockPosition(
+    left,
+    top,
+    persist
+  ) {
+    if (
+      !isDesktop()
+      || dock.hidden
+    ) {
+      return;
+    }
+
+    const rect = dock.getBoundingClientRect();
+
+    const position = viewportPosition(
+      left,
+      top,
+      rect.width,
+      rect.height
+    );
+
+    dock.style.right = "auto";
+    dock.style.bottom = "auto";
+
+    dock.style.left = (
+      position.left + "px"
+    );
+
+    dock.style.top = (
+      position.top + "px"
+    );
+
+    if (persist) {
+      savePosition(
+        position.left,
+        position.top
+      );
+    }
+  }
+
+  function restorePosition() {
+    if (
+      !isDesktop()
+      || dock.hidden
+    ) {
+      return;
+    }
+
+    const saved = readPosition();
+
+    if (!saved) {
+      return;
+    }
+
+    setDockPosition(
+      saved.left,
+      saved.top,
+      false
+    );
+  }
+
+  function clampCurrentPosition() {
+    if (
+      !isDesktop()
+      || dock.hidden
+    ) {
+      return;
+    }
+
+    const rect = dock.getBoundingClientRect();
+
+    setDockPosition(
+      rect.left,
+      rect.top,
+      true
+    );
+  }
+
+  function resetDesktopPosition() {
+    clearPosition();
+
+    dock.style.left = "";
+    dock.style.top = "";
+    dock.style.right = "";
+    dock.style.bottom = "";
+  }
+
+  function isControlTarget(target) {
+    return Boolean(
+      target.closest(
+        "button, a, input, select, textarea, label"
+      )
+    );
+  }
+
+  header.addEventListener(
+    "pointerdown",
+    function (event) {
+      if (
+        !isDesktop()
+        || dock.hidden
+        || dock.classList.contains(
+          "is-minimized"
+        )
+        || isControlTarget(
+          event.target
+        )
+      ) {
+        return;
+      }
+
+      const rect = dock.getBoundingClientRect();
+
+      dragging = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startLeft: rect.left,
+        startTop: rect.top,
+        width: rect.width,
+        height: rect.height
+      };
+
+      dock.style.right = "auto";
+      dock.style.bottom = "auto";
+      dock.style.left = rect.left + "px";
+      dock.style.top = rect.top + "px";
+
+      dock.classList.add(
+        "is-dragging"
+      );
+
+      header.setPointerCapture(
+        event.pointerId
+      );
+
+      event.preventDefault();
+    }
+  );
+
+  header.addEventListener(
+    "pointermove",
+    function (event) {
+      if (
+        !dragging
+        || event.pointerId
+          !== dragging.pointerId
+      ) {
+        return;
+      }
+
+      const nextLeft = (
+        dragging.startLeft
+        + event.clientX
+        - dragging.startX
+      );
+
+      const nextTop = (
+        dragging.startTop
+        + event.clientY
+        - dragging.startY
+      );
+
+      const position = viewportPosition(
+        nextLeft,
+        nextTop,
+        dragging.width,
+        dragging.height
+      );
+
+      dock.style.left = (
+        position.left + "px"
+      );
+
+      dock.style.top = (
+        position.top + "px"
+      );
+    }
+  );
+
+  function finishDragging(event) {
+    if (
+      !dragging
+      || (
+        event
+        && event.pointerId
+          !== dragging.pointerId
+      )
+    ) {
+      return;
+    }
+
+    try {
+      header.releasePointerCapture(
+        dragging.pointerId
+      );
+    } catch (error) {
+      // El navegador puede haber liberado la captura.
+    }
+
+    dragging = null;
+
+    dock.classList.remove(
+      "is-dragging"
+    );
+
+    const rect = dock.getBoundingClientRect();
+
+    savePosition(
+      rect.left,
+      rect.top
+    );
+  }
+
+  header.addEventListener(
+    "pointerup",
+    finishDragging
+  );
+
+  header.addEventListener(
+    "pointercancel",
+    finishDragging
+  );
+
+  header.addEventListener(
+    "dblclick",
+    function (event) {
+      if (
+        !isDesktop()
+        || isControlTarget(
+          event.target
+        )
+      ) {
+        return;
+      }
+
+      resetDesktopPosition();
+    }
+  );
+
+  launcher.addEventListener(
+    "click",
+    function () {
+      window.requestAnimationFrame(
+        restorePosition
+      );
+    }
+  );
+
+  if (minimizeButton) {
+    minimizeButton.addEventListener(
+      "click",
+      function () {
+        window.requestAnimationFrame(
+          clampCurrentPosition
+        );
+      }
+    );
+  }
+
+  window.addEventListener(
+    "resize",
+    function () {
+      if (!isDesktop()) {
+        dock.style.left = "";
+        dock.style.top = "";
+        dock.style.right = "";
+        dock.style.bottom = "";
+        return;
+      }
+
+      window.requestAnimationFrame(
+        clampCurrentPosition
+      );
+    }
+  );
+
+  desktopQuery.addEventListener(
+    "change",
+    function () {
+      if (isDesktop()) {
+        window.requestAnimationFrame(
+          restorePosition
+        );
+      } else {
+        dock.style.left = "";
+        dock.style.top = "";
+        dock.style.right = "";
+        dock.style.bottom = "";
+      }
+    }
+  );
+})();
+</script>
+

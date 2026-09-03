@@ -1,0 +1,245 @@
+{# COMPARATIVAS_IMPORTACION_BASICA_PRESUPUESTO_V1 #}
+{% extends "base.html" %}
+
+{% block title %}Importar presupuesto{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width: 920px;">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        Importar presupuesto
+      </h1>
+      <div class="text-muted">
+        {{ comparativa.titulo }}
+      </div>
+    </div>
+
+    <a href="{% url 'comparativas:detail' comparativa.uuid %}"
+       class="btn btn-outline-secondary btn-sm">
+      Volver
+    </a>
+  </div>
+
+  {% if not preview %}
+    <form method="post"
+          enctype="multipart/form-data"
+          class="card">
+      {% csrf_token %}
+      <input type="hidden"
+             name="action"
+             value="preview">
+
+      <div class="card-body">
+        <div class="alert alert-light border">
+          <strong>Preparar documento para INTASA IA.</strong>
+          El archivo se conserva temporalmente y se abrirá una revisión V3
+          antes de escribir datos económicos o conceptos.
+        </div>
+
+        <label class="form-label">
+          {{ upload_form.archivo.label }}
+        </label>
+
+        {{ upload_form.archivo }}
+        {{ upload_form.archivo.errors }}
+
+        <div class="form-text">
+          {{ upload_form.archivo.help_text }}
+        </div>
+      </div>
+
+      <div class="card-footer bg-white text-end">
+        <button class="btn btn-primary">
+          Preparar para analizar
+        </button>
+        <span class="visually-hidden">Leer presupuesto</span>
+      </div>
+    </form>
+
+  {% else %}
+
+    {% if analysis %}
+      <div class="card mb-3">
+        <div class="card-header bg-white fw-semibold">
+          Documento preparado para análisis V3
+        </div>
+
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="small text-muted">
+                Método
+              </div>
+              <div class="fw-semibold">
+                {{ analysis.method|default:"—" }}
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="small text-muted">
+                OCR
+              </div>
+              <div class="fw-semibold">
+                {% if analysis.ocr_used %}
+                  Sí
+                {% else %}
+                  No
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="small text-muted">
+                Texto leído
+              </div>
+              <div class="fw-semibold">
+                {{ analysis.text_len }} caracteres
+              </div>
+            </div>
+          </div>
+
+          {% if analysis.error %}
+            <div class="alert alert-warning mt-3 mb-0">
+              {{ analysis.error }}
+            </div>
+          {% endif %}
+
+          <div class="alert alert-info mt-3 mb-0">
+            Ningún dato detectado aquí tiene autoridad de negocio. La revisión semántica se realizará en INTASA IA V3.
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# COMPARATIVAS_PRESUPUESTO_DOCUMENT_PREVIEW_V1 #}
+    {% if staged_document %}
+      <div class="card mb-3 border-primary">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <div class="fw-semibold mb-1">
+                Documento preparado para importar
+              </div>
+
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="fs-5" aria-hidden="true">
+                  📄
+                </span>
+
+                <span class="fw-semibold">
+                  {{ staged_document.original_name }}
+                </span>
+
+                <span class="badge text-bg-warning">
+                  Pendiente de confirmar
+                </span>
+              </div>
+
+              <div class="small text-muted mt-2">
+                {% if staged_document.extension %}
+                  {{ staged_document.extension|slice:"1:"|upper }}
+                {% else %}
+                  Documento
+                {% endif %}
+                · El original se incorporará a la
+                versión de la oferta cuando confirmes.
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+              <a href="{% url 'comparativas:presupuesto_import_document' comparativa.uuid %}?token={{ staged_document.token|urlencode }}"
+                 target="_blank"
+                 rel="noopener"
+                 class="btn btn-outline-primary btn-sm">
+                Ver presupuesto
+              </a>
+
+              <a href="{% url 'comparativas:presupuesto_import' comparativa.uuid %}"
+                 class="btn btn-outline-secondary btn-sm">
+                Sustituir documento
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if confirm_form %}
+      <form method="post" class="card">
+        {% csrf_token %}
+        <input type="hidden"
+               name="action"
+               value="confirm">
+
+        {{ confirm_form.token }}
+
+        <div class="card-header bg-white fw-semibold">
+          Confirmar ofertante para crear el documento
+        </div>
+
+        <div class="card-body">
+          {% if confirm_form.non_field_errors %}
+            <div class="alert alert-danger">
+              {{ confirm_form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label">
+              {{ confirm_form.proveedor_ref.label }}
+            </label>
+            {{ confirm_form.proveedor_ref }}
+            {{ confirm_form.proveedor_ref.errors }}
+
+            <div class="form-text">
+              La vinculación nunca es automática.
+              La selección de proveedor maestro es opcional y siempre explícita.
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">
+                {{ confirm_form.nombre.label }}
+              </label>
+              {{ confirm_form.nombre }}
+              {{ confirm_form.nombre.errors }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">
+                {{ confirm_form.nif.label }}
+              </label>
+              {{ confirm_form.nif }}
+              {{ confirm_form.nif.errors }}
+            </div>
+
+            <div class="col-12">
+              <div class="alert alert-light border mb-0">
+                Fecha, referencia, importes, cliente y partidas se revisarán en la preview V3 antes de confirmar el presupuesto.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer bg-white d-flex justify-content-between">
+          <a href="{% url 'comparativas:presupuesto_import' comparativa.uuid %}"
+             class="btn btn-outline-secondary">
+            Leer otro documento
+          </a>
+
+          <button class="btn btn-primary">
+            Crear documento y abrir revisión V3
+          </button>
+        </div>
+      </form>
+    {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}

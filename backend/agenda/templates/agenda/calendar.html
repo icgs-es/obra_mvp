@@ -2,177 +2,475 @@
 {% block title %}Agenda{% endblock %}
 
 {% block content %}
+{# AGENDA_OPERATIVA_V1 #}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
 
 <style>
-  .fc { --fc-border-color:#e5e7eb; --fc-page-bg-color:#fff; }
-  .card{ border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
-  .card-body{ padding:.75rem; }
-  .filters{
-    display:flex; gap:.75rem; align-items:center;
-    margin-bottom:.75rem; flex-wrap:wrap;
-    padding:.25rem .25rem .75rem;
-    border-bottom:1px solid #e5e7eb;
-  }
-  .left-tools{display:flex; gap:.5rem; align-items:center;}
-  .filters .chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid #d1d5db;border-radius:999px;padding:.3rem .6rem}
-  .filters .chip input{transform:translateY(1px)}
-  .right-tools{ margin-left:auto; display:flex; gap:.5rem; }
-
-  .right-tools .btn{
-    border-radius:10px;
-    padding:.35rem .65rem;
-    font-weight:600;
-  }
-  .right-tools .btn-primary{
-    box-shadow:0 2px 6px rgba(37,99,235,.18);
+  .agenda-shell {
+    padding: 1.25rem 1.35rem 2rem;
   }
 
-  /* Contenedor FullCalendar más "app" */
-  #calendar .fc-view-harness{
-    border-radius:12px;
-    overflow:hidden;
+  .agenda-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 54%, #334155 100%);
+    border-radius: 18px;
+    padding: 1.2rem 1.35rem;
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .18);
+    margin-bottom: 1rem;
   }
 
-  /* Barra superior FC */
-  #calendar .fc-toolbar{
-    margin: .75rem 0 .75rem 0;
+  .agenda-header h1 {
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin: 0;
   }
 
-  /* Botones FC más tipo app */
-  #calendar .fc .fc-button{
-    border-radius:10px;
-    padding:.35rem .6rem;
-    font-weight:600;
+  .agenda-header .agenda-subtitle {
+    color: rgba(255,255,255,.78);
+    margin-top: .25rem;
+    margin-bottom: 0;
   }
 
-  /* Título centrado más sobrio */
-  #calendar .fc-toolbar-title{
-    font-size: 1.25rem;
+  .agenda-actions {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .agenda-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+    overflow: hidden;
+  }
+
+  .agenda-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .85rem;
+    align-items: center;
+    padding: .95rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+  }
+
+  .agenda-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    align-items: center;
+  }
+
+  .agenda-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .42rem;
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+    padding: .38rem .68rem;
+    background: #fff;
+    color: #334155;
+    font-weight: 650;
+    font-size: .86rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .agenda-chip input {
+    transform: translateY(1px);
+  }
+
+  .agenda-chip--mis {
+    border-color: #bfdbfe;
+  }
+
+  .agenda-chip--depto {
+    border-color: #bbf7d0;
+  }
+
+  .agenda-chip--global {
+    border-color: #fed7aa;
+  }
+
+  .agenda-search {
+    min-width: 240px;
+    max-width: 340px;
+  }
+
+  .agenda-search input {
+    border-radius: 999px;
+    padding-left: .9rem;
+  }
+
+  .agenda-body {
+    padding: .7rem 1rem 1rem;
+  }
+
+  #calendar .fc-toolbar {
+    margin: .65rem 0 1rem;
+  }
+
+  #calendar .fc-toolbar-title {
+    font-size: 1.22rem;
+    font-weight: 800;
+    letter-spacing: -.01em;
+  }
+
+  #calendar .fc .fc-button {
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    padding: .38rem .68rem !important;
+  }
+
+  #calendar .fc-view-harness {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+  }
+
+  #calendar .fc-event {
+    border: 0 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    padding: 3px 5px !important;
+    font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.25;
+  }
+  #calendar .fc-event.agenda-state-completed { opacity: .72; }
+  #calendar .fc-event.agenda-state-completed .agenda-event__title { text-decoration: line-through; }
+  #calendar .fc-event.agenda-state-cancelled { opacity: .52; filter: grayscale(.55); }
+  #calendar .fc-event.agenda-state-overdue { border-left: 3px solid #dc3545 !important; }
+  #calendar .fc-list-event.agenda-state-overdue td:first-child { box-shadow: inset 3px 0 0 #dc3545; }
+  .agenda-event {
+    line-height: 1.28;
+    overflow: hidden;
+  }
+
+  .agenda-event__top {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    min-height: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    opacity: .88;
+    white-space: nowrap;
+  }
+
+  .agenda-event__time { font-weight: 500; }
+  .agenda-event__icon,
+  .agenda-event__state {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 400;
+  }
+
+  .agenda-event__title {
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .agenda-event__meta {
+    font-size: 10.5px;
+    font-weight: 400;
+    opacity: .78;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #calendar .fc-daygrid-event .agenda-event__title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  #calendar .fc-list-event .agenda-event__title { white-space: normal; }
+  @media (max-width: 640px) {
+    #calendar .fc-event { padding: 2px 4px !important; }
+    .agenda-event__title { font-size: 12px; }
+    .agenda-event__meta { font-size: 10px; }
+    .agenda-event__top { font-size: 9.5px; }
+  }
+
+  .agenda-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem 1rem;
+    align-items: center;
+    color: #64748b;
+    font-size: .82rem;
+    padding: .75rem 1rem 0;
+  }
+
+  .agenda-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: .38rem;
+  }
+
+  .agenda-legend__dot {
+    width: .72rem;
+    height: .72rem;
+    border-radius: 999px;
+    display: inline-block;
+  }
+
+  .agenda-counter {
+    color: #64748b;
+    font-weight: 650;
+    font-size: .86rem;
+    white-space: nowrap;
+  }
+
+  .agenda-empty-warning {
+    display: none;
+    margin: .75rem 1rem 0;
+  }
+
+  @media (max-width: 900px) {
+    .agenda-toolbar {
+      grid-template-columns: 1fr;
+    }
+
+    .agenda-actions {
+      justify-content: flex-start;
+      margin-top: .75rem;
+    }
+
+    .agenda-search {
+      max-width: none;
+      width: 100%;
+    }
+  }
+
+  /* AGENDA_USER_COLORS_V1_3 */
+  .agenda-user-legend {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45rem;
+  }
+  .agenda-legend__heading {
+    color: #334155;
     font-weight: 700;
   }
+  .agenda-legend__separator {
+    color: #94a3b8;
+    margin: 0 .2rem;
+  }
+  .agenda-legend__empty {
+    color: #64748b;
+    font-style: italic;
+  }
 
-  /* Colores por tipo de visibilidad */
-  #calendar .fc-event.ev-private {
-    background-color:#2563eb;
-    border-color:#2563eb;
-    color:#fff;
-  }
-  #calendar .fc-event.ev-depto {
-    background-color:#16a34a;
-    border-color:#16a34a;
-    color:#fff;
-  }
-  #calendar .fc-event.ev-global {
-    background-color:#f97316;
-    border-color:#f97316;
-    color:#fff;
-  }
 </style>
 
-<div class="card">
-  <div class="card-body">
-    <div class="filters">
-      <div class="left-tools">
-        <strong style="font-size:14px;">Agenda</strong>
+<div class="agenda-shell">
+  <div class="agenda-header">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <h1 class="h3">Agenda operativa</h1>
+        <p class="agenda-subtitle">
+          Vista semanal, diaria y mensual para gestionar reuniones, tareas y eventos con privacidad controlada.
+        </p>
       </div>
-      <label class="chip"><input type="checkbox" id="f-mis"> Mis</label>
-      <label class="chip"><input type="checkbox" id="f-depto"> Depto</label>
-      <label class="chip"><input type="checkbox" id="f-global"> Global</label>
 
-      <div class="right-tools">
-        <a class="btn btn-sm btn-primary" href="{% url 'agenda:create' %}">
-          + Nuevo evento
+      <div class="agenda-actions">
+        <a class="btn btn-light btn-sm fw-bold" href="{% url 'agenda:create' %}">
+          <i class="bi bi-plus-lg"></i> Nuevo evento
         </a>
-
-        <a class="btn btn-sm btn-outline-secondary" href="{% url 'agenda:import' %}">
-          Importar
+        <a class="btn btn-outline-light btn-sm" href="{% url 'agenda:import' %}">
+          <i class="bi bi-upload"></i> Importar
         </a>
-
-        <a class="btn btn-sm btn-outline-secondary" href="{% url 'agenda:export' %}">
-          Exportar
+        <a class="btn btn-outline-light btn-sm" href="{% url 'agenda:export' %}">
+          <i class="bi bi-download"></i> Exportar
         </a>
       </div>
     </div>
-    <div id="calendar"></div>
+  </div>
+
+  <div class="agenda-card">
+    <div class="agenda-toolbar">
+      <div class="agenda-filter-row">
+        <strong class="me-1">Mostrar:</strong>
+
+        <label class="agenda-chip agenda-chip--mis" title="Solo mis eventos privados">
+          <input type="checkbox" id="f-mis">
+          <span>Mis privados</span>
+        </label>
+
+        <label class="agenda-chip agenda-chip--depto" title="Eventos de departamento/empresa permitidos">
+          <input type="checkbox" id="f-depto">
+          <span>Departamento</span>
+        </label>
+
+        <label class="agenda-chip agenda-chip--global" title="Eventos globales visibles para todos">
+          <input type="checkbox" id="f-global">
+          <span>Global</span>
+        </label>
+
+        <button type="button" id="btn-agenda-today" class="btn btn-outline-secondary btn-sm">
+          Hoy
+        </button>
+
+        <button type="button" id="btn-agenda-refresh" class="btn btn-outline-primary btn-sm">
+          ↻ Actualizar
+        </button>
+      </div>
+
+      <div class="d-flex gap-2 align-items-center justify-content-end flex-wrap">
+        <div class="agenda-search">
+          <input id="agenda-search" class="form-control form-control-sm" type="search"
+                 placeholder="Buscar por título o ubicación…">
+        </div>
+        <span id="agenda-counter" class="agenda-counter">—</span>
+      </div>
+    </div>
+
+    <div class="agenda-legend" aria-label="Leyenda de Agenda">
+      <span class="agenda-legend__heading">Usuarios:</span>
+      <span id="agenda-user-legend" class="agenda-user-legend">
+        <span class="agenda-legend__empty">Se cargará con los eventos visibles.</span>
+      </span>
+      <span class="agenda-legend__separator" aria-hidden="true">·</span>
+      <span class="agenda-legend__heading">Visibilidad:</span>
+      <span class="agenda-legend__item">🔒 Privado</span>
+      <span class="agenda-legend__item">👥 Departamento</span>
+      <span class="agenda-legend__item">🌐 Global</span>
+    </div>
+
+    <div id="agenda-empty-warning" class="alert alert-warning agenda-empty-warning">
+      No hay capas seleccionadas. Se mostrará “Mis privados” por seguridad.
+    </div>
+
+    <div class="agenda-body">
+      <div id="calendar"></div>
+    </div>
   </div>
 </div>
 
 <!-- Modal: Nuevo evento rápido -->
 <div class="modal fade" id="quickEventModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="border-radius:14px;">
+    <div class="modal-content" style="border-radius:16px;">
       <div class="modal-header">
-        <h5 class="modal-title">Nuevo evento</h5>
+        <div>
+          <h5 class="modal-title mb-0">Nuevo evento rápido</h5>
+          <small class="text-muted">Luego podrás completar más datos desde la ficha de edición.</small>
+        </div>
         <button id="qe-close" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
       <div class="modal-body">
-        <div class="mb-2">
-          <label class="form-label">Título</label>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Título</label>
           <input id="qe-title" type="text" class="form-control" placeholder="Título del evento">
         </div>
 
-        <div class="row g-2">
-          <div class="col-6">
-            <label class="form-label">Inicio</label>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Inicio</label>
             <input id="qe-start" type="datetime-local" class="form-control">
           </div>
-          <div class="col-6">
-            <label class="form-label">Fin</label>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Fin</label>
             <input id="qe-end" type="datetime-local" class="form-control">
           </div>
         </div>
 
-        <div class="form-check mt-2">
-          <input id="qe-allDay" class="form-check-input" type="checkbox">
-          <label class="form-check-label" for="qe-allDay">Todo el día</label>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Ubicación</label>
+            <input id="qe-location" type="text" class="form-control" placeholder="Sala / Dirección / Link">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Visibilidad</label>
+            <select id="qe-visibility" class="form-select">
+              <option value="privada" selected>Privada · solo yo</option>
+              <option value="depto">Departamento / empresa</option>
+              <option value="global">Global</option>
+            </select>
+            <div class="form-text">Por seguridad, el valor por defecto es Privada.</div>
+          </div>
         </div>
 
-        <div class="mt-2">
-          <label class="form-label">Ubicación (opcional)</label>
-          <input id="qe-location" type="text" class="form-control" placeholder="Sala / Dirección / Link">
+        <div class="form-check mt-3">
+          <input id="qe-allDay" class="form-check-input" type="checkbox">
+          <label class="form-check-label" for="qe-allDay">Todo el día</label>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button id="qe-save" type="button" class="btn btn-primary">Guardar</button>
-        <button id="qe-cancel" type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button id="qe-save" type="button" class="btn btn-primary">
+          Guardar evento
+        </button>
+        <button id="qe-open-full" type="button" class="btn btn-outline-secondary">
+          Abrir formulario completo
+        </button>
+        <button id="qe-cancel" type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-console.log("AGENDA: script cargado");
+console.log("AGENDA_OPERATIVA_V1 cargada");
 
 (function(){
   const calendarEl = document.getElementById("calendar");
-  if (!calendarEl) {
-    console.warn("AGENDA: no existe #calendar");
-    return;
-  }
+  if (!calendarEl) return;
 
-  // ✅ Diagnóstico inmediato
-  console.log("AGENDA: FullCalendar =", typeof FullCalendar);
-  console.log("AGENDA: bootstrap =", typeof bootstrap);
-
-  // Si FullCalendar no cargó, muestro error visible
   if (typeof FullCalendar === "undefined") {
-    calendarEl.innerHTML =
-      '<div class="alert alert-danger m-2">FullCalendar no está cargado (CDN bloqueado o no llega el JS). Revisa consola.</div>';
+    calendarEl.innerHTML = '<div class="alert alert-danger m-2">FullCalendar no está cargado.</div>';
     return;
   }
 
-  // --- helpers ---
+  const STORAGE_LAYERS = "portal_intasa_agenda_layers_v1";
+  const STORAGE_VIEW = "portal_intasa_agenda_view_v1";
+
+  const cbMis = document.getElementById("f-mis");
+  const cbDepto = document.getElementById("f-depto");
+  const cbGlobal = document.getElementById("f-global");
+  const searchInput = document.getElementById("agenda-search");
+  const counterEl = document.getElementById("agenda-counter");
+  const emptyWarning = document.getElementById("agenda-empty-warning");
+
+  const modalEl = document.getElementById("quickEventModal");
+  const hasBootstrap = (typeof bootstrap !== "undefined" && bootstrap?.Modal);
+  const quickModal = (modalEl && hasBootstrap) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+
   function getCookie(name){
     const m = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
-    return m ? m.pop() : '';
+    return m ? decodeURIComponent(m.pop()) : '';
   }
+
+  function escapeHtml(value){
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function pad(n){ return String(n).padStart(2, "0"); }
+
   function toLocalInputValue(dateObj){
-    const pad = (n) => String(n).padStart(2, "0");
+    if (!dateObj) return "";
     const y = dateObj.getFullYear();
     const m = pad(dateObj.getMonth() + 1);
     const d = pad(dateObj.getDate());
@@ -181,13 +479,67 @@ console.log("AGENDA: script cargado");
     return `${y}-${m}-${d}T${hh}:${mm}`;
   }
 
-  // --- modal (solo si existe bootstrap) ---
-  const modalEl = document.getElementById("quickEventModal");
-  const hasBootstrap = (typeof bootstrap !== "undefined" && bootstrap?.Modal);
-  const quickModal = (modalEl && hasBootstrap) ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+  function loadLayerState(){
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_LAYERS) || "{}");
+      cbMis.checked = saved.mis !== undefined ? !!saved.mis : true;
+      cbDepto.checked = saved.depto !== undefined ? !!saved.depto : false;
+      cbGlobal.checked = saved.global !== undefined ? !!saved.global : false;
+    } catch(e) {
+      cbMis.checked = true;
+      cbDepto.checked = false;
+      cbGlobal.checked = false;
+    }
+  }
+
+  function saveLayerState(){
+    localStorage.setItem(STORAGE_LAYERS, JSON.stringify({
+      mis: cbMis.checked,
+      depto: cbDepto.checked,
+      global: cbGlobal.checked
+    }));
+  }
+
+  function selectedLayers(){
+    const layers = [];
+    if (cbMis.checked) layers.push("mis");
+    if (cbDepto.checked) layers.push("depto");
+    if (cbGlobal.checked) layers.push("global");
+
+    if (!layers.length) {
+      emptyWarning.style.display = "block";
+      return ["mis"];
+    }
+
+    emptyWarning.style.display = "none";
+    return layers;
+  }
+
+  function buildEventsUrl(info){
+    const params = new URLSearchParams();
+    params.set("start", info.startStr);
+    params.set("end", info.endStr);
+    selectedLayers().forEach(l => params.append("calendar", l));
+    return "{% url 'agenda:api_events' %}?" + params.toString();
+  }
+
+  function updateCounter(items){
+    const n = Array.isArray(items) ? items.length : 0;
+    counterEl.textContent = n === 1 ? "1 evento" : `${n} eventos`;
+  }
+
+  function eventMatchesSearch(ev, q){
+    if (!q) return true;
+    const props = ev.extendedProps || {};
+    const hay = [
+      ev.title,
+      props.location,
+      props.visibility
+    ].join(" ").toLowerCase();
+    return hay.includes(q);
+  }
 
   function openQuickModal({start, end, allDay}){
-    // si no hay bootstrap, volvemos al formulario clásico
     if (!quickModal) {
       const url = new URL("{% url 'agenda:create' %}", window.location.origin);
       url.searchParams.set("start", start.toISOString());
@@ -202,42 +554,221 @@ console.log("AGENDA: script cargado");
     document.getElementById("qe-end").value = toLocalInputValue(end);
     document.getElementById("qe-allDay").checked = allDay === true;
     document.getElementById("qe-location").value = "";
+    document.getElementById("qe-visibility").value = "privada";
     quickModal.show();
+
+    setTimeout(() => document.getElementById("qe-title")?.focus(), 250);
   }
 
-  // --- FullCalendar ---
+  function patchEventTime(info){
+    const ev = info.event;
+    const updateUrl = ev.extendedProps?.update_url;
+    if (!updateUrl) {
+      info.revert();
+      return;
+    }
+
+    fetch(updateUrl, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: JSON.stringify({
+        start: ev.start ? ev.start.toISOString() : null,
+        end: ev.end ? ev.end.toISOString() : null,
+        allDay: ev.allDay === true
+      })
+    }).then(resp => {
+      if (!resp.ok) {
+        info.revert();
+        alert("No se pudo actualizar el evento. Puede que no tengas permisos.");
+      }
+    }).catch(() => {
+      info.revert();
+      alert("Error de red al actualizar el evento.");
+    });
+  }
+
+  loadLayerState();
+
+  const initialView = localStorage.getItem(STORAGE_VIEW) || "timeGridWeek";
+
+
+  // AGENDA_USER_COLORS_V1_3
+  function normalizeAgendaUserColor(value) {
+    const raw = String(value || "").trim();
+    return /^#[0-9A-Fa-f]{6}$/.test(raw) ? raw.toUpperCase() : "#3498DB";
+  }
+
+  function visIcon(value) {
+    const vis = String(value || "").toUpperCase();
+    if (vis === "PRIVADA") return "🔒";
+    if (vis === "DEPARTAMENTO") return "👥";
+    if (vis === "GLOBAL") return "🌐";
+    return "•";
+  }
+
+  function itemTypePresentation(value) {
+    const type = String(value || "EVENTO").toUpperCase();
+    return type === "TAREA"
+      ? { icon: "☑", label: "Tarea" }
+      : { icon: "◷", label: "Evento" };
+  }
+
+  function renderAgendaUserLegend(events) {
+    const host = document.getElementById("agenda-user-legend");
+    if (!host) return;
+
+    const users = new Map();
+    (events || []).forEach(function(event) {
+      const props = event.extendedProps || {};
+      const key = props.owner_id === null || props.owner_id === undefined
+        ? "deleted"
+        : String(props.owner_id);
+      if (!users.has(key)) {
+        users.set(key, {
+          name: String(props.owner_name || "Usuario eliminado"),
+          color: normalizeAgendaUserColor(props.owner_color || event.backgroundColor)
+        });
+      }
+    });
+
+    host.replaceChildren();
+    const ordered = Array.from(users.values()).sort(function(a, b) {
+      return a.name.localeCompare(b.name, "es", {sensitivity: "base"});
+    });
+
+    if (!ordered.length) {
+      const empty = document.createElement("span");
+      empty.className = "agenda-legend__empty";
+      empty.textContent = "Sin eventos visibles.";
+      host.appendChild(empty);
+      return;
+    }
+
+    ordered.forEach(function(user) {
+      const item = document.createElement("span");
+      item.className = "agenda-legend__item";
+      const dot = document.createElement("span");
+      dot.className = "agenda-legend__dot";
+      dot.style.backgroundColor = user.color;
+      dot.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.textContent = user.name;
+      item.appendChild(dot);
+      item.appendChild(label);
+      host.appendChild(item);
+    });
+  }
+
   const calendar = new FullCalendar.Calendar(calendarEl, {
     locale: "es",
     firstDay: 1,
-    initialView: "timeGridWeek",
+    initialView: initialView,
+    nowIndicator: true,
+    selectable: true,
+    selectMirror: true,
+    editable: true,
+    eventResizableFromStart: true,
+    slotEventOverlap: false,
+    eventMaxStack: 4,
+    dayMaxEvents: true,
+    dayMaxEventRows: true,
+    allDayText: "Todo el día",
+    moreLinkText: "más",
+    noEventsText: "No hay eventos para mostrar",
+
     headerToolbar: {
       left: "prev,next today",
       center: "title",
       right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
     },
+
     buttonText: {
       today: "Hoy",
       month: "Mes",
       week: "Semana",
       day: "Día",
-      list: "Lista",
+      list: "Lista"
     },
-    allDayText: "Todo el día",
-    moreLinkText: "más",
-    noEventsText: "No hay eventos para mostrar",
-    selectable: true,
-    selectMirror: true,
-    // Evitar que los eventos se "pisen" visualmente y limitar el apilado
-    slotEventOverlap: false,
-    eventMaxStack: 4,
-    dayMaxEvents: true,
-    dayMaxEventRows: true,
+
+    datesSet: function(info){
+      localStorage.setItem(STORAGE_VIEW, info.view.type);
+    },
+
+    events: function(info, successCallback, failureCallback){
+      fetch(buildEventsUrl(info), {
+        headers: {"X-Requested-With": "XMLHttpRequest"}
+      })
+      .then(resp => {
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return resp.json();
+      })
+      .then(items => {
+        const q = (searchInput.value || "").trim().toLowerCase();
+        const filtered = (items || []).filter(ev => eventMatchesSearch(ev, q));
+        updateCounter(filtered);
+        successCallback(filtered);
+      })
+      .catch(err => {
+        console.error("AGENDA eventos error", err);
+        updateCounter([]);
+        failureCallback(err);
+      });
+    },
+
     eventClassNames: function(info){
+      const state = info.event.extendedProps?.visual_state;
+      const classes = state && state !== "normal" ? ["agenda-state-" + state] : [];
       const vis = (info.event.extendedProps.visibility || "").toUpperCase();
-      if (vis === "PRIVADA") return ["ev-private"];
-      if (vis === "DEPARTAMENTO") return ["ev-depto"];
-      if (vis === "GLOBAL") return ["ev-global"];
-      return [];
+      if (vis === "PRIVADA") classes.push("ev-private");
+      if (vis === "DEPARTAMENTO") classes.push("ev-depto");
+      if (vis === "GLOBAL") classes.push("ev-global");
+      return classes;
+    },
+
+    eventContent: function(arg){
+      const props = arg.event.extendedProps || {};
+      const location = props.location || "";
+      const vis = props.visibility || "";
+      const timeText = arg.timeText || "";
+      const title = arg.event.title || "Evento";
+      const indicator = props.indicator || "";
+      const stateNotice = props.state_notice || "";
+      const type = itemTypePresentation(props.item_type);
+      const company = props.company || "";
+      const secondary = company && location ? `${company} · ${location}` : (company || location);
+      const visibilityLabel = String(props.visibility_label || vis || "Sin visibilidad");
+
+      return {
+        html: `
+          <div class="agenda-event" data-agenda-item-type="${escapeHtml(props.item_type || "EVENTO")}" title="${escapeHtml(title)}">
+            <div class="agenda-event__top">
+              ${timeText ? `<span class="agenda-event__time">${escapeHtml(timeText)}</span>` : ""}
+              <span class="agenda-event__icon" role="img" aria-label="Visibilidad: ${escapeHtml(visibilityLabel)}" title="Visibilidad: ${escapeHtml(visibilityLabel)}">${escapeHtml(visIcon(vis))}</span>
+              <span class="agenda-event__icon" role="img" aria-label="${escapeHtml(type.label)}" title="${escapeHtml(type.label)}">${escapeHtml(type.icon)}</span>
+              ${indicator ? `<span class="agenda-event__state" role="img" aria-label="${escapeHtml(stateNotice || indicator)}" title="${escapeHtml(stateNotice || indicator)}">${escapeHtml(indicator)}</span>` : ""}
+            </div>
+            <div class="agenda-event__title">${escapeHtml(title)}</div>
+            ${secondary ? `<div class="agenda-event__meta">${escapeHtml(secondary)}</div>` : ""}
+          </div>
+        `
+      };
+    },
+
+    eventDidMount: function(info){
+      const props = info.event.extendedProps || {};
+      const parts = [
+        info.event.title || "Evento",
+        props.location ? "📍 " + props.location : "",
+        props.visibility ? "Visibilidad: " + props.visibility : ""
+        ,props.state_notice || ""
+      ].filter(Boolean);
+      info.el.setAttribute("title", parts.join("\\n"));
+      info.el.setAttribute("aria-label", parts.join(" · "));
+      info.el.setAttribute("data-agenda-item-type", props.item_type || "EVENTO");
+      info.el.setAttribute("data-agenda-visibility", props.visibility || "");
     },
 
     dateClick: function(info){
@@ -245,97 +776,104 @@ console.log("AGENDA: script cargado");
       const end = new Date(start.getTime() + 60*60*1000);
       openQuickModal({ start, end, allDay: info.allDay === true });
     },
+
     select: function(info){
       openQuickModal({ start: info.start, end: info.end, allDay: info.allDay === true });
     },
+
+    eventsSet: function(events){
+      renderAgendaUserLegend(events);
+     },
     eventClick: function(info){
-      // Navegar a la página de edición real del evento
       const editUrl = info.event.extendedProps?.edit_url;
       if (editUrl) {
         window.location.href = editUrl;
-      } else {
-        console.warn("Evento sin edit_url en extendedProps", info.event);
       }
     },
 
-    events: function(fetchInfo, successCallback, failureCallback){
-      // Diagnóstico: ver qué pide FullCalendar
-      const layers = [];
-      if (document.getElementById("f-mis")?.checked) layers.push("mis");
-      if (document.getElementById("f-depto")?.checked) layers.push("depto");
-      if (document.getElementById("f-global")?.checked) layers.push("global");
-
-      const baseUrl = "{% url 'agenda:api_events' %}";
-      const params = new URLSearchParams();
-      params.set("start", fetchInfo.startStr);
-      params.set("end", fetchInfo.endStr);
-      layers.forEach(l => params.append("calendar", l));
-      const finalUrl = baseUrl + "?" + params.toString();
-
-      console.log("FC events fetch:", {
-        startStr: fetchInfo.startStr,
-        endStr: fetchInfo.endStr,
-        layers,
-        url: finalUrl,
-      });
-
-      fetch(finalUrl, {credentials:"same-origin"})
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(successCallback)
-      .catch(failureCallback);
-    }
+    eventDrop: patchEventTime,
+    eventResize: patchEventTime
   });
 
-  // listeners modal (solo si bootstrap está)
-  if (modalEl && quickModal){
-    modalEl.addEventListener("hidden.bs.modal", () => {
-      try { calendar.unselect(); } catch(e) {}
-      setTimeout(() => calendarEl.scrollIntoView({block:"nearest"}), 0);
-    });
-  }
+  calendar.render();
 
-  // Guardar (solo si hay modal)
-  const btnSave = document.getElementById("qe-save");
-  if (btnSave && quickModal){
-    btnSave.addEventListener("click", async () => {
-      const title = (document.getElementById("qe-title").value || "").trim();
-      const startVal = document.getElementById("qe-start").value;
-      const endVal = document.getElementById("qe-end").value;
-      const allDay = document.getElementById("qe-allDay").checked;
-      const ubicacion = (document.getElementById("qe-location").value || "").trim();
-
-      if (!title) return alert("Escribe un título.");
-      if (!startVal) return alert("Selecciona inicio.");
-
-      const startISO = new Date(startVal).toISOString();
-      const endISO = endVal ? new Date(endVal).toISOString() : null;
-
-      const resp = await fetch("{% url 'agenda:api_events' %}", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken")
-        },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          title,
-          start: startISO,
-          end: endISO,
-          allDay,
-          ubicacion,
-          visibilidad: "privada"
-        })
-      });
-
-      if (!resp.ok) return alert("No se pudo guardar el evento.");
-
-      quickModal.hide();
+  [cbMis, cbDepto, cbGlobal].forEach(cb => {
+    cb.addEventListener("change", () => {
+      saveLayerState();
       calendar.refetchEvents();
     });
-  }
+  });
 
-  calendar.render();
+  let searchTimer = null;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => calendar.refetchEvents(), 220);
+  });
+
+  document.getElementById("btn-agenda-refresh")?.addEventListener("click", () => {
+    calendar.refetchEvents();
+  });
+
+  document.getElementById("btn-agenda-today")?.addEventListener("click", () => {
+    calendar.today();
+  });
+
+  document.getElementById("qe-open-full")?.addEventListener("click", () => {
+    const start = document.getElementById("qe-start").value;
+    const end = document.getElementById("qe-end").value;
+    const allDay = document.getElementById("qe-allDay").checked;
+
+    const url = new URL("{% url 'agenda:create' %}", window.location.origin);
+    if (start) url.searchParams.set("start", start);
+    if (end) url.searchParams.set("end", end);
+    url.searchParams.set("allDay", allDay ? "1" : "0");
+    window.location.href = url.toString();
+  });
+
+  document.getElementById("qe-save")?.addEventListener("click", async () => {
+    const title = document.getElementById("qe-title").value.trim();
+    const start = document.getElementById("qe-start").value;
+    const end = document.getElementById("qe-end").value;
+    const allDay = document.getElementById("qe-allDay").checked;
+    const location = document.getElementById("qe-location").value.trim();
+    const visibilidad = document.getElementById("qe-visibility").value || "privada";
+
+    if (!title) {
+      alert("Indica un título.");
+      document.getElementById("qe-title").focus();
+      return;
+    }
+
+    if (!start) {
+      alert("Indica fecha/hora de inicio.");
+      return;
+    }
+
+    const resp = await fetch("{% url 'agenda:api_events' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: JSON.stringify({
+        title,
+        start,
+        end,
+        allDay,
+        location,
+        visibilidad
+      })
+    });
+
+    if (!resp.ok) {
+      const msg = await resp.text();
+      alert("No se pudo guardar el evento.\\n" + msg);
+      return;
+    }
+
+    if (quickModal) quickModal.hide();
+    calendar.refetchEvents();
+  });
 })();
 </script>
-
 {% endblock %}

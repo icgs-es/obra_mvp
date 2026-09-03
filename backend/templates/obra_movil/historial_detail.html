@@ -1,0 +1,65 @@
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- {{ detail_marker }} -->
+<!-- OBRA_MOVIL_HISTORIAL_DETAIL_TEMPLATE_V1 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi bi-search"></i>
+    </span>
+    <div>
+      <span class="badge rounded-pill {{ badge_class }}">{{ badge }}</span>
+      <h1 class="h3 mb-1 mt-2">{{ title }}</h1>
+      <p class="mb-0 opacity-75">{{ subtitle }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Datos principales</h2>
+
+    <div class="list-group list-group-flush obra-detail-list">
+      {% for item in items %}
+        <div class="list-group-item px-0">
+          <div class="small text-muted">{{ item.label }}</div>
+          <div class="fw-semibold">{{ item.value }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if raw_items %}
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Trazabilidad técnica</h2>
+
+    <div class="list-group list-group-flush obra-detail-list">
+      {% for item in raw_items %}
+        <div class="list-group-item px-0">
+          <div class="small text-muted">{{ item.key }}</div>
+          <div class="small fw-semibold text-break">{{ item.value }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="d-grid gap-2">
+  {% for action in actions %}
+    <a class="btn {{ action.class }} btn-lg rounded-4" href="{{ action.url }}">
+      <i class="bi {{ action.icon }} me-1"></i> {{ action.label }}
+    </a>
+  {% endfor %}
+</section>
+
+<style>
+  /* OBRA_MOVIL_HISTORIAL_DETAIL_STYLE_V1 */
+  .obra-detail-list .list-group-item {
+    background: transparent;
+  }
+</style>
+{% endblock %}

@@ -1,7 +1,12 @@
 {% extends "base_profesional.html" %}
 {% load static %}
 
-{% block title %}Login - Intasa Platform{% endblock %}
+{% block title %}Login - Intasa Platform
+<!-- OBRA_MOVIL_UX0_LOGIN_SHORTCUT_V1 -->
+
+
+
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center align-items-center min-vh-80">
@@ -69,9 +74,7 @@
                         </a>
                     </div>
                     <div class="col-6">
-                        <a href="/manual/tabs/" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-hard-hat me-1"></i>Módulo Construcción
-                        </a>
+                        <a href="/app/obra-movil/" href="/app/obra-movil/" class="btn btn-sm btn-outline-primary">🏗️ Obra móvil</a>
                     </div>
                 </div>
             </div>
@@ -79,3 +82,61 @@
     </div>
 </div>
 {% endblock %}
+{# LOGIN_OBRA_DIRECTA_V2 #}
+
+<!-- LOGIN_OBRA_MOVIL_BOTON_OK -->
+
+<!-- LOGIN_OBRA_MOVIL_SIN_PANEL_LATERAL_OK -->
+<style>
+  .login-obm-direct-hide {
+    display: none !important;
+  }
+</style>
+<script>
+(function () {
+  function ready(fn) {
+    if (document.readyState !== "loading") fn();
+    else document.addEventListener("DOMContentLoaded", fn);
+  }
+
+  ready(function () {
+    var phrases = [
+      "Acceso directo de obra",
+      "Entra con usuario",
+      "abre directamente Obra móvil",
+      "abre directamente Obra movil",
+      "Entrar a Obra móvil",
+      "Entrar a Obra movil"
+    ];
+
+    Array.prototype.slice.call(document.querySelectorAll("body *")).forEach(function (el) {
+      var txt = (el.innerText || el.textContent || "");
+
+      if (!phrases.some(function (p) { return txt.indexOf(p) !== -1; })) return;
+
+      var node = el;
+
+      for (var i = 0; i < 8 && node && node !== document.body; i++) {
+        var tag = String(node.tagName || "").toUpperCase();
+        var cls = String(node.className || "").toLowerCase();
+
+        if (
+          ["ASIDE", "SECTION", "ARTICLE"].indexOf(tag) !== -1 ||
+          cls.indexOf("card") !== -1 ||
+          cls.indexOf("direct") !== -1 ||
+          cls.indexOf("obra") !== -1 ||
+          cls.indexOf("side") !== -1 ||
+          cls.indexOf("right") !== -1
+        ) {
+          node.classList.add("login-obm-direct-hide");
+          return;
+        }
+
+        node = node.parentElement;
+      }
+
+      el.classList.add("login-obm-direct-hide");
+    });
+  });
+})();
+</script>

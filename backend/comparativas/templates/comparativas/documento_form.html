@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Adjuntar presupuesto{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width: 760px;">
+
+  <h1 class="h4 mb-1">Adjuntar documento</h1>
+
+  <div class="text-muted mb-3">
+    {{ ofertante.nombre }}
+    · Versión {{ oferta.version }}
+    · {{ comparativa.titulo }}
+  </div>
+
+  <form method="post"
+        enctype="multipart/form-data"
+        class="card">
+    {% csrf_token %}
+
+    <div class="card-body">
+      <label class="form-label">
+        {{ form.archivo.label }}
+      </label>
+
+      {{ form.archivo }}
+      {{ form.archivo.errors }}
+
+      <div class="form-text mt-2">
+        {{ form.archivo.help_text }}
+      </div>
+
+      <div class="alert alert-light border mt-3 mb-0 small">
+        El archivo original se conserva.
+        En la siguiente fase INTASA IA generará
+        una extracción separada sin modificarlo.
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{% url 'comparativas:detail' comparativa.uuid %}"
+         class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+
+      <button class="btn btn-primary">
+        Guardar documento
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

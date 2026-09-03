@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Añadir ofertante{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width: 820px;">
+
+  <h1 class="h4 mb-1">Añadir ofertante</h1>
+  <div class="text-muted mb-3">
+    {{ comparativa.titulo }}
+  </div>
+
+  {# COMPARATIVAS_IMPORTACION_BASICA_PRESUPUESTO_V1 #}
+  <div class="card border-success mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center gap-3">
+      <div>
+        <div class="fw-semibold">
+          ¿Ya tienes el presupuesto?
+        </div>
+        <div class="small text-muted">
+          Podemos leer automáticamente proveedor,
+          fecha, referencia e importes básicos.
+        </div>
+      </div>
+
+      <a href="{% url 'comparativas:presupuesto_import' comparativa.uuid %}"
+         class="btn btn-outline-success text-nowrap">
+        Importar PDF / imagen
+      </a>
+    </div>
+  </div>
+
+  <form method="post" class="card">
+    {% csrf_token %}
+
+    <div class="card-body">
+      <div class="alert alert-light border">
+        Si ya existe en Proveedores, selecciónalo.
+        Si todavía es un candidato, deja el selector vacío
+        e introduce sus datos.
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">
+          {{ form.proveedor_ref.label }}
+        </label>
+        {{ form.proveedor_ref }}
+        {{ form.proveedor_ref.errors }}
+      </div>
+
+      <hr>
+
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">
+            {{ form.nombre.label }}
+          </label>
+          {{ form.nombre }}
+          {{ form.nombre.errors }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">
+            {{ form.nif.label }}
+          </label>
+          {{ form.nif }}
+          {{ form.nif.errors }}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          {{ form.email }}
+          {{ form.email.errors }}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Teléfono</label>
+          {{ form.telefono }}
+          {{ form.telefono.errors }}
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{% url 'comparativas:detail' comparativa.uuid %}"
+         class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+
+      <button class="btn btn-primary">
+        Añadir ofertante
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

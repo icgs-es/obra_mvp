@@ -1,0 +1,203 @@
+
+<!-- OBRA_MOVIL_DIRECT_FLOW_BACK_OK -->
+<div class="obra-movil-flow-back" style="max-width:760px;margin:10px auto 14px;">
+  <a href="/app/obra-movil/" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:800;color:#0d6efd;">
+    ← Volver a Obra móvil
+  </a>
+</div>
+
+{% extends "obra_movil/base_mobile.html" %}
+
+{% block mobile_content %}
+<!-- OBRA_MOVIL_PRODUCCION_FORM_V2 -->
+<section class="obra-mobile-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="obra-mobile-icon bg-white">
+      <i class="bi bi-person-check"></i>
+    </span>
+    <div>
+      <h1 class="h3 mb-1">Nueva producción</h1>
+      <p class="mb-0 opacity-75">Registrar real ejecutado en obra.</p>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 shadow-sm rounded-4 mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">
+      <i class="bi bi-funnel me-1"></i> Filtrar tarea
+    </h2>
+
+    <form method="get" class="obra-mobile-filter">
+      <div class="mb-2">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.f_obra.id_for_label }}">{{ filtro_form.f_obra.label }}</label>
+        {{ filtro_form.f_obra }}
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.f_unidad_obra.id_for_label }}">{{ filtro_form.f_unidad_obra.label }}</label>
+        {{ filtro_form.f_unidad_obra }}
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.f_capitulo.id_for_label }}">{{ filtro_form.f_capitulo.label }}</label>
+        {{ filtro_form.f_capitulo }}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold" for="{{ filtro_form.f_partida.id_for_label }}">{{ filtro_form.f_partida.label }}</label>
+        {{ filtro_form.f_partida }}
+      </div>
+
+      <div class="d-grid gap-2">
+        <button class="btn btn-outline-primary btn-lg rounded-4" type="submit">
+          Aplicar filtros
+        </button>
+        <a class="btn btn-light rounded-4" href="{% url 'obra_movil:produccion_nueva' %}">
+          Limpiar filtros
+        </a>
+      </div>
+    </form>
+
+    <div class="small text-muted mt-3">
+      Tareas disponibles: {{ tareas_disponibles_count }}
+      {% if tareas_limitadas %}
+        · Mostrando últimas 250. Usa filtros para afinar.
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<form method="post" class="card border-0 shadow-sm rounded-4 obra-mobile-form" novalidate>
+  {% csrf_token %}
+  {% for key, value in filtros_hidden.items %}
+    <input type="hidden" name="{{ key }}" value="{{ value }}">
+  {% endfor %}
+
+  <div class="card-body">
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger rounded-4">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.tarea_obra.id_for_label }}">{{ form.tarea_obra.label }}</label>
+      {{ form.tarea_obra }}
+      {% if form.tarea_obra.errors %}<div class="text-danger small mt-1">{{ form.tarea_obra.errors }}</div>{% endif %}
+      <div class="form-text">Selecciona la tarea exacta: obra, vivienda, planta, capítulo y partida.</div>
+    </div>
+
+    <div class="mb-3">
+      <div class="form-label fw-semibold">{{ form.modo.label }}</div>
+      <div class="obra-radio-panel">
+        {{ form.modo }}
+      </div>
+      {% if form.modo.errors %}<div class="text-danger small mt-1">{{ form.modo.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3" data-mobile-field="empleado">
+      <label class="form-label fw-semibold" for="{{ form.empleado.id_for_label }}">{{ form.empleado.label }}</label>
+      {{ form.empleado }}
+      {% if form.empleado.errors %}<div class="text-danger small mt-1">{{ form.empleado.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3" data-mobile-field="recurso">
+      <label class="form-label fw-semibold" for="{{ form.recurso.id_for_label }}">{{ form.recurso.label }}</label>
+      {{ form.recurso }}
+      {% if form.recurso.errors %}<div class="text-danger small mt-1">{{ form.recurso.errors }}</div>{% endif %}
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.fecha.id_for_label }}">{{ form.fecha.label }}</label>
+        {{ form.fecha }}
+        {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors }}</div>{% endif %}
+      </div>
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.cantidad.id_for_label }}">{{ form.cantidad.label }}</label>
+        {{ form.cantidad }}
+        {% if form.cantidad.errors %}<div class="text-danger small mt-1">{{ form.cantidad.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.unidad.id_for_label }}">{{ form.unidad.label }}</label>
+        {{ form.unidad }}
+        {% if form.unidad.errors %}<div class="text-danger small mt-1">{{ form.unidad.errors }}</div>{% endif %}
+      </div>
+      <div class="col-6 mb-3">
+        <label class="form-label fw-semibold" for="{{ form.precio_unidad.id_for_label }}">{{ form.precio_unidad.label }}</label>
+        {{ form.precio_unidad }}
+        {% if form.precio_unidad.errors %}<div class="text-danger small mt-1">{{ form.precio_unidad.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="{{ form.observaciones.id_for_label }}">{{ form.observaciones.label }}</label>
+      {{ form.observaciones }}
+      {% if form.observaciones.errors %}<div class="text-danger small mt-1">{{ form.observaciones.errors }}</div>{% endif %}
+    </div>
+
+    <div class="d-grid gap-2">
+      <button class="btn btn-primary btn-lg rounded-4" type="submit">
+        <i class="bi bi-check2-circle me-1"></i> Guardar producción
+      </button>
+      <a class="btn btn-light btn-lg rounded-4" href="{% url 'obra_movil:produccion_home' %}">
+        Cancelar
+      </a>
+    </div>
+  </div>
+</form>
+
+<style>
+  /* OBRA_MOVIL_PRODUCCION_FORM_STYLE_V2 */
+  .obra-mobile-form select,
+  .obra-mobile-form input,
+  .obra-mobile-form textarea,
+  .obra-mobile-filter select {
+    border-radius: 1rem;
+  }
+  .obra-radio-panel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .6rem;
+  }
+  .obra-radio-panel li label {
+    display: block;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 1rem;
+    padding: .85rem;
+    background: #f8fafc;
+    font-weight: 700;
+  }
+  .obra-radio-panel input {
+    margin-right: .35rem;
+  }
+</style>
+
+<script>
+(function(){
+  function currentMode(){
+    const checked = document.querySelector('input[name="modo"]:checked');
+    return checked ? checked.value : "EMPLEADO";
+  }
+  function syncFields(){
+    const modo = currentMode();
+    const empleado = document.querySelector('[data-mobile-field="empleado"]');
+    const recurso = document.querySelector('[data-mobile-field="recurso"]');
+    if (empleado) empleado.style.display = modo === "EMPLEADO" ? "" : "none";
+    if (recurso) recurso.style.display = modo === "RECURSO" ? "" : "none";
+  }
+  document.querySelectorAll('input[name="modo"]').forEach(function(el){
+    el.addEventListener("change", syncFields);
+  });
+  syncFields();
+})();
+</script>
+{% endblock %}

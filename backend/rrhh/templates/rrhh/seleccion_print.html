@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RRHH · Candidaturas filtradas</title>
+  <style>
+    /* RRHH_FILTERED_PRINT_V1 */
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #111827;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+    }
+    .print-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #d1d5db;
+      background: #fff;
+    }
+    .print-toolbar a,
+    .print-toolbar button {
+      display: inline-block;
+      padding: 7px 11px;
+      border: 1px solid #9ca3af;
+      border-radius: 5px;
+      background: #fff;
+      color: #111827;
+      font: inherit;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .print-toolbar button {
+      border-color: #dc2626;
+      color: #dc2626;
+      font-weight: 700;
+    }
+    .sheet { padding: 10mm; }
+    .report-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+      padding-bottom: 7px;
+      border-bottom: 2px solid #111827;
+    }
+    h1 {
+      margin: 0 0 3px;
+      font-size: 17pt;
+      line-height: 1.15;
+    }
+    .subtitle, .generated {
+      color: #4b5563;
+      font-size: 8.5pt;
+    }
+    .generated {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 5px;
+      margin: 8px 0;
+    }
+    .summary-item {
+      min-width: 0;
+      padding: 5px 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+    }
+    .summary-label {
+      display: block;
+      margin-bottom: 1px;
+      color: #6b7280;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+    }
+    .summary-value {
+      display: block;
+      overflow: hidden;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .result-count {
+      margin: 5px 0 7px;
+      font-weight: 700;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    thead { display: table-header-group; }
+    th, td {
+      padding: 4px;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+    th {
+      background: #e5e7eb;
+      font-size: 7.5pt;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    tbody tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr.discarded {
+      background: #e5e7eb;
+      color: #4b5563;
+    }
+    .main-line {
+      display: block;
+      font-weight: 700;
+    }
+    .secondary-line {
+      display: block;
+      margin-top: 1px;
+      color: #4b5563;
+      font-size: 7.5pt;
+    }
+    .state {
+      display: inline-block;
+      padding: 2px 4px;
+      border: 1px solid #9ca3af;
+      border-radius: 3px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .empty {
+      padding: 20px;
+      text-align: center;
+      color: #6b7280;
+    }
+    .col-candidate { width: 18%; }
+    .col-contact { width: 17%; }
+    .col-date { width: 8%; }
+    .col-origin { width: 8%; }
+    .col-score { width: 5%; }
+    .col-state { width: 9%; }
+    .col-planning { width: 13%; }
+    .col-responsible { width: 8%; }
+
+    @page {
+      size: A4 landscape;
+      margin: 8mm;
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      .sheet { padding: 0; }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-toolbar no-print">
+    <a href="{% url 'rrhh:seleccion_personal_list' %}">
+      ← Volver a Selección
+    </a>
+    <button type="button" onclick="window.print()">
+      Imprimir / Guardar PDF
+    </button>
+  </div>
+
+  <main class="sheet">
+    <header class="report-header">
+      <div>
+        <h1>RRHH · Candidaturas filtradas</h1>
+        <div class="subtitle">
+          Portal INTASA · Selección de personal
+        </div>
+      </div>
+      <div class="generated">
+        Generado: {{ generated_at|date:"d/m/Y H:i" }}
+      </div>
+    </header>
+
+    <section class="summary">
+      <div class="summary-item">
+        <span class="summary-label">Empresa</span>
+        <span class="summary-value">{{ filter_labels.team }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Proceso</span>
+        <span class="summary-value">{{ filter_labels.proceso }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Estado</span>
+        <span class="summary-value">{{ filter_labels.estado }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Origen</span>
+        <span class="summary-value">{{ filter_labels.origen }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Nota</span>
+        <span class="summary-value">{{ filter_labels.puntuacion }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Búsqueda</span>
+        <span class="summary-value">{{ filter_labels.q }}</span>
+      </div>
+    </section>
+
+    <div class="result-count">
+      Total: {{ total }} candidatura{{ total|pluralize }}
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="col-candidate">Candidato</th>
+          <th class="col-contact">Contacto</th>
+          <th class="col-date">Solicitud</th>
+          <th class="col-origin">Origen</th>
+          <th class="col-score">Nota</th>
+          <th class="col-state">Estado</th>
+          <th class="col-planning">Planificación</th>
+          <th class="col-responsible">Responsable</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for candidatura in candidaturas %}
+          <tr{% if candidatura.estado == "DESCARTADO" %} class="discarded"{% endif %}>
+            <td>
+              <span class="main-line">
+                {{ candidatura.candidato.nombre_completo }}
+              </span>
+              <span class="secondary-line">
+                {{ candidatura.candidato.perfil_profesional|default:"Sin perfil" }}
+                {% if candidatura.candidato.ciudad %}
+                  · {{ candidatura.candidato.ciudad }}
+                {% endif %}
+                {% if show_process_in_rows %}
+                  · {{ candidatura.proceso.titulo }}
+                {% endif %}
+              </span>
+            </td>
+            <td>
+              <span class="main-line">
+                {{ candidatura.candidato.email|default:"—" }}
+              </span>
+              <span class="secondary-line">
+                {{ candidatura.candidato.telefono|default:"—" }}
+              </span>
+            </td>
+            <td>{{ candidatura.fecha_solicitud|date:"d/m/Y" }}</td>
+            <td>{{ candidatura.get_origen_display }}</td>
+            <td>
+              {% if candidatura.puntuacion %}
+                {{ candidatura.puntuacion }}/5
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              <span class="state">{{ candidatura.get_estado_display }}</span>
+            </td>
+            <td>
+              <span class="main-line">
+                Contacto:
+                {{ candidatura.fecha_proximo_contacto|date:"d/m/Y H:i"|default:"—" }}
+              </span>
+              <span class="secondary-line">
+                Entrevista:
+                {{ candidatura.fecha_entrevista|date:"d/m/Y H:i"|default:"—" }}
+              </span>
+            </td>
+            <td>{{ candidatura.responsable|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="empty">
+              No hay candidaturas que coincidan con los filtros.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    window.addEventListener("load", function () {
+      window.setTimeout(function () {
+        window.print();
+      }, 250);
+    });
+  </script>
+</body>
+</html>

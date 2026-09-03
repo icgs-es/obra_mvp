@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load gestion_money %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Crear factura de compra desde albaranes</h1>
+      <div class="text-muted small">
+        Selecciona albaranes de compra pendientes y genera una factura de proveedor.
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      {% if team %}<span class="badge bg-primary">{{ team.name }}</span>{% endif %}
+      <a href="/app/gestion/facturas/" class="btn btn-outline-secondary btn-sm">Volver a facturas</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="get" class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label small text-muted">Proveedor</label>
+          <select name="proveedor" class="form-select form-select-sm">
+            <option value="">Selecciona proveedor...</option>
+            {% for p in proveedores %}
+              <option value="{{ p.id }}" {% if proveedor and proveedor.id == p.id %}selected{% endif %}>
+                {{ p.nombre_comercial }}{% if p.cif %} · {{ p.cif }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-grid">
+          <button class="btn btn-primary btn-sm">Buscar albaranes pendientes</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  {% if proveedor %}
+    <form method="post" class="card shadow-sm border-0">
+      {% csrf_token %}
+      <input type="hidden" name="proveedor" value="{{ proveedor.id }}">
+
+      <div class="card-header bg-white fw-semibold">
+        Factura para {{ proveedor.nombre_comercial }}
+      </div>
+
+      <div class="card-body">
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Código interno</label>
+            <input type="text" name="cod_factura" class="form-control form-control-sm" placeholder="Vacío = automático">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Nº factura proveedor</label>
+            <input type="text" name="num_factura_proveedor" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">Fecha emisión</label>
+            <input type="date" name="fecha_emision" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">IVA %</label>
+            <input type="number" step="0.01" name="iva_porcentaje" value="21.00" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">% retención</label>
+            <input type="number" step="0.01" min="0" name="retencion_porcentaje" value="0.00" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Forma de pago</label>
+            <input type="text" name="forma_pago" class="form-control form-control-sm" placeholder="TRANSFERENCIA">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="PAGO PEND.">PAGO PEND.</option>
+              <option value="PAGADA">PAGADA</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small text-muted">Observaciones</label>
+            <input type="text" name="observaciones" class="form-control form-control-sm">
+          </div>
+        </div>
+
+        <h2 class="h6 mb-2">Albaranes pendientes</h2>
+
+        {% if albaranes_pendientes %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th></th>
+                  <th>Código</th>
+                  <th>Nº proveedor</th>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th class="text-end">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in albaranes_pendientes %}
+                <tr>
+                  <td>
+                    <input type="checkbox" name="albaranes" value="{{ a.id }}" class="form-check-input">
+                  </td>
+                  <td class="fw-semibold">{{ a.cod_albaran }}</td>
+                  <td>{{ a.num_albaran_proveedor|default:"—" }}</td>
+                  <td>{{ a.fecha_albaran|date:"d/m/Y" }}</td>
+                  <td>{{ a.descripcion|default:"—"|truncatechars:70 }}</td>
+                  <td class="text-end">{{ a.importe_albaran|money_es }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <a href="/app/gestion/facturas/" class="btn btn-outline-secondary">Cancelar</a>
+            <button class="btn btn-primary">Crear factura desde albaranes</button>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            Este proveedor no tiene albaranes pendientes de facturar.
+          </div>
+        {% endif %}
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

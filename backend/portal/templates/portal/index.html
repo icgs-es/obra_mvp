@@ -60,6 +60,40 @@
     <div class="row g-3">
       <!-- TARJETA TAREAS -->
       <div class="col-12">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h2 class="h5 mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>Mi agenda operativa</h2>
+              <div class="d-flex gap-2">
+                <span class="badge text-bg-danger">{{ agenda_personal.counts.overdue }} atrasados</span>
+                <span class="badge text-bg-primary">{{ agenda_personal.counts.today }} hoy</span>
+                <span class="badge text-bg-secondary">{{ agenda_personal.counts.upcoming }} próximos</span>
+              </div>
+            </div>
+            {% if agenda_personal.overdue %}
+              <div class="small fw-semibold text-danger mb-1">Atrasados</div>
+              <div class="list-group list-group-flush mb-2">
+                {% for item in agenda_personal.overdue|slice:":5" %}
+                  <a class="list-group-item list-group-item-action px-0 py-2" href="{{ item.edit_url|default:'/app/agenda/' }}"><span class="badge text-bg-light border me-2">{{ item.type_label }}</span>⚠ {{ item.title }} <span class="text-muted float-end">{{ item.company }}</span></a>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if agenda_personal.today %}
+              <div class="small fw-semibold mb-1">Hoy</div>
+              <div class="list-group list-group-flush mb-2">
+                {% for item in agenda_personal.today|slice:":5" %}
+                  <a class="list-group-item list-group-item-action px-0 py-2" href="{{ item.edit_url|default:'/app/agenda/' }}"><span class="badge text-bg-light border me-2">{{ item.type_label }}</span>{{ item.title }} <span class="text-muted float-end">{{ item.company }}</span></a>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if not agenda_personal.overdue and not agenda_personal.today %}
+              <p class="small text-muted mb-0">No tienes elementos atrasados ni programados para hoy.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
         <div class="card shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -157,37 +191,32 @@
                 <i class="bi bi-envelope-paper me-2 text-warning"></i>
                 Correo y comunicaciones
               </h2>
-              <span class="badge rounded-pill text-bg-warning text-dark">
-                Próxima integración
-              </span>
+
+              {% if perms.correo.use_correo %}
+                <span class="badge rounded-pill text-bg-primary">
+                  Piloto
+                </span>
+              {% else %}
+                <span class="badge rounded-pill text-bg-secondary">
+                  No habilitado
+                </span>
+              {% endif %}
             </div>
 
             <p class="small text-muted mb-3">
-              Este bloque se reserva para integrar el correo corporativo y
-              notificaciones clave del sistema (avisos de obras, tareas,
-              fichajes, ausencias, etc.).
+              Acceso personal al correo corporativo desde INTASA Platform.
             </p>
 
-            <div class="alert alert-warning small mb-3">
-              <i class="bi bi-lightbulb me-1"></i>
-              En la siguiente fase conectaremos aquí:
-              <ul class="mb-0">
-                <li>Acceso rápido al correo corporativo</li>
-                <li>Notificaciones de tareas y agenda</li>
-                <li>Avisos de fichaje y ausencias</li>
-              </ul>
-            </div>
-
-            <div class="d-flex flex-wrap gap-2">
-              <a href="/" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-house-door me-1"></i>
-                Ir a la portada pública
+            {% if perms.correo.use_correo %}
+              <a href="{% url 'correo:inicio' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-inbox me-1"></i>
+                Abrir mi correo
               </a>
-              <a href="/app/fichajes/ausencias/" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-airplane me-1"></i>
-                Vacaciones y ausencias
-              </a>
-            </div>
+            {% else %}
+              <div class="alert alert-light border small mb-0">
+                El módulo de correo todavía no está habilitado para tu usuario.
+              </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -195,5 +224,383 @@
     </div>  {# row derecha #}
   </div>
 </div>
-{% endblock %}
 
+<!-- PORTAL_ACTIVITY_FEED_V2 -->
+<style>
+  .portal-activity-card {
+    border: 0;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .portal-activity-summary {
+    min-width: 88px;
+    border: 1px solid #e4e9ef;
+    border-radius: 12px;
+    padding: .55rem .7rem;
+    background: #fff;
+  }
+
+  .portal-activity-summary-value {
+    font-size: 1.25rem;
+    font-weight: 750;
+    line-height: 1;
+  }
+
+  .portal-activity-summary-label {
+    margin-top: .2rem;
+    color: #6c757d;
+    font-size: .7rem;
+  }
+
+  .portal-activity-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    border: 1px solid #dce2e8;
+    border-radius: 999px;
+    padding: .32rem .65rem;
+    background: #fff;
+    color: #495057;
+    text-decoration: none;
+    font-size: .78rem;
+    line-height: 1;
+  }
+
+  .portal-activity-filter:hover {
+    border-color: #0d6efd;
+    color: #0d6efd;
+  }
+
+  .portal-activity-filter.active {
+    border-color: #0d6efd;
+    background: #0d6efd;
+    color: #fff;
+  }
+
+  .portal-activity-group-title {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin: 1rem 0 .1rem;
+    font-size: .84rem;
+    font-weight: 750;
+    color: #344054;
+  }
+
+  .portal-activity-group-title::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: #edf0f3;
+  }
+
+  .portal-activity-item {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: .75rem;
+    align-items: flex-start;
+    padding: .82rem 0;
+    border-bottom: 1px solid #eef2f6;
+  }
+
+  .portal-activity-item:last-child {
+    border-bottom: 0;
+  }
+
+  .portal-activity-icon {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: #eef4ff;
+    color: #0d6efd;
+    font-size: 1.05rem;
+  }
+
+  .portal-activity-description {
+    line-height: 1.35;
+  }
+
+  .portal-activity-meta {
+    color: #667085;
+    font-size: .76rem;
+  }
+
+  .portal-activity-files {
+    margin-top: .4rem;
+    padding-left: 1rem;
+    color: #667085;
+    font-size: .76rem;
+  }
+
+  .portal-activity-files li {
+    margin-bottom: .12rem;
+    overflow-wrap: anywhere;
+  }
+
+  .portal-activity-details {
+    margin-top: .55rem;
+  }
+
+  .portal-activity-details summary {
+    width: fit-content;
+    cursor: pointer;
+    color: #0d6efd;
+    font-size: .78rem;
+    font-weight: 650;
+    user-select: none;
+  }
+
+  .portal-activity-detail-list {
+    margin-top: .55rem;
+    border: 1px solid #e8edf2;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fafbfc;
+  }
+
+  .portal-activity-detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .5rem .65rem;
+    border-bottom: 1px solid #edf0f3;
+    font-size: .76rem;
+  }
+
+  .portal-activity-detail-row:last-child {
+    border-bottom: 0;
+  }
+
+  .portal-activity-detail-text {
+    min-width: 0;
+    color: #566173;
+    overflow-wrap: anywhere;
+  }
+
+  .portal-activity-empty {
+    border: 1px dashed #d7dce2;
+    border-radius: 12px;
+    padding: 1rem;
+    color: #6c757d;
+    background: #fafbfc;
+  }
+
+  @media (max-width: 767.98px) {
+    .portal-activity-summary {
+      min-width: 76px;
+    }
+
+    .portal-activity-item {
+      grid-template-columns: 36px minmax(0, 1fr);
+    }
+
+    .portal-activity-item-action {
+      grid-column: 2;
+    }
+  }
+</style>
+
+<div class="row g-3 mt-3" id="actividad-reciente">
+  <div class="col-12">
+    <div class="card shadow-sm portal-activity-card">
+      <div class="card-header bg-white border-0 pt-3 px-3 px-lg-4">
+        <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h2 class="h5 mb-0">
+                <i class="bi bi-activity me-2 text-primary"></i>
+                Actividad reciente
+              </h2>
+
+              <span class="badge text-bg-light border">
+                {{ actividad_scope_label }}
+              </span>
+            </div>
+
+            <p class="small text-muted mb-0 mt-2">
+              Trabajo real registrado por los usuarios de la plataforma.
+            </p>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2">
+            <div class="portal-activity-summary">
+              <div class="portal-activity-summary-value">
+                {{ actividad_hoy_count }}
+              </div>
+              <div class="portal-activity-summary-label">
+                Hoy
+              </div>
+            </div>
+
+            <div class="portal-activity-summary">
+              <div class="portal-activity-summary-value">
+                {{ actividad_semana_count }}
+              </div>
+              <div class="portal-activity-summary-label">
+                Filtro actual
+              </div>
+            </div>
+
+            <div class="portal-activity-summary">
+              <div class="portal-activity-summary-value">
+                {{ actividad_mia_semana_count }}
+              </div>
+              <div class="portal-activity-summary-label">
+                Mi actividad
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <a
+            href="?actividad_alcance=equipo{% if actividad_modulo_activo %}&actividad_modulo={{ actividad_modulo_activo|urlencode }}{% endif %}#actividad-reciente"
+            class="portal-activity-filter {% if actividad_alcance == 'equipo' %}active{% endif %}">
+            <i class="bi bi-people"></i>
+            Equipo
+          </a>
+
+          <a
+            href="?actividad_alcance=mi{% if actividad_modulo_activo %}&actividad_modulo={{ actividad_modulo_activo|urlencode }}{% endif %}#actividad-reciente"
+            class="portal-activity-filter {% if actividad_alcance == 'mi' %}active{% endif %}">
+            <i class="bi bi-person"></i>
+            Mi actividad
+          </a>
+
+          <span class="border-start mx-1"></span>
+
+          <a
+            href="?actividad_alcance={{ actividad_alcance }}#actividad-reciente"
+            class="portal-activity-filter {% if not actividad_modulo_activo %}active{% endif %}">
+            Todos
+          </a>
+
+          {% for filtro in actividad_module_filters %}
+            <a
+              href="?actividad_alcance={{ actividad_alcance }}&actividad_modulo={{ filtro.value|urlencode }}#actividad-reciente"
+              class="portal-activity-filter {% if actividad_modulo_activo == filtro.value %}active{% endif %}">
+              <i class="bi {{ filtro.icon }}"></i>
+              {{ filtro.label }}
+              <span>{{ filtro.count }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card-body px-3 px-lg-4 pt-1">
+        {% for grupo in actividad_grupos %}
+          <div class="portal-activity-group-title">
+            {{ grupo.label }}
+          </div>
+
+          {% for actividad in grupo.items %}
+            <div class="portal-activity-item">
+              <div class="portal-activity-icon">
+                <i class="bi {{ actividad.modulo_icon }}"></i>
+              </div>
+
+              <div class="min-w-0">
+                <div class="portal-activity-description">
+                  <strong title="{{ actividad.actor_nombre_completo }}">
+                    {{ actividad.actor_nombre }}
+                  </strong>
+
+                  {{ actividad.descripcion }}
+                </div>
+
+                {% if actividad.detalle_nombres %}
+                  <ul class="portal-activity-files mb-0">
+                    {% for nombre in actividad.detalle_nombres %}
+                      <li>{{ nombre }}</li>
+                    {% endfor %}
+
+                    {% if actividad.detalle_restantes %}
+                      <li>
+                        y {{ actividad.detalle_restantes }} archivo(s) más
+                      </li>
+                    {% endif %}
+                  </ul>
+                {% endif %}
+
+                <div class="portal-activity-meta mt-1">
+                  {{ actividad.horario_label }}
+
+                  {% if actividad.team %}
+                    · {{ actividad.team.name }}
+                  {% endif %}
+
+                  ·
+                  <span class="badge {{ actividad.modulo_badge_class }}">
+                    {{ actividad.modulo_label }}
+                  </span>
+                </div>
+
+                {% if actividad.actividades|length > 1 %}
+                  <details class="portal-activity-details">
+                    <summary>
+                      Ver actividades ({{ actividad.actividades|length }})
+                    </summary>
+
+                    <div class="portal-activity-detail-list">
+                      {% for detalle in actividad.actividades %}
+                        <div class="portal-activity-detail-row">
+                          <div class="portal-activity-detail-text">
+                            <strong>
+                              {{ detalle.ocurrida_local|date:"H:i" }}
+                            </strong>
+
+                            ·
+                            {% if detalle.objeto_repr %}
+                              {{ detalle.objeto_repr }}
+                            {% else %}
+                              {{ detalle.descripcion }}
+                            {% endif %}
+                          </div>
+
+                          {% if detalle.url %}
+                            <a
+                              href="{{ detalle.url }}"
+                              class="btn btn-sm btn-outline-primary flex-shrink-0">
+                              Abrir
+                            </a>
+                          {% endif %}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </details>
+                {% endif %}
+              </div>
+
+              {% if actividad.url %}
+                <div class="portal-activity-item-action">
+                  <a
+                    href="{{ actividad.url }}"
+                    class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>
+                    Abrir
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% empty %}
+          <div class="portal-activity-empty my-3">
+            No hay actividad visible con los filtros seleccionados.
+          </div>
+        {% endfor %}
+
+        {% if actividad_grupos_total > actividad_limite %}
+          <div class="small text-muted border-top pt-2 mt-2">
+            Se muestran los últimos {{ actividad_limite }} resúmenes de actividad.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

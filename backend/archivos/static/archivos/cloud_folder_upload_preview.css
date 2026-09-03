@@ -1,0 +1,129 @@
+/* INTASA Documents · Folder Upload Preview · P2A */
+
+.folder-upload-preview-card {
+  border-color: rgba(var(--bs-success-rgb), 0.32);
+}
+
+.folder-upload-preview-card .card-header {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(var(--bs-success-rgb), 0.10),
+      rgba(var(--bs-primary-rgb), 0.04)
+    );
+}
+
+.folder-upload-summary-item {
+  min-height: 86px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  padding: 0.8rem 0.9rem;
+}
+
+.folder-upload-summary-label {
+  display: block;
+  color: var(--bs-secondary-color);
+  font-size: 0.76rem;
+  line-height: 1.2;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+.folder-upload-summary-value {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.folder-upload-preview-path {
+  max-width: 560px;
+  overflow-wrap: anywhere;
+}
+
+.folder-upload-preview-table {
+  font-size: 0.86rem;
+}
+
+.folder-upload-preview-table td,
+.folder-upload-preview-table th {
+  vertical-align: middle;
+}
+
+.folder-upload-preview-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.folder-upload-status-badge {
+  min-width: 92px;
+}
+
+.folder-upload-policy-panel {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-tertiary-bg);
+  padding: 0.9rem;
+}
+
+.folder-upload-conflict-table {
+  font-size: 0.84rem;
+}
+
+.folder-upload-preview-scroll {
+  max-height: 390px;
+  overflow: auto;
+}
+
+.folder-upload-preview-empty-note {
+  border-left: 3px solid var(--bs-warning);
+  padding-left: 0.75rem;
+}
+
+@media (max-width: 767.98px) {
+  .folder-upload-preview-card .card-header,
+  .folder-upload-preview-card .card-footer {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .folder-upload-preview-card .card-footer .btn {
+    width: 100%;
+  }
+
+  .folder-upload-summary-item {
+    min-height: auto;
+  }
+}
+
+/* P2B_FOLDER_UPLOAD_PROGRESS */
+
+.folder-upload-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.84rem;
+}
+
+.folder-upload-result-item span {
+  color: var(--bs-secondary-color);
+}
+
+.folder-upload-result-item strong {
+  font-size: 1rem;
+}
+
+#folderUploadProgressBar {
+  min-width: 3rem;
+  transition: width 180ms ease;
+}
+
+#folderUploadProgressSection {
+  background: rgba(var(--bs-primary-rgb), 0.025);
+}

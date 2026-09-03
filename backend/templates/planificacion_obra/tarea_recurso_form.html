@@ -1,0 +1,1128 @@
+{% extends "base.html" %}
+{% load l10n %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1">{{ titulo }}</h1>
+      <p class="text-secondary mb-0">
+        Tarea #{{ tarea.id }} · {{ tarea.obra }} · Viv. {{ tarea.legacy_cod_vivienda }} · {{ tarea.legacy_planta }} · {{ tarea.legacy_partida }}
+      </p>
+    </div>
+    <a href="{{ cancel_url }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  <form method="post" class="card shadow-sm border-0" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="confirmar_no_laborable" id="id_confirmar_no_laborable" value="0">
+    {# PLANIFICACION_NAV_HIDDEN_NEXT_FINAL #}
+    {% if next_url %}
+      <input type="hidden" name="next" value="{{ next_url }}">
+    {% endif %}
+
+    <div class="card-body">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="row g-3">
+
+
+        <div class="col-12">
+          <label class="form-label d-block">Tipo de recurso</label>
+          <input type="hidden" name="tipo_recurso_ui" id="id_tipo_recurso_ui" value="MATERIAL">
+
+          <div class="d-flex flex-wrap gap-2 mb-2" id="tipoRecursoButtons">
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn active" data-tipo="MATERIAL">Material</button>
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn" data-tipo="HERRAMIENTA">Herramienta</button>
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn" data-tipo="MAQUINARIA">Maquinaria</button>
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn" data-tipo="M.O. ADM.">M.O. Adm.</button>
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn" data-tipo="M.O. CONT.">M.O. Cont.</button>
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn" data-tipo="PER. CONT.">Per. Cont.</button>
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn" data-tipo="PORTES">Portes</button>
+            <button type="button" class="btn btn-outline-primary tipo-recurso-btn" data-tipo="E.P.I.S.">E.P.I.S.</button>
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label" for="id_recurso_unificado">Recurso / Personal</label>
+          <input type="search"
+                 id="id_recurso_unificado_search"
+                 class="form-control mb-2"
+                 placeholder="Buscar por cualquier parte del nombre, código o tipo..."
+                 autocomplete="off">
+          <select id="id_recurso_unificado" class="form-select d-none" tabindex="-1" aria-hidden="true">
+            <option value="">---------</option>
+
+            {% if form.recurso %}
+              {% for recurso in form.fields.recurso.queryset %}
+                <option value="recurso:{{ recurso.pk }}"
+                        data-source="recurso"
+                        data-target="{{ recurso.pk }}"
+                        data-tipo="{{ recurso.tipo|default:'MATERIAL' }}"
+                        data-unidad="{{ recurso.unidad|default:'' }}"
+                        data-precio="{{ recurso.precio_unidad_uso|default:recurso.ultimo_precio_unidad|default:'' }}">
+                  {{ recurso.legacy_id }} · {{ recurso.tipo|default:"MATERIAL" }} · {{ recurso.nombre }}
+                </option>
+              {% endfor %}
+            {% endif %}
+
+            {% if form.empleado %}
+              {% for empleado in form.fields.empleado.queryset %}
+                <option value="empleado:{{ empleado.pk }}"
+                        data-source="empleado"
+                        data-target="{{ empleado.pk }}"
+                        data-empleado-tipo="{{ empleado.tipo }}"
+                        data-unidad="HRS"
+                        data-precio="{{ empleado.precio_hora|default_if_none:'0'|unlocalize }}">
+                  {{ empleado.nombre }}{% if empleado.tipo == "CONTRATADO" %} · CONTRATADO{% else %} · M.O. ADM.{% endif %}
+                </option>
+              {% endfor %}
+            {% endif %}
+          </select>
+          <div id="id_recurso_unificado_selected"
+               class="small text-success mt-2 d-none"></div>
+
+          <div id="id_recurso_unificado_results"
+               class="list-group shadow-sm mt-2 d-none"
+               style="max-height: 340px; overflow-y: auto;"></div>
+
+          <div class="form-text">
+            Escribe como en Obra móvil. Busca por cualquier parte del nombre, código o tipo y pulsa sobre un resultado.
+          </div>
+        </div>
+
+        {% if form.recurso %}
+          <div class="col-md-6 d-none">
+            <label class="form-label" for="id_recurso">Recurso</label>
+            <select name="recurso" id="id_recurso" class="form-select">
+              <option value="">---------</option>
+              {% for recurso in form.fields.recurso.queryset %}
+                <option value="{{ recurso.pk }}"
+                        data-unidad="{{ recurso.unidad|default:'' }}"
+                        data-precio="{{ recurso.precio_unidad_uso|default:recurso.ultimo_precio_unidad|default:'' }}"
+                        data-tipo="{{ recurso.tipo|default:'' }}"
+                        {% if form.recurso.value|stringformat:"s" == recurso.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ recurso.legacy_id }} · {{ recurso.tipo|default:"-" }} · {{ recurso.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Al seleccionar, se rellenan unidad y precio si existen en catálogo.</div>
+            {% for error in form.recurso.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.empleado %}
+          <div class="col-md-6 d-none">
+            <label class="form-label" for="id_empleado">Empleado</label>
+            <select name="empleado" id="id_empleado" class="form-select">
+              <option value="">---------</option>
+              {% for empleado in form.fields.empleado.queryset %}
+                <option value="{{ empleado.pk }}"
+                        data-unidad="HRS"
+                        data-precio="{{ empleado.precio_hora|default_if_none:'0'|unlocalize }}"
+                        {% if form.empleado.value|stringformat:"s" == empleado.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ empleado.nombre }}{% if empleado.tipo == "CONTRATADO" %} · CONTRATADO{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Para mano de obra, el coste se calcula por horas reales × precio hora.</div>
+            {% for error in form.empleado.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.unidad %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.unidad.id_for_label }}">Unidad</label>
+            {{ form.unidad }}
+            {% for error in form.unidad.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.cantidad %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.cantidad.id_for_label }}">Cantidad</label>
+            {{ form.cantidad }}
+            {% for error in form.cantidad.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.horas_reales %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.horas_reales.id_for_label }}">Horas reales</label>
+            {{ form.horas_reales }}
+            {% for error in form.horas_reales.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.precio_unidad %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.precio_unidad.id_for_label }}">Precio unidad</label>
+            {{ form.precio_unidad }}
+            {% for error in form.precio_unidad.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.costo_recurso %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.costo_recurso.id_for_label }}">Coste previsto</label>
+            {{ form.costo_recurso }}
+            <div class="form-text">Cantidad × precio.</div>
+            {% for error in form.costo_recurso.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.costo_recurso_real %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.costo_recurso_real.id_for_label }}">Coste real</label>
+            {{ form.costo_recurso_real }}
+            <div class="form-text">Horas × precio o cantidad × precio.</div>
+            {% for error in form.costo_recurso_real.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.fecha_estimada_entrega %}
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.fecha_estimada_entrega.id_for_label }}">Fecha estimada entrega</label>
+            {{ form.fecha_estimada_entrega }}
+            {% for error in form.fecha_estimada_entrega.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.inicio_recurso_real %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.inicio_recurso_real.id_for_label }}">Fecha inicio</label>
+            {{ form.inicio_recurso_real }}
+            {% for error in form.inicio_recurso_real.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.fin_recurso_real %}
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.fin_recurso_real.id_for_label }}">Fecha fin</label>
+            {{ form.fin_recurso_real }}
+            {% for error in form.fin_recurso_real.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.control_suministros %}
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.control_suministros }}
+              <label class="form-check-label" for="{{ form.control_suministros.id_for_label }}">
+                Control suministros
+              </label>
+            </div>
+            {% for error in form.control_suministros.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.observaciones %}
+          <div class="col-12">
+            <label class="form-label" for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+            {{ form.observaciones }}
+            {% for error in form.observaciones.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- PLANIFICACION_RECURSO_REAL_NO_LABORABLE_CONFIRM_HTML_V3 -->
+    {% if mostrar_boton_no_laborable %}
+      <div class="alert alert-warning mt-3">
+        <strong>Rango no laborable.</strong>
+        El rango seleccionado no contiene días laborables.
+        Puedes crear el recurso real igualmente si confirmas la operación.
+
+        <div class="mt-3">
+          <button type="submit"
+                  name="confirmar_no_laborable"
+                  value="1"
+                  class="btn btn-warning">
+            Crear de todas formas
+          </button>
+        </div>
+      </div>
+    {% endif %}
+
+<div class="card-footer bg-white d-flex justify-content-between">
+      <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+  </form>
+
+<script>
+/* PLANIFICACION_RECURSO_REAL_CANTIDAD_EQ_HORAS_JS_FIX */
+(function () {
+  function parseDecimal(value) {
+    if (value === null || value === undefined) return 0;
+    var raw = String(value).trim();
+    if (!raw) return 0;
+    var normalized = raw.replace(",", ".");
+    var n = parseFloat(normalized);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function numberValue(value) {
+    var n = parseDecimal(value);
+    if (!isFinite(n)) return "";
+    return n.toFixed(4); // input type=number necesita punto decimal, no coma
+  }
+
+  function hideHorasReales() {
+    var horas = document.getElementById("id_horas_reales");
+    if (!horas) return;
+
+    horas.type = "hidden";
+
+    var node = horas.parentElement;
+    while (node && node.tagName !== "FORM") {
+      var cls = String(node.className || "");
+      if (
+        cls.indexOf("col-") !== -1 ||
+        cls.indexOf("mb-") !== -1 ||
+        cls.indexOf("form-group") !== -1
+      ) {
+        node.style.display = "none";
+        break;
+      }
+      node = node.parentElement;
+    }
+  }
+
+  function recalcRecursoReal() {
+    var cantidad = document.getElementById("id_cantidad");
+    var horas = document.getElementById("id_horas_reales");
+    var precio = document.getElementById("id_precio_unidad");
+    var coste = document.getElementById("id_costo_recurso_real");
+
+    if (!cantidad || !precio || !coste) return;
+
+    var cantidadVal = parseDecimal(cantidad.value);
+    var precioVal = parseDecimal(precio.value);
+
+    if (horas) {
+      horas.value = numberValue(cantidad.value);
+    }
+
+    var total = cantidadVal * precioVal;
+
+    if (cantidadVal > 0 && precioVal >= 0) {
+      coste.value = total.toFixed(4);
+    }
+  }
+
+  hideHorasReales();
+  recalcRecursoReal();
+
+  ["id_cantidad", "id_precio_unidad"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", recalcRecursoReal);
+      el.addEventListener("change", recalcRecursoReal);
+    }
+  });
+
+  /* PLANIFICACION_RECURSO_REAL_SELECTOR_UNIFICADO_V1 */
+  function initSelectorUnificado() {
+    var tipoHidden = document.getElementById("id_tipo_recurso_ui");
+    var unified = document.getElementById("id_recurso_unificado");
+    var recurso = document.getElementById("id_recurso");
+    var empleado = document.getElementById("id_empleado");
+    var buttons = document.querySelectorAll(".tipo-recurso-btn");
+
+    if (!tipoHidden || !unified || !recurso || !empleado || !buttons.length) return;
+
+    function clearUnderlying() {
+      recurso.value = "";
+      empleado.value = "";
+      recurso.dispatchEvent(new Event("change", { bubbles: true }));
+      empleado.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function optionMatches(opt, tipo) {
+      if (!opt || !opt.dataset) return false;
+
+      if (opt.dataset.source === "recurso") {
+        return String(opt.dataset.tipo || "MATERIAL") === tipo;
+      }
+
+      if (opt.dataset.source === "empleado") {
+        if (tipo === "M.O. ADM.") return opt.dataset.empleadoTipo === "ADMINISTRADA";
+        if (tipo === "M.O. CONT." || tipo === "PER. CONT.") return opt.dataset.empleadoTipo === "CONTRATADO";
+      }
+
+      return false;
+    }
+
+    function setTipo(tipo) {
+      tipoHidden.value = tipo;
+      buttons.forEach(function (btn) {
+        var active = btn.dataset.tipo === tipo;
+        btn.classList.toggle("active", active);
+        btn.classList.toggle("btn-primary", active);
+        btn.classList.toggle("btn-outline-primary", !active);
+      });
+
+      Array.from(unified.options).forEach(function (opt, idx) {
+        if (idx === 0) {
+          opt.hidden = false;
+          opt.disabled = false;
+          return;
+        }
+        var ok = optionMatches(opt, tipo);
+        opt.hidden = !ok;
+        opt.disabled = !ok;
+      });
+
+      unified.value = "";
+      clearUnderlying();
+    }
+
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setTipo(btn.dataset.tipo || "MATERIAL");
+      });
+    });
+
+    unified.addEventListener("change", function () {
+      var opt = unified.options[unified.selectedIndex];
+      clearUnderlying();
+
+      if (!opt || !opt.dataset || !opt.dataset.source) return;
+
+      if (opt.dataset.source === "recurso") {
+        recurso.value = opt.dataset.target || "";
+        recurso.dispatchEvent(new Event("change", { bubbles: true }));
+      } else if (opt.dataset.source === "empleado") {
+        empleado.value = opt.dataset.target || "";
+        empleado.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+
+    setTipo(tipoHidden.value || "MATERIAL");
+  }
+
+  initSelectorUnificado();
+
+
+  /* PLANIFICACION_RECURSO_REAL_SELECTOR_UNIFICADO_UX1B */
+  function initSelectorUnificadoUx1b() {
+    var tipoHidden = document.getElementById("id_tipo_recurso_ui");
+    var unified = document.getElementById("id_recurso_unificado");
+    var search = document.getElementById("id_recurso_unificado_search");
+    var buttons = document.querySelectorAll(".tipo-recurso-btn");
+
+    if (!tipoHidden || !unified || !buttons.length) return;
+
+    function norm(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function currentTipo() {
+      return tipoHidden.value || "MATERIAL";
+    }
+
+    function optionMatchesTipo(opt, tipo) {
+      if (!opt || !opt.dataset) return false;
+
+      if (opt.dataset.source === "recurso") {
+        return String(opt.dataset.tipo || "MATERIAL") === tipo;
+      }
+
+      if (opt.dataset.source === "empleado") {
+        if (tipo === "M.O. ADM.") return opt.dataset.empleadoTipo === "ADMINISTRADA";
+        if (tipo === "M.O. CONT." || tipo === "PER. CONT.") return opt.dataset.empleadoTipo === "CONTRATADO";
+      }
+
+      return false;
+    }
+
+    function optionMatchesSearch(opt) {
+      if (!search) return true;
+
+      var q = norm(search.value);
+      if (!q) return true;
+
+      var text = norm(opt.textContent || "");
+      var tipo = norm(opt.dataset.tipo || opt.dataset.empleadoTipo || "");
+      var value = norm(opt.value || "");
+      var haystack = text + " " + tipo + " " + value;
+
+      return q.split(/\s+/).every(function (term) {
+        return haystack.indexOf(term) !== -1;
+      });
+    }
+
+    function applyFilter() {
+      var tipo = currentTipo();
+
+      Array.from(unified.options).forEach(function (opt, idx) {
+        if (idx === 0) {
+          opt.hidden = false;
+          opt.disabled = false;
+          return;
+        }
+
+        var ok = optionMatchesTipo(opt, tipo) && optionMatchesSearch(opt);
+        opt.hidden = !ok;
+        opt.disabled = !ok;
+      });
+    }
+
+    function clearField(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.value = "";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function clearEntryFields() {
+      if (search) search.value = "";
+
+      unified.value = "";
+
+      [
+        "id_recurso",
+        "id_empleado",
+        "id_unidad",
+        "id_cantidad",
+        "id_horas_reales",
+        "id_precio_unidad",
+        "id_costo_recurso_real",
+        "id_inicio_recurso_real",
+        "id_fin_recurso_real",
+        "id_observaciones"
+      ].forEach(clearField);
+
+      applyFilter();
+    }
+
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        window.setTimeout(clearEntryFields, 0);
+      });
+    });
+
+    if (search) {
+      search.addEventListener("input", function () {
+        unified.value = "";
+        applyFilter();
+      });
+    }
+
+    unified.addEventListener("focus", applyFilter);
+    applyFilter();
+  }
+
+  initSelectorUnificadoUx1b();
+
+
+  /* PLANIFICACION_RECURSO_REAL_AUTOCOMPLETE_UX1C */
+  function initAutocompleteRecursoRealUx1c() {
+    var tipoHidden = document.getElementById("id_tipo_recurso_ui");
+    var search = document.getElementById("id_recurso_unificado_search");
+    var unified = document.getElementById("id_recurso_unificado");
+    var results = document.getElementById("id_recurso_unificado_results");
+    var selectedBox = document.getElementById("id_recurso_unificado_selected");
+    var recurso = document.getElementById("id_recurso");
+    var empleado = document.getElementById("id_empleado");
+    var buttons = document.querySelectorAll(".tipo-recurso-btn");
+
+    if (!tipoHidden || !search || !unified || !results || !recurso || !empleado) return;
+
+    function norm(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function tipoActual() {
+      return tipoHidden.value || "MATERIAL";
+    }
+
+    function clearRealSelects() {
+      recurso.value = "";
+      empleado.value = "";
+      recurso.dispatchEvent(new Event("change", { bubbles: true }));
+      empleado.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function clearImportesKeepDates() {
+      ["id_unidad", "id_cantidad", "id_horas_reales", "id_precio_unidad", "id_costo_recurso_real"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.value = "";
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    }
+
+    function hideResults() {
+      results.classList.add("d-none");
+      results.innerHTML = "";
+    }
+
+    function optionMatchesTipo(opt, tipo) {
+      if (!opt || !opt.dataset) return false;
+
+      if (opt.dataset.source === "recurso") {
+        return String(opt.dataset.tipo || "MATERIAL") === tipo;
+      }
+
+      if (opt.dataset.source === "empleado") {
+        if (tipo === "M.O. ADM.") return opt.dataset.empleadoTipo === "ADMINISTRADA";
+        if (tipo === "M.O. CONT." || tipo === "PER. CONT.") return opt.dataset.empleadoTipo === "CONTRATADO";
+      }
+
+      return false;
+    }
+
+    function optionMatchesSearch(opt, query) {
+      var q = norm(query);
+      if (!q) return true;
+
+      var text = norm(opt.textContent || "");
+      var tipo = norm(opt.dataset.tipo || opt.dataset.empleadoTipo || "");
+      var value = norm(opt.value || "");
+      var haystack = text + " " + tipo + " " + value;
+
+      return q.split(/\s+/).every(function (term) {
+        return haystack.indexOf(term) !== -1;
+      });
+    }
+
+    function getMatches() {
+      var tipo = tipoActual();
+      var query = search.value || "";
+
+      return Array.from(unified.options)
+        .filter(function (opt, idx) {
+          if (idx === 0) return false;
+          return optionMatchesTipo(opt, tipo) && optionMatchesSearch(opt, query);
+        })
+        .slice(0, 60);
+    }
+
+    function renderResults() {
+      var query = search.value || "";
+      var matches = getMatches();
+
+      results.innerHTML = "";
+
+      if (!query.trim()) {
+        hideResults();
+        return;
+      }
+
+      if (!matches.length) {
+        var empty = document.createElement("div");
+        empty.className = "list-group-item text-muted";
+        empty.textContent = "Sin resultados para esta búsqueda.";
+        results.appendChild(empty);
+        results.classList.remove("d-none");
+        return;
+      }
+
+      matches.forEach(function (opt) {
+        var item = document.createElement("button");
+        item.type = "button";
+        item.className = "list-group-item list-group-item-action";
+
+        var title = document.createElement("div");
+        title.className = "fw-semibold";
+        title.textContent = (opt.textContent || "").trim();
+
+        var meta = document.createElement("div");
+        meta.className = "small text-secondary";
+
+        if (opt.dataset.source === "recurso") {
+          meta.textContent = [
+            opt.dataset.tipo || "MATERIAL",
+            opt.dataset.unidad ? "Unidad: " + opt.dataset.unidad : "",
+            opt.dataset.precio ? "Precio: " + opt.dataset.precio : ""
+          ].filter(Boolean).join(" · ");
+        } else {
+          meta.textContent = [
+            opt.dataset.empleadoTipo || "Empleado",
+            "Unidad: HRS",
+            opt.dataset.precio ? "Precio: " + opt.dataset.precio : "Precio: 0"
+          ].filter(Boolean).join(" · ");
+        }
+
+        item.appendChild(title);
+        item.appendChild(meta);
+
+        item.addEventListener("click", function () {
+          selectOption(opt);
+        });
+
+        results.appendChild(item);
+      });
+
+      results.classList.remove("d-none");
+    }
+
+    function selectOption(opt) {
+      unified.value = opt.value;
+      clearRealSelects();
+
+      if (opt.dataset.source === "recurso") {
+        recurso.value = opt.dataset.target || "";
+        recurso.dispatchEvent(new Event("change", { bubbles: true }));
+      } else if (opt.dataset.source === "empleado") {
+        empleado.value = opt.dataset.target || "";
+        empleado.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      search.value = (opt.textContent || "").trim();
+
+      if (selectedBox) {
+        selectedBox.textContent = "Seleccionado: " + search.value;
+        selectedBox.classList.remove("d-none");
+      }
+
+      hideResults();
+    }
+
+    function clearSelectionFull() {
+      search.value = "";
+      unified.value = "";
+      clearRealSelects();
+
+      if (selectedBox) {
+        selectedBox.textContent = "";
+        selectedBox.classList.add("d-none");
+      }
+
+      hideResults();
+    }
+
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        window.setTimeout(function () {
+          clearSelectionFull();
+        }, 10);
+      });
+    });
+
+    search.addEventListener("input", function () {
+      unified.value = "";
+      clearRealSelects();
+      clearImportesKeepDates();
+
+      if (selectedBox) {
+        selectedBox.textContent = "";
+        selectedBox.classList.add("d-none");
+      }
+
+      renderResults();
+    });
+
+    search.addEventListener("focus", renderResults);
+
+    document.addEventListener("click", function (ev) {
+      if (ev.target === search || results.contains(ev.target)) return;
+      hideResults();
+    });
+
+    var form = search.closest("form");
+    if (form) {
+      form.addEventListener("submit", function (ev) {
+        if (!recurso.value && !empleado.value) {
+          ev.preventDefault();
+          results.classList.remove("d-none");
+          renderResults();
+          search.focus();
+          search.classList.add("is-invalid");
+          window.setTimeout(function () {
+            search.classList.remove("is-invalid");
+          }, 2500);
+        }
+      });
+    }
+  }
+
+  initAutocompleteRecursoRealUx1c();
+
+
+  /* PLANIFICACION_RECURSO_REAL_COSTE_FECHA_UX1D */
+  function initCosteFechaUx1d() {
+    function todayISO() {
+      var d = new Date();
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, "0");
+      var day = String(d.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + day;
+    }
+
+    function parseDecimal(value) {
+      var raw = String(value || "").trim();
+      if (!raw) return 0;
+
+      // Inputs type=number usan punto internamente. También aceptamos coma escrita a mano.
+      raw = raw.replace(",", ".");
+
+      var n = parseFloat(raw);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function formatDecimal(value) {
+      if (!isFinite(value)) value = 0;
+
+      // El input type=number necesita punto decimal, no coma.
+      return value.toFixed(4);
+    }
+
+    function setFechaHoySiVacia() {
+      var hoy = todayISO();
+      ["id_inicio_recurso_real", "id_fin_recurso_real"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && !el.value) {
+          el.value = hoy;
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+    }
+
+    function recalcularCoste() {
+      var cantidad = document.getElementById("id_cantidad");
+      var precio = document.getElementById("id_precio_unidad");
+      var coste = document.getElementById("id_costo_recurso_real");
+
+      if (!cantidad || !precio || !coste) return;
+
+      var q = parseDecimal(cantidad.value);
+      var p = parseDecimal(precio.value);
+
+      if (q > 0 && p >= 0) {
+        coste.value = formatDecimal(q * p);
+      }
+    }
+
+    ["id_cantidad", "id_precio_unidad", "id_horas_reales"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", recalcularCoste);
+      el.addEventListener("change", recalcularCoste);
+    });
+
+    var search = document.getElementById("id_recurso_unificado_search");
+    if (search) {
+      search.addEventListener("input", function () {
+        window.setTimeout(function () {
+          setFechaHoySiVacia();
+          recalcularCoste();
+        }, 50);
+      });
+    }
+
+    document.querySelectorAll(".tipo-recurso-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        window.setTimeout(function () {
+          setFechaHoySiVacia();
+          recalcularCoste();
+        }, 80);
+      });
+    });
+
+    var results = document.getElementById("id_recurso_unificado_results");
+    if (results) {
+      results.addEventListener("click", function () {
+        window.setTimeout(function () {
+          setFechaHoySiVacia();
+          recalcularCoste();
+        }, 120);
+      });
+    }
+
+    setFechaHoySiVacia();
+    recalcularCoste();
+  }
+
+  initCosteFechaUx1d();
+
+})();
+</script>
+
+
+</div>
+
+<script>
+(function(){
+  const recurso = document.getElementById("id_recurso");
+  const empleado = document.getElementById("id_empleado");
+  const unidad = document.getElementById("id_unidad");
+  const cantidad = document.getElementById("id_cantidad");
+  const horas = document.getElementById("id_horas_reales");
+  const precio = document.getElementById("id_precio_unidad");
+  const inicio = document.getElementById("id_inicio_recurso_real");
+  const fin = document.getElementById("id_fin_recurso_real");
+  const costePrevisto = document.getElementById("id_costo_recurso");
+  const costeReal = document.getElementById("id_costo_recurso_real");
+  const coste = costePrevisto || costeReal;
+
+  let autoUnidad = "";
+  let autoPrecio = "";
+  let autoCantidad = "";
+  let autoHoras = "";
+  let autoCoste = "";
+
+  function parseNumber(value){
+    if(value === null || value === undefined) return null;
+    value = String(value).trim().replace(",", ".");
+    if(!value) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function formatNumber(value, decimals){
+    if(value === null || value === undefined || !Number.isFinite(value)) return "";
+    return value.toFixed(decimals || 2);
+  }
+
+  function selectedOption(select){
+    if(!select || select.selectedIndex < 0) return null;
+    return select.options[select.selectedIndex];
+  }
+
+  function normalizeInputValue(input, value){
+    value = value || "";
+    if(!input) return value;
+
+    const numericIds = [
+      "id_precio_unidad",
+      "id_cantidad",
+      "id_horas_reales",
+      "id_costo_recurso",
+      "id_costo_recurso_real"
+    ];
+
+    if(numericIds.includes(input.id)){
+      value = String(value).trim().replace(",", ".");
+    }
+
+    return value;
+  }
+
+  function setIfAutoOrEmpty(input, value, previousAuto){
+    if(!input) return "";
+    value = normalizeInputValue(input, value);
+    previousAuto = normalizeInputValue(input, previousAuto);
+
+    if(!input.value || input.value === previousAuto){
+      input.value = value;
+      return value;
+    }
+    return previousAuto;
+  }
+
+  function hoursForDate(dateStr){
+    if(!dateStr) return 9;
+    const d = new Date(dateStr + "T00:00:00");
+    if(isNaN(d)) return 9;
+
+    const wd = d.getDay(); // Sunday=0, Monday=1
+    if(wd >= 1 && wd <= 4) return 9;
+    if(wd === 5) return 6;
+    return 0;
+  }
+
+  function sumEmployeeHours(){
+    if(!inicio || !inicio.value) return 9;
+
+    const start = new Date(inicio.value + "T00:00:00");
+    const end = (fin && fin.value) ? new Date(fin.value + "T00:00:00") : start;
+
+    if(isNaN(start) || isNaN(end) || end < start){
+      return 0;
+    }
+
+    let total = 0;
+    let d = new Date(start);
+
+    while(d <= end){
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      total += hoursForDate(`${yyyy}-${mm}-${dd}`);
+      d.setDate(d.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  function calcularCoste(){
+    if(!coste || !precio) return;
+
+    const p = parseNumber(precio.value);
+    let base = null;
+
+    if(empleado && empleado.value){
+      base = horas ? parseNumber(horas.value) : null;
+      if(base === null && cantidad){
+        base = parseNumber(cantidad.value);
+      }
+    } else if(cantidad) {
+      base = parseNumber(cantidad.value);
+    }
+
+    if(p === null || base === null){
+      if(coste.value === autoCoste){
+        coste.value = "";
+        autoCoste = "";
+      }
+      return;
+    }
+
+    const nuevo = formatNumber(base * p, 2);
+
+    if(!coste.value || coste.value === autoCoste){
+      coste.value = nuevo;
+      autoCoste = nuevo;
+    }
+  }
+
+  function aplicarHorasEmpleado(){
+    if(!(empleado && empleado.value)) return;
+
+    const total = sumEmployeeHours();
+    const value = total > 0 ? formatNumber(total, 2) : "";
+
+    autoCantidad = setIfAutoOrEmpty(cantidad, value, autoCantidad);
+    autoHoras = setIfAutoOrEmpty(horas, value, autoHoras);
+
+    calcularCoste();
+  }
+
+  function aplicarRecurso(){
+    if(!recurso) return;
+    const opt = selectedOption(recurso);
+
+    if(recurso.value && empleado){
+      empleado.value = "";
+    }
+
+    if(!opt || !recurso.value) return;
+
+    autoUnidad = setIfAutoOrEmpty(unidad, opt.dataset.unidad || "", autoUnidad);
+    autoPrecio = setIfAutoOrEmpty(precio, opt.dataset.precio || "", autoPrecio);
+
+    calcularCoste();
+  }
+
+  function aplicarEmpleado(){
+    if(!empleado) return;
+    const opt = selectedOption(empleado);
+
+    if(empleado.value && recurso){
+      recurso.value = "";
+    }
+
+    if(!opt || !empleado.value) return;
+
+    // EMPLEADO_PRECIO_HORA_COSTE_REAL_JS_V1
+    autoUnidad = setIfAutoOrEmpty(unidad, "HRS", autoUnidad);
+    autoPrecio = setIfAutoOrEmpty(precio, opt.dataset.precio || "", autoPrecio);
+
+    aplicarHorasEmpleado();
+    calcularCoste();
+  }
+
+  if(recurso) recurso.addEventListener("change", aplicarRecurso);
+  if(empleado) empleado.addEventListener("change", aplicarEmpleado);
+  if(cantidad) cantidad.addEventListener("input", calcularCoste);
+  if(horas) horas.addEventListener("input", calcularCoste);
+  if(precio) precio.addEventListener("input", calcularCoste);
+  if(inicio) inicio.addEventListener("change", aplicarHorasEmpleado);
+  if(fin) fin.addEventListener("change", aplicarHorasEmpleado);
+
+  aplicarRecurso();
+  aplicarEmpleado();
+  calcularCoste();
+})();
+</script>
+
+
+<!-- PLANIFICACION_RECURSO_REAL_FECHA_INICIO_SYNC_FIN_RENDER_V2 -->
+<script>
+(function () {
+  function todayISO() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function initRecursoRealDates() {
+    var inicio = document.getElementById("id_inicio_recurso_real");
+    var fin = document.getElementById("id_fin_recurso_real");
+
+    if (!inicio || !fin) {
+      return;
+    }
+
+    if (!inicio.value) {
+      inicio.value = todayISO();
+    }
+
+    if (!fin.value) {
+      fin.value = inicio.value || todayISO();
+    }
+
+    inicio.addEventListener("change", function () {
+      if (inicio.value) {
+        fin.value = inicio.value;
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initRecursoRealDates);
+  } else {
+    initRecursoRealDates();
+  }
+})();
+</script>
+
+{% endblock %}
+

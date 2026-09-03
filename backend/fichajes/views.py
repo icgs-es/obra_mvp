@@ -20,6 +20,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from .models import Fichaje, Ausencia, TerminalFichaje
 from .forms import AusenciaForm
 from .utils import reverse_geocode
+from .team_utils import resolve_team_for_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -207,6 +208,10 @@ def fichar(request):
     lat = request.POST.get("lat") or None
     lng = request.POST.get("lng") or None
     tipo = request.POST.get("tipo")  # puede venir del botón
+    fichaje_team, team_error = resolve_team_for_user(user, request)
+    if team_error:
+        messages.error(request, team_error)
+        return redirect("fichajes:mi_jornada")
 
     # Último fichaje del usuario (para el modo "toggle" antiguo)
     ultimo = (
@@ -226,6 +231,7 @@ def fichar(request):
                 # ⚙️ Creamos el fichaje normalmente
         f = Fichaje.objects.create(
             user=user,
+            team=fichaje_team,
             tipo=tipo,
             timestamp=ahora,
             lat=lat,
@@ -260,6 +266,7 @@ def fichar(request):
     # ⚙️ Creamos el fichaje
     f = Fichaje.objects.create(
         user=user,
+        team=fichaje_team,
         tipo=nuevo_tipo,
         timestamp=ahora,
         lat=lat,
@@ -461,12 +468,21 @@ def ausencias_list(request):
         "username",
     )
 
+    puede_gestionar_ausencias = request.user.is_staff or request.user.is_superuser
+    hay_filtros_activos = bool(
+        filtros.get("estado")
+        or filtros.get("tipo")
+        or (puede_gestionar_ausencias and filtros.get("empleado"))
+    )
+
     context = {
         "ausencias": ausencias,
         "filtros": filtros,
         "estado_choices": estado_choices,
         "tipo_choices": tipo_choices,
         "empleados": empleados,
+        "puede_gestionar_ausencias": puede_gestionar_ausencias,
+        "hay_filtros_activos": hay_filtros_activos,
     }
     return render(request, "fichajes/ausencias_list.html", context)
 
@@ -803,6 +819,10 @@ def terminal_fichaje(request):
             return render(request, "fichajes/terminal_fichaje.html", context)
 
         empleado = terminal.user
+        fichaje_team, team_error = resolve_team_for_user(empleado, None)
+        if team_error:
+            messages.error(request, team_error)
+            return render(request, "fichajes/terminal_fichaje.html", context)
 
         # Reutilizamos tus reglas de negocio
         ok, error_msg = validar_nuevo_fichaje(empleado, tipo)
@@ -815,6 +835,7 @@ def terminal_fichaje(request):
         # Crear fichaje igual que en la vista 'fichar'
         f = Fichaje.objects.create(
             user=empleado,
+            team=fichaje_team,
             tipo=tipo,
             timestamp=ahora,
             lat=None,  # normalmente la tablet fija no dará geolocalización

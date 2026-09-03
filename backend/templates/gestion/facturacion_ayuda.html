@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">Facturación · Ayuda</h1>
+      <div class="text-muted small">
+        Guía rápida de estados, planes de pago y vencimientos.
+      </div>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+      Volver
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white fw-semibold">Regla principal</div>
+    <div class="card-body">
+      <p class="mb-2">
+        <strong>Crear un plan no significa autorizarlo</strong>, y una fecha vencida
+        <strong>nunca</strong> convierte un pago en <strong>PAGADO</strong> automáticamente.
+      </p>
+      <p class="mb-0">
+        Un vencimiento puede estar vencido y seguir pendiente de pago.
+        El pago solo existe cuando alguien autorizado pulsa <strong>Marcar pagado</strong>.
+      </p>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white fw-semibold">Estados de la factura</div>
+    <div class="card-body">
+      <ul class="mb-0">
+        <li><strong>PENDIENTE:</strong> existe la factura y puede existir un plan, pero Gerencia todavía no lo ha autorizado.</li>
+        <li><strong>AUT. PAGO:</strong> Gerencia ha autorizado el plan y Administración ya puede registrar pagos.</li>
+        <li><strong>PARCIAL:</strong> existe al menos un vencimiento pagado, pero todavía queda saldo pendiente.</li>
+        <li><strong>PAGADA:</strong> todos los vencimientos del plan están realmente pagados.</li>
+        <li><strong>VENCIDO:</strong> es una señal del vencimiento, no una prueba de pago. Puede existir un plan <strong>AUT. PAGO · VENCIDO</strong>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white fw-semibold">Flujo correcto</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="border rounded p-3 h-100 bg-light">
+            <div class="fw-semibold mb-2">1. Crear factura</div>
+            <div class="small text-muted">
+              La factura puede tener uno o varios vencimientos.
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-3 h-100 bg-light">
+            <div class="fw-semibold mb-2">2. Definir plan</div>
+            <div class="small text-muted">
+              Un pago único = un único vencimiento por el total.
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-3 h-100 bg-light">
+            <div class="fw-semibold mb-2">3. Autorizar</div>
+            <div class="small text-muted">
+              Gerencia revisa y pulsa <strong>Autorizar plan de pagos</strong>.
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-3 h-100 bg-light">
+            <div class="fw-semibold mb-2">4. Registrar pagos</div>
+            <div class="small text-muted">
+              Administración marca los vencimientos realmente pagados.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-semibold">Criterio para planes históricos</div>
+    <div class="card-body">
+      <ul class="mb-0">
+        <li>Si una factura histórica ya estaba <strong>PAGADA</strong>, su vencimiento histórico queda como <strong>PAGADO</strong>.</li>
+        <li>Si una factura histórica tenía autorización previa, queda como <strong>AUT. PAGO</strong>.</li>
+        <li>Si estaba pendiente, el plan puede existir pero permanece <strong>PENDIENTE</strong> hasta autorización expresa.</li>
+        <li>Una fecha pasada no cambia nada a <strong>PAGADO</strong> por sí sola.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

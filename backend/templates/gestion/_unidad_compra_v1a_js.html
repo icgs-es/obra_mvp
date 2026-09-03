@@ -1,0 +1,780 @@
+{# FACTURA_ARTICULO_NATURALEZAS_MINIMAL_V1_1 #}
+<!-- GESTION_UNIDADES_COMPRA_V1A_UI -->
+
+<style>
+  .ucv1a-memory-box {
+    margin-top: .45rem;
+    padding: .55rem .7rem;
+    border: 1px solid #dbe5df;
+    border-radius: .65rem;
+    background: #f7fbf8;
+    font-size: .82rem;
+    color: #425466;
+  }
+
+  .ucv1a-memory-box strong {
+    color: #14532d;
+  }
+
+  .ucv1a-nature {
+    display: inline-flex;
+    align-items: center;
+    margin-right: .45rem;
+    padding: .15rem .5rem;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+
+  .ucv1a-nature-material {
+    background: #e8f1ff;
+    color: #174ea6;
+  }
+
+  .ucv1a-nature-service {
+    background: #e8f7ee;
+    color: #166534;
+  }
+
+  .ucv1a-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, .45);
+  }
+
+  .ucv1a-modal-backdrop.is-open {
+    display: flex;
+  }
+
+  .ucv1a-modal-card {
+    width: min(520px, 100%);
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+  }
+
+  .ucv1a-modal-header,
+  .ucv1a-modal-footer {
+    padding: 1rem 1.1rem;
+  }
+
+  .ucv1a-modal-header {
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .ucv1a-modal-body {
+    padding: 1rem 1.1rem;
+  }
+
+  .ucv1a-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    border-top: 1px solid #e5e7eb;
+  }
+</style>
+
+<script>
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+    const suggestionUrl =
+      "{% url 'gestion:articulo_compra_sugerencia_v1a' %}";
+
+    {% if factura %}
+      const createUrl =
+        "{% url 'gestion:articulo_servicio_create_fast' %}";
+      const documentKind = "factura";
+      const documentId = "{{ factura.id }}";
+      const teamId = "{{ factura.team_id }}";
+      const providerId = "{{ factura.proveedor_id|default:'' }}";
+      const defaultNature =
+        "{{ factura.ambito_gestion }}" === "OBRA"
+        ? "MATERIAL"
+        : "SERVICIO";
+    {% else %}
+      const createUrl =
+        "{% url 'gestion:articulo_compra_create_fast' %}";
+      const documentKind = "albaran";
+      const documentId = "{{ albaran.id }}";
+      const teamId = "{{ albaran.team_id }}";
+      const providerId = "{{ albaran.proveedor_id|default:'' }}";
+      const defaultNature = "MATERIAL";
+    {% endif %}
+
+    const articleField =
+      document.getElementById("id_articulo_compra")
+      || document.getElementById("id_articulo_compra_id");
+
+    const searchField =
+      document.getElementById("id_articulo_search")
+      || document.getElementById("id_articulo_busqueda");
+
+    const unitField =
+      document.getElementById("id_unidad_compra")
+      || document.querySelector('[name="unidad_compra"]')
+      || document.getElementById("id_unidad")
+      || document.querySelector('[name="unidad"]');
+
+    const priceField =
+      document.getElementById("id_precio_unitario")
+      || document.getElementById("id_precio")
+      || document.querySelector('[name="precio_unitario"]');
+
+    const createButton =
+      document.getElementById("id_crear_articulo_servicio_btn")
+      || document.getElementById("id_crear_articulo_rapido_btn");
+
+    if (!articleField) {
+      return;
+    }
+
+    let memoryBox = document.getElementById(
+      "ucv1a-memory-box"
+    );
+
+    if (!memoryBox) {
+      memoryBox = document.createElement("div");
+      memoryBox.id = "ucv1a-memory-box";
+      memoryBox.className = "ucv1a-memory-box d-none";
+
+      const anchor =
+        searchField
+        ? searchField.closest(".mb-3")
+          || searchField.parentElement
+        : articleField.parentElement;
+
+      if (anchor && anchor.parentElement) {
+        anchor.parentElement.insertBefore(
+          memoryBox,
+          anchor.nextSibling
+        );
+      }
+    }
+
+    function ensureSelectValue(select, value) {
+      if (!select || !value) {
+        return;
+      }
+
+      if (
+        select.tagName
+        && select.tagName.toLowerCase() === "select"
+      ) {
+        let exists = Array.from(select.options).some(
+          function (option) {
+            return option.value === value;
+          }
+        );
+
+        if (!exists) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          select.appendChild(option);
+        }
+      }
+
+      select.value = value;
+    }
+
+    function priceIsEmpty() {
+      if (!priceField) {
+        return true;
+      }
+
+      const value = String(
+        priceField.value || ""
+      ).trim();
+
+      return (
+        value === ""
+        || value === "0"
+        || value === "0.0"
+        || value === "0.00"
+        || value === "0.0000"
+      );
+    }
+
+    function unitIsEmpty() {
+      return (
+        !unitField
+        || !String(unitField.value || "").trim()
+      );
+    }
+
+    function sourceText(data) {
+      const parts = [];
+
+      if (data.proveedor) {
+        parts.push(data.proveedor);
+      }
+
+      if (data.fecha) {
+        parts.push(data.fecha);
+      }
+
+      const documentLabel =
+        data.documento_numero
+        || data.documento_codigo;
+
+      if (documentLabel) {
+        parts.push(
+          data.fuente + " " + documentLabel
+        );
+      }
+
+      return parts.join(" · ");
+    }
+
+    function renderMemory(data) {
+      if (!memoryBox) {
+        return;
+      }
+
+      const nature =
+        data.naturaleza || data.tipo || "MATERIAL";
+
+      const natureClass =
+        nature === "SERVICIO"
+        ? "ucv1a-nature-service"
+        : "ucv1a-nature-material";
+
+      const priceText =
+        data.precio
+        ? Number(data.precio).toLocaleString(
+            "es-ES",
+            {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 4
+            }
+          ) + " €"
+        : "sin precio anterior";
+
+      const unitText =
+        data.unidad_compra
+        ? " / " + data.unidad_compra
+        : "";
+
+      const origin = sourceText(data);
+
+      let scopeText = "";
+
+      if (
+        data.proveedor
+        && providerId
+        && !data.mismo_proveedor
+      ) {
+        scopeText =
+          '<div class="text-warning mt-1">'
+          + 'Referencia de otro proveedor.'
+          + '</div>';
+      }
+
+      memoryBox.innerHTML =
+        '<span class="ucv1a-nature '
+        + natureClass
+        + '">'
+        + nature
+        + '</span>'
+        + '<strong>'
+        + priceText
+        + unitText
+        + '</strong>'
+        + (
+          origin
+          ? '<div class="mt-1">'
+            + origin
+            + '</div>'
+          : '<div class="mt-1">'
+            + 'Sin historial de compra; se usa la unidad habitual.'
+            + '</div>'
+        )
+        + scopeText;
+
+      memoryBox.classList.remove("d-none");
+    }
+
+    function loadSuggestion(
+      articleId,
+      initialLoad
+    ) {
+      if (!articleId) {
+        memoryBox.classList.add("d-none");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        articulo_id: articleId,
+        provider_id: providerId || "",
+        team_id: teamId || ""
+      });
+
+      fetch(
+        suggestionUrl + "?" + params.toString(),
+        {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        }
+      )
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        if (!data.ok) {
+          return;
+        }
+
+        if (
+          data.unidad_compra
+          && unitField
+          && (
+            !initialLoad
+            || unitIsEmpty()
+          )
+        ) {
+          ensureSelectValue(
+            unitField,
+            data.unidad_compra
+          );
+
+          unitField.dispatchEvent(
+            new Event(
+              "change",
+              {bubbles: true}
+            )
+          );
+        }
+
+        if (
+          data.precio
+          && priceField
+          && (
+            !initialLoad
+            || priceIsEmpty()
+          )
+        ) {
+          priceField.value = data.precio;
+
+          priceField.dispatchEvent(
+            new Event(
+              "input",
+              {bubbles: true}
+            )
+          );
+
+          priceField.dispatchEvent(
+            new Event(
+              "change",
+              {bubbles: true}
+            )
+          );
+        }
+
+        renderMemory(data);
+      })
+      .catch(function () {
+        // La línea sigue siendo editable aunque falle la sugerencia.
+      });
+    }
+
+    let lastArticleId = null;
+    let firstDetection = true;
+
+    function detectArticleChange() {
+      const value = String(
+        articleField.value || ""
+      ).trim();
+
+      if (value === lastArticleId) {
+        return;
+      }
+
+      lastArticleId = value;
+
+      loadSuggestion(
+        value,
+        firstDetection
+      );
+
+      firstDetection = false;
+    }
+
+    articleField.addEventListener(
+      "change",
+      function () {
+        firstDetection = false;
+        detectArticleChange();
+      }
+    );
+
+    window.setInterval(
+      detectArticleChange,
+      250
+    );
+
+    detectArticleChange();
+
+    if (!createButton) {
+      return;
+    }
+
+    const modal = document.createElement("div");
+    modal.className = "ucv1a-modal-backdrop";
+    modal.id = "ucv1a-create-modal";
+
+    modal.innerHTML = `
+      <div class="ucv1a-modal-card">
+        <div class="ucv1a-modal-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-bold">Crear artículo o recurso</div>
+              <div class="small text-muted">
+                Define su naturaleza y unidad habitual.
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn-close"
+              data-ucv1a-close
+              aria-label="Cerrar"
+            ></button>
+          </div>
+        </div>
+
+        <div class="ucv1a-modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input
+              type="text"
+              class="form-control"
+              id="ucv1a-create-name"
+            >
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Naturaleza</label>
+              <select
+                class="form-select"
+                id="ucv1a-create-nature"
+              >
+                <option value="MATERIAL">Material</option>
+                <option value="SERVICIO">Servicio</option>
+                <option value="HERRAMIENTA">Herramienta</option>
+                <option value="MAQUINARIA">Maquinaria</option>
+                <option value="PORTES">Portes</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Unidad habitual</label>
+              <select
+                class="form-select"
+                id="ucv1a-create-unit"
+              >
+                <option value="UD">Unidad (UD)</option>
+                <option value="H">Hora (h)</option>
+                <option value="DIA">Día</option>
+                <option value="MES">Mes</option>
+                <option value="SERVICIO">Servicio</option>
+                <option value="M">Metro (m)</option>
+                <option value="ML">Metro lineal (ML)</option>
+                <option value="M2">Metro cuadrado (m²)</option>
+                <option value="M3">Metro cúbico (m³)</option>
+                <option value="L">Litro (l)</option>
+                <option value="KG">Kilogramo (kg)</option>
+                <option value="TN">Tonelada (t)</option>
+                <option value="CAJA">Caja</option>
+                <option value="SACO">Saco</option>
+                <option value="SACA">Saca</option>
+                <option value="BOLSA">Bolsa</option>
+                <option value="PAQUETE">Paquete</option>
+                <option value="PACK">Pack</option>
+                <option value="PALET">Palé</option>
+                <option value="ROLLO">Rollo</option>
+                <option value="BOTE">Bote</option>
+                <option value="CUBA">Cuba</option>
+                <option value="PERFIL">Perfil</option>
+                <option value="PLACA">Placa</option>
+                <option value="PORTE">Porte</option>
+              </select>
+            </div>
+          </div>
+
+          <div
+            class="alert alert-danger small mt-3 d-none"
+            id="ucv1a-create-error"
+          ></div>
+        </div>
+
+        <div class="ucv1a-modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            data-ucv1a-close
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="ucv1a-create-save"
+          >
+            Crear y seleccionar
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const modalName =
+      document.getElementById("ucv1a-create-name");
+
+    const modalNature =
+      document.getElementById("ucv1a-create-nature");
+
+    const modalUnit =
+      document.getElementById("ucv1a-create-unit");
+
+    const modalError =
+      document.getElementById("ucv1a-create-error");
+
+    const modalSave =
+      document.getElementById("ucv1a-create-save");
+
+    function closeModal() {
+      modal.classList.remove("is-open");
+    }
+
+    function openModal() {
+      modalError.classList.add("d-none");
+      modalError.textContent = "";
+
+      modalName.value =
+        searchField
+        ? searchField.value.trim()
+        : "";
+
+      modalNature.value = defaultNature;
+
+      modalUnit.value =
+        defaultNature === "SERVICIO"
+        ? "SERVICIO"
+        : "UD";
+
+      modal.classList.add("is-open");
+
+      window.setTimeout(
+        function () {
+          modalName.focus();
+          modalName.select();
+        },
+        30
+      );
+    }
+
+    modal.querySelectorAll(
+      "[data-ucv1a-close]"
+    ).forEach(function (button) {
+      button.addEventListener(
+        "click",
+        closeModal
+      );
+    });
+
+    modal.addEventListener(
+      "click",
+      function (event) {
+        if (event.target === modal) {
+          closeModal();
+        }
+      }
+    );
+
+    modalNature.addEventListener(
+      "change",
+      function () {
+        if (
+          modalNature.value === "SERVICIO"
+          && (
+            modalUnit.value === "UD"
+            || !modalUnit.value
+          )
+        ) {
+          modalUnit.value = "SERVICIO";
+        }
+
+        if (
+          modalNature.value === "MATERIAL"
+          && modalUnit.value === "SERVICIO"
+        ) {
+          modalUnit.value = "UD";
+        }
+      }
+    );
+
+    createButton.addEventListener(
+      "click",
+      function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        openModal();
+      },
+      true
+    );
+
+    modalSave.addEventListener(
+      "click",
+      function () {
+        const name = modalName.value.trim();
+
+        if (name.length < 3) {
+          modalError.textContent =
+            "Escribe al menos 3 caracteres.";
+
+          modalError.classList.remove(
+            "d-none"
+          );
+
+          return;
+        }
+
+        modalSave.disabled = true;
+
+        const body = new URLSearchParams({
+          nombre: name,
+          tipo: modalNature.value,
+          naturaleza: modalNature.value,
+          unidad: modalUnit.value,
+          unidad_compra: modalUnit.value,
+          team_id: teamId || ""
+        });
+
+        if (documentKind === "factura") {
+          body.set(
+            "factura_id",
+            documentId
+          );
+        }
+
+        if (priceField && priceField.value) {
+          body.set(
+            "precio",
+            priceField.value
+          );
+        }
+
+        const csrf =
+          document.querySelector(
+            'input[name="csrfmiddlewaretoken"]'
+          );
+
+        fetch(
+          createUrl,
+          {
+            method: "POST",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": csrf ? csrf.value : ""
+            },
+            body: body
+          }
+        )
+        .then(function (response) {
+          return response.json().then(
+            function (data) {
+              return {
+                status: response.status,
+                data: data
+              };
+            }
+          );
+        })
+        .then(function (result) {
+          if (!result.data.ok) {
+            throw new Error(
+              result.data.error
+              || "No se pudo crear."
+            );
+          }
+
+          const id = String(result.data.id);
+
+          if (
+            articleField.tagName
+            && articleField.tagName.toLowerCase() === "select"
+          ) {
+            let option = Array.from(
+              articleField.options
+            ).find(
+              function (item) {
+                return item.value === id;
+              }
+            );
+
+            if (!option) {
+              option = document.createElement("option");
+              option.value = id;
+              option.textContent =
+                result.data.label
+                || result.data.nombre;
+              articleField.appendChild(option);
+            }
+          }
+
+          articleField.value = id;
+
+          articleField.dispatchEvent(
+            new Event(
+              "input",
+              {bubbles: true}
+            )
+          );
+
+          articleField.dispatchEvent(
+            new Event(
+              "change",
+              {bubbles: true}
+            )
+          );
+
+          if (searchField) {
+            searchField.value =
+              result.data.label
+              || result.data.nombre;
+          }
+
+          closeModal();
+
+          firstDetection = false;
+          lastArticleId = null;
+          detectArticleChange();
+        })
+        .catch(function (error) {
+          modalError.textContent =
+            error.message
+            || "No se pudo crear.";
+
+          modalError.classList.remove(
+            "d-none"
+          );
+        })
+        .finally(function () {
+          modalSave.disabled = false;
+        });
+      }
+    );
+  }
+);
+</script>

@@ -1,0 +1,936 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>#id_articulo_search_results { max-height: 22rem; overflow-y: auto; }</style>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ title }}</h1>
+      <div class="text-muted small">
+        Factura {{ factura.cod_factura }}
+        {% if factura.proveedor %} · {{ factura.proveedor.nombre_comercial }}{% endif %}
+        {% if factura.ambito_gestion %} · {{ factura.ambito_gestion }}{% endif %}
+      </div>
+    </div>
+    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+  </div>
+
+  {# FACTURA_LINEA_FORM_LIMPIO_POR_AMBITO_V1 #}
+  <form method="post" class="card shadow-sm border-0">
+    {% csrf_token %}
+
+    <div class="card-body">
+      {% if factura.ambito_gestion != "OBRA" %}
+        <div class="alert alert-info small mb-3">
+          Línea de factura de <strong>{{ factura.ambito_gestion|default:"servicios generales" }}</strong>.
+          Se guardará como artículo/servicio de compra, sin albarán, almacén ni partida/tarea.
+        </div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label class="form-label small text-muted" for="id_articulo_search">Artículo / servicio</label>
+        <div class="input-group">
+          <input
+            type="text"
+            id="id_articulo_search"
+            class="form-control"
+            autocomplete="off"
+            placeholder="Busca o crea un artículo/servicio. Ejemplo: asesoría, honorarios, limpieza, software."
+          >
+          {% if request.user.is_superuser %}
+            <button class="btn btn-outline-primary" type="button" id="id_crear_articulo_servicio_btn">
+              + Crear artículo / servicio
+            </button>
+          {% endif %}
+        </div>
+
+        <div id="id_articulo_search_results" class="list-group mt-2 d-none"></div>
+
+        <div class="form-text">
+          {% if factura.ambito_gestion == "OBRA" %}
+            Puedes vincular este artículo a obra, almacén o albarán si corresponde.
+          {% else %}
+            Para este ámbito se crea solo como ArticuloCompra, sin recurso de obra ni almacén.
+          {% endif %}
+        </div>
+
+        <div class="d-none">
+          {{ form.articulo_compra }}
+        </div>
+
+        {% if form.articulo_compra.errors %}
+          <div class="text-danger small">{{ form.articulo_compra.errors|striptags }}</div>
+        {% endif %}
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label class="form-label small text-muted">{{ form.linea.label }}</label>
+          {{ form.linea }}
+          {% if form.linea.errors %}<div class="text-danger small">{{ form.linea.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">{{ form.cantidad.label }}</label>
+          {{ form.cantidad }}
+          {% if form.cantidad.errors %}<div class="text-danger small">{{ form.cantidad.errors|striptags }}</div>{% endif %}
+        </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">
+              {{ form.unidad_compra.label }}
+            </label>
+            {{ form.unidad_compra }}
+            {% if form.unidad_compra.errors %}
+              <div class="text-danger small">
+                {{ form.unidad_compra.errors|striptags }}
+              </div>
+            {% endif %}
+          </div>
+
+        <div class="col-md-3">
+          <label class="form-label small text-muted">{{ form.precio_unitario.label }}</label>
+          {{ form.precio_unitario }}
+          {% if form.precio_unitario.errors %}<div class="text-danger small">{{ form.precio_unitario.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label small text-muted">{{ form.importe_linea.label }}</label>
+          {{ form.importe_linea }}
+          {% if form.importe_linea.errors %}<div class="text-danger small">{{ form.importe_linea.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small text-muted">{{ form.iva_porcentaje.label }}</label>
+          {{ form.iva_porcentaje }}
+          {% if form.iva_porcentaje.errors %}<div class="text-danger small">{{ form.iva_porcentaje.errors|striptags }}</div>{% endif %}
+        </div>
+      </div>
+
+      {# FACTURA_LINEA_OBSERVACIONES_UI_V1 #}
+      <div class="mt-3">
+        <label
+          class="form-label small text-muted"
+          for="{{ form.observaciones.id_for_label }}"
+        >
+          {{ form.observaciones.label }}
+        </label>
+
+        {{ form.observaciones }}
+
+        {% if form.observaciones.help_text %}
+          <div class="form-text">
+            {{ form.observaciones.help_text }}
+          </div>
+        {% endif %}
+
+        {% if form.observaciones.errors %}
+          <div class="text-danger small">
+            {{ form.observaciones.errors|striptags }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="mt-3">
+        <button class="btn btn-link btn-sm px-0" type="button" data-bs-toggle="collapse" data-bs-target="#lineaOpcionesAvanzadas">
+          Opciones avanzadas
+        </button>
+
+        <div class="collapse" id="lineaOpcionesAvanzadas">
+          <div class="row g-3 pt-2">
+            <div class="col-md-3">
+              <label class="form-label small text-muted">Descuento %</label>
+              {{ form.descuento }}
+              {% if form.descuento.errors %}<div class="text-danger small">{{ form.descuento.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label small text-muted">Importe descuento adicional (€)</label>
+              {{ form.importe_descuento }}
+              {% if form.importe_descuento.errors %}<div class="text-danger small">{{ form.importe_descuento.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if factura.ambito_gestion == "OBRA" %}
+        <hr class="my-4">
+        <h6 class="mb-3">Datos de obra / albarán</h6>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">{{ form.albaran.label }}</label>
+            {{ form.albaran }}
+            {% if form.albaran.errors %}<div class="text-danger small">{{ form.albaran.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">{{ form.cod_articulo_legacy.label }}</label>
+            {{ form.cod_articulo_legacy }}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.cod_albaran_legacy.label }}</label>
+            {{ form.cod_albaran_legacy }}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.linea_albaran_legacy.label }}</label>
+            {{ form.linea_albaran_legacy }}
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.en_almacen }}
+              <label class="form-check-label">{{ form.en_almacen.label }}</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.en_partida }}
+              <label class="form-check-label">{{ form.en_partida.label }}</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small text-muted">{{ form.cantidad_en_partidas.label }}</label>
+            {{ form.cantidad_en_partidas }}
+          </div>
+        </div>
+      {% else %}
+        <input type="hidden" name="albaran" value="">
+        <input type="hidden" name="cod_articulo_legacy" value="">
+        <input type="hidden" name="cod_albaran_legacy" value="">
+        <input type="hidden" name="linea_albaran_legacy" value="">
+        <input type="hidden" name="cantidad_en_partidas" value="0">
+      {% endif %}
+    </div>
+
+    <div class="card-footer bg-white d-flex justify-content-end gap-2">
+      <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary">Cancelar</a>
+      <button class="btn btn-primary">{{ button_label }}</button>
+    </div>
+  </form>
+</div>
+
+<script id="factura-linea-recalculo-v1">
+(function () {
+  "use strict";
+
+  function findField(names) {
+    for (const name of names) {
+      const el =
+        document.querySelector('[name="' + name + '"]') ||
+        document.getElementById("id_" + name);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  const cantidad = findField(["cantidad"]);
+  const precio = findField(["precio_unitario"]);
+  const importe = findField(["importe_linea"]);
+  const importeDescuento = findField(["importe_descuento"]);
+  const descuento = findField(["descuento"]);
+
+  function decimalFromAny(value) {
+    let s = String(value || "").trim();
+
+    if (!s) return "";
+
+    s = s
+      .replace(/€/g, "")
+      .replace(/EUR/gi, "")
+      .replace(/\u00a0/g, "")
+      .replace(/\s+/g, "")
+      .replace(/'/g, "");
+
+    s = s.replace(/[^0-9,.\-]/g, "");
+
+    if (!s || s === "-" || s === "," || s === ".") return "";
+
+    let negative = false;
+    if (s.startsWith("-")) {
+      negative = true;
+      s = s.slice(1);
+    }
+
+    if (s.includes(".") && s.includes(",")) {
+      const lastDot = s.lastIndexOf(".");
+      const lastComma = s.lastIndexOf(",");
+
+      if (lastComma > lastDot) {
+        // Español: 17.475,62 -> 17475.62
+        s = s.replace(/\./g, "").replace(",", ".");
+      } else {
+        // Técnico/anglosajón: 17,475.62 -> 17475.62
+        s = s.replace(/,/g, "");
+      }
+    } else if (s.includes(",")) {
+      // Español: 17475,62 -> 17475.62
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (s.includes(".")) {
+      // FACTURA_LINEA_DECIMAL_INPUT_CANONICAL_V1
+      //
+      // Un único punto es decimal canónico:
+      //
+      //     1.246 -> 1.246
+      //
+      // Nunca reinterpretarlo como 1246.
+    }
+
+    if (negative) s = "-" + s;
+
+    return s;
+  }
+
+  function toNumber(value) {
+    const s = decimalFromAny(value);
+    if (!s) return 0;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function formatEs(value, decimals) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "";
+    return new Intl.NumberFormat("es-ES", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(n);
+  }
+
+  function recalc() {
+    if (!cantidad || !precio || !importe) return;
+
+    const qty = toNumber(cantidad.value);
+    const price = toNumber(precio.value);
+    const discountAmount = importeDescuento ? toNumber(importeDescuento.value) : 0;
+
+    const discountPct = descuento ? Math.min(100, Math.max(0, toNumber(descuento.value))) : 0;
+    const result = (qty * price * (1 - (discountPct / 100))) - discountAmount;
+
+    importe.value = formatEs(result, 2);
+  }
+
+  function normalizeBeforeSubmit() {
+    const form = (importe && importe.closest("form")) || document.querySelector("form");
+    if (!form) return;
+
+    // FACTURA_LINEA_DECIMAL_INPUT_CANONICAL_V1
+    // Este bloque se invoca inmediatamente y en DOMContentLoaded.
+    // Registrar su listener una sola vez.
+    if (
+      form.dataset.facturaLineaSubmitRecalculoV1
+      === "1"
+    ) {
+      return;
+    }
+
+    form.dataset.facturaLineaSubmitRecalculoV1 = "1";
+
+    form.addEventListener("submit", function () {
+      [cantidad, precio, importe, importeDescuento, descuento].forEach(function (el) {
+        if (!el) return;
+        el.value = decimalFromAny(el.value);
+      });
+    });
+  }
+
+  [cantidad, precio, importeDescuento].forEach(function (el) {
+    if (!el) return;
+    el.setAttribute("type", "text");
+    el.setAttribute("inputmode", "decimal");
+    el.addEventListener("input", recalc);
+    el.addEventListener("change", recalc);
+    el.addEventListener("blur", recalc);
+  });
+
+  if (importe) {
+    importe.setAttribute("type", "text");
+    importe.setAttribute("inputmode", "decimal");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    recalc();
+    normalizeBeforeSubmit();
+  });
+
+  // Por si el script se carga al final del body.
+  recalc();
+  normalizeBeforeSubmit();
+})();
+</script>
+
+
+
+<script id="factura-linea-formula-descuento-iva-v2">
+(function () {
+  "use strict";
+
+  const IVA_INITIAL = "{{ form.iva_porcentaje.value|default:'21.00'|escapejs }}";
+
+  function findField(name) {
+    return document.querySelector('[name="' + name + '"]') || document.getElementById("id_" + name);
+  }
+
+  const cantidad = findField("cantidad");
+  const precio = findField("precio_unitario");
+  const descuentoUnitario = findField("descuento");
+  const importeDescuento = findField("importe_descuento");
+  const baseLinea = findField("importe_linea");
+
+  function ensureIvaField() {
+    let iva = findField("iva_porcentaje");
+    if (iva) return iva;
+
+    const container = document.createElement("div");
+    container.className = "mt-3 row g-3";
+    container.innerHTML = `
+      <div class="col-md-3">
+        <label class="form-label">IVA %</label>
+        <input type="text" name="iva_porcentaje" id="id_iva_porcentaje" class="form-control text-end" value="${IVA_INITIAL || "21,00"}" inputmode="decimal">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Importe IVA línea</label>
+        <input type="text" id="id_importe_iva_linea_display" class="form-control text-end" readonly>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Total línea con IVA</label>
+        <input type="text" id="id_total_con_iva_linea_display" class="form-control text-end fw-semibold" readonly>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fórmula</label>
+        <div class="form-control form-control-sm bg-light">
+          Cant. × Precio × (1 - Dto.% / 100) - Dto. adicional
+        </div>
+      </div>
+    `;
+
+    const form = document.querySelector("form");
+    const footer = form ? form.querySelector(".card-footer, .form-actions") : null;
+
+    if (footer && footer.parentNode) {
+      footer.parentNode.insertBefore(container, footer);
+    } else if (form) {
+      form.appendChild(container);
+    }
+
+    return findField("iva_porcentaje");
+  }
+
+  const ivaPct = ensureIvaField();
+  const ivaImporteDisplay = document.getElementById("id_importe_iva_linea_display");
+  const totalConIvaDisplay = document.getElementById("id_total_con_iva_linea_display");
+
+  function decimalFromAny(value) {
+    let s = String(value || "").trim();
+    if (!s) return "";
+
+    s = s
+      .replace(/€/g, "")
+      .replace(/EUR/gi, "")
+      .replace(/\u00a0/g, "")
+      .replace(/\s+/g, "")
+      .replace(/'/g, "");
+
+    s = s.replace(/[^0-9,.\-]/g, "");
+
+    if (!s || s === "-" || s === "," || s === ".") return "";
+
+    let negative = false;
+    if (s.startsWith("-")) {
+      negative = true;
+      s = s.slice(1);
+    }
+
+    if (s.includes(".") && s.includes(",")) {
+      if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+        s = s.replace(/\./g, "").replace(",", ".");
+      } else {
+        s = s.replace(/,/g, "");
+      }
+    } else if (s.includes(",")) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (s.includes(".")) {
+      // FACTURA_LINEA_DECIMAL_INPUT_CANONICAL_V1
+      //
+      // Un único punto es decimal canónico:
+      //
+      //     1.246 -> 1.246
+      //
+      // Nunca reinterpretarlo como 1246.
+    }
+
+    if (negative) s = "-" + s;
+    return s;
+  }
+
+  function toNumber(value) {
+    const s = decimalFromAny(value);
+    if (!s) return 0;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function formatEs(value, decimals) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "";
+    return new Intl.NumberFormat("es-ES", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(n);
+  }
+
+  function recalc() {
+    if (!cantidad || !precio || !baseLinea) return;
+
+    const qty = toNumber(cantidad.value);
+    const price = toNumber(precio.value);
+    const dtoUnit = descuentoUnitario ? Math.min(100, Math.max(0, toNumber(descuentoUnitario.value))) : 0;
+    const dtoTotal = importeDescuento ? toNumber(importeDescuento.value) : 0;
+    const iva = ivaPct ? toNumber(ivaPct.value) : 21;
+
+    const base = (qty * price * (1 - (dtoUnit / 100))) - dtoTotal;
+    const ivaAmount = base * iva / 100;
+    const total = base + ivaAmount;
+
+    baseLinea.value = formatEs(base, 2);
+
+    if (ivaImporteDisplay) ivaImporteDisplay.value = formatEs(ivaAmount, 2);
+    if (totalConIvaDisplay) totalConIvaDisplay.value = formatEs(total, 2);
+  }
+
+  function normalizeBeforeSubmit() {
+    const form = document.querySelector("form");
+    if (!form) return;
+
+    // FACTURA_LINEA_DECIMAL_INPUT_CANONICAL_V1
+    // Mantener este segundo normalizador porque incluye IVA,
+    // pero registrarlo solo una vez.
+    if (
+      form.dataset.facturaLineaSubmitFormulaIvaV2
+      === "1"
+    ) {
+      return;
+    }
+
+    form.dataset.facturaLineaSubmitFormulaIvaV2 = "1";
+
+    form.addEventListener("submit", function () {
+      [cantidad, precio, descuentoUnitario, importeDescuento, baseLinea, ivaPct].forEach(function (el) {
+        if (!el) return;
+        el.value = decimalFromAny(el.value);
+      });
+    });
+  }
+
+  [cantidad, precio, descuentoUnitario, importeDescuento, ivaPct].forEach(function (el) {
+    if (!el) return;
+    el.setAttribute("type", "text");
+    el.setAttribute("inputmode", "decimal");
+    el.addEventListener("input", recalc);
+    el.addEventListener("change", recalc);
+    el.addEventListener("blur", recalc);
+  });
+
+  if (baseLinea) {
+    baseLinea.setAttribute("type", "text");
+    baseLinea.setAttribute("inputmode", "decimal");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    recalc();
+    normalizeBeforeSubmit();
+  });
+
+  recalc();
+  normalizeBeforeSubmit();
+})();
+</script>
+
+
+
+<script id="factura-linea-articulo-servicio-ui-v1">
+(function () {
+  "use strict";
+
+  const searchInput = document.getElementById("id_articulo_search");
+  const resultsBox = document.getElementById("id_articulo_search_results");
+  const select = document.getElementById("id_articulo_compra");
+  const createBtn = document.getElementById("id_crear_articulo_servicio_btn");
+
+  if (!searchInput || !resultsBox || !select) return;
+
+  const searchUrl = "{% url 'gestion:articulos_compra_search' %}";
+  const createUrl = "{% url 'gestion:articulo_servicio_create_fast' %}";
+  const facturaId = "{{ factura.id }}";
+  const teamId = "{{ factura.team_id }}";
+  const csrf = (document.querySelector('[name="csrfmiddlewaretoken"]') || {}).value || "";
+
+  function normalizeResults(data) {
+    if (Array.isArray(data)) return data;
+    return data.results || data.items || data.articulos || data.data || [];
+  }
+
+  function itemId(item) {
+    return item.id || item.pk || item.value || item.articulo_id;
+  }
+
+  function itemLabel(item) {
+    return item.text || item.label || item.nombre || item.name || item.descripcion || String(itemId(item) || "");
+  }
+
+  function setArticulo(id, label) {
+    if (!id) return;
+
+    let option = Array.from(select.options).find(function (o) {
+      return String(o.value) === String(id);
+    });
+
+    if (!option) {
+      option = document.createElement("option");
+      option.value = id;
+      option.textContent = label || ("Artículo " + id);
+      select.appendChild(option);
+    }
+
+    select.value = String(id);
+    searchInput.value = label || option.textContent;
+    resultsBox.classList.add("d-none");
+    resultsBox.innerHTML = "";
+  }
+
+  let activeIndex = -1;
+  function renderResults(items, hasMore) {
+    resultsBox.innerHTML = "";
+
+    if (!items.length) {
+      resultsBox.classList.add("d-none");
+      return;
+    }
+
+    items.forEach(function (item, index) {
+      const id = itemId(item);
+      const label = itemLabel(item);
+
+      if (!id || !label) return;
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action";
+      btn.setAttribute("role", "option");
+      btn.dataset.index = String(index);
+      btn.textContent = label;
+      btn.addEventListener("click", function () {
+        setArticulo(id, label);
+      });
+      resultsBox.appendChild(btn);
+    });
+
+    if (hasMore) {
+      const note = document.createElement("div");
+      note.className = "list-group-item text-muted small";
+      note.textContent = "Hay más resultados: concrete la búsqueda para acotarlos.";
+      resultsBox.appendChild(note);
+    }
+
+    resultsBox.classList.toggle("d-none", !resultsBox.children.length);
+  }
+
+  let timer = null;
+
+  searchInput.addEventListener("input", function () {
+    const q = searchInput.value.trim();
+
+    clearTimeout(timer);
+
+    if (q.length < 2) {
+      resultsBox.classList.add("d-none");
+      resultsBox.innerHTML = "";
+      return;
+    }
+
+    timer = setTimeout(function () {
+      const url = searchUrl + "?q=" + encodeURIComponent(q) + "&team_id=" + encodeURIComponent(teamId) + "&context=factura";
+      fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}})
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          renderResults(normalizeResults(data), Boolean(data.has_more));
+        })
+        .catch(function () {
+          resultsBox.classList.add("d-none");
+        });
+    }, 220);
+  });
+
+  searchInput.addEventListener("keydown", function (event) {
+    const choices = Array.from(resultsBox.querySelectorAll("button.list-group-item-action"));
+    if (!choices.length) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      activeIndex = event.key === "ArrowDown" ? (activeIndex + 1) % choices.length : (activeIndex - 1 + choices.length) % choices.length;
+      choices.forEach(function (button, index) { button.classList.toggle("active", index === activeIndex); });
+      choices[activeIndex].scrollIntoView({block: "nearest"});
+    } else if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault(); choices[activeIndex].click();
+    } else if (event.key === "Escape") { resultsBox.classList.add("d-none"); }
+  });
+
+  if (createBtn) {
+    createBtn.addEventListener("click", function () {
+      const nombre = searchInput.value.trim();
+
+      if (nombre.length < 3) {
+        alert("Escribe al menos 3 caracteres para crear el artículo/servicio.");
+        return;
+      }
+
+      if (!window.confirm("Vas a crear un NUEVO artículo/servicio:\n\n" + nombre + "\n\nContinúa solo si has comprobado que no existe.")) {
+        return;
+      }
+
+      const body = new URLSearchParams();
+      body.set("factura_id", facturaId);
+      body.set("nombre", nombre);
+      body.set("tipo", "{{ factura.ambito_gestion }}" === "OBRA" ? "MATERIAL" : "SERVICIO");
+      body.set("unidad", "UD");
+
+      fetch(createUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-CSRFToken": csrf,
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: body.toString()
+      })
+        .then(function (r) { return r.json().then(function (data) { return {ok: r.ok, data: data}; }); })
+        .then(function (res) {
+          if (!res.ok || !res.data.ok) {
+            throw new Error(res.data.error || "No se pudo crear el artículo/servicio.");
+          }
+          setArticulo(res.data.id, res.data.text || res.data.label || res.data.nombre);
+          alert(res.data.created ? "Artículo/servicio creado." : "Ya existía; se ha seleccionado.");
+        })
+        .catch(function (error) {
+          alert(error.message || "No se pudo crear el artículo/servicio.");
+        });
+    });
+  }
+
+  document.addEventListener("click", function (event) {
+    if (!resultsBox.contains(event.target) && event.target !== searchInput) {
+      resultsBox.classList.add("d-none");
+    }
+  });
+
+  // Precargar texto si ya hay artículo seleccionado.
+  if (select.value) {
+    const selected = select.options[select.selectedIndex];
+    if (selected) searchInput.value = selected.textContent;
+  }
+})();
+</script>
+
+
+{% include "gestion/_unidad_compra_v1a_js.html" %}
+{% endblock %}
+
+<script>
+(function () {
+  // GESTION_FACTURA_LINEA_IVA_AUTO_JS_V1
+  function parseEs(value) {
+    value = String(value || "").trim()
+      .replace(/[€\s]/g, "");
+
+    if (!value) return 0;
+
+    if (value.includes(",")) {
+      value = value.replace(/\./g, "").replace(",", ".");
+    }
+
+    var n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function fmtEs(value, decimals) {
+    decimals = decimals == null ? 2 : decimals;
+    if (!Number.isFinite(value)) value = 0;
+    return value.toLocaleString("es-ES", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  }
+
+  function byName(names) {
+    for (var i = 0; i < names.length; i++) {
+      var el = document.querySelector('[name="' + names[i] + '"]');
+      if (el) return el;
+    }
+    return null;
+  }
+
+  function findByLabel(regex) {
+    var labels = Array.from(document.querySelectorAll("label"));
+    for (var i = 0; i < labels.length; i++) {
+      var label = labels[i];
+      if (!regex.test((label.textContent || "").trim())) continue;
+
+      if (label.htmlFor) {
+        var byFor = document.getElementById(label.htmlFor);
+        if (byFor) return byFor;
+      }
+
+      var parent = label.closest(".form-group, .mb-3, .col, div") || label.parentElement;
+      if (parent) {
+        var input = parent.querySelector("input, select");
+        if (input) return input;
+      }
+    }
+    return null;
+  }
+
+  function ensureHidden(name) {
+    var input = document.querySelector('[name="' + name + '"]');
+    if (!input) {
+      input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      var form = document.querySelector("form");
+      if (form) form.appendChild(input);
+    }
+    return input;
+  }
+
+  function ensureBox(anchor) {
+    var box = document.getElementById("iva-linea-auto-box");
+    if (box) return box;
+
+    box = document.createElement("div");
+    box.id = "iva-linea-auto-box";
+    box.className = "alert alert-info py-2 mt-3";
+    box.innerHTML =
+      '<strong>Cálculo IVA línea:</strong> ' +
+      'Base <span id="iva-auto-base">0,00</span> € · ' +
+      'IVA <span id="iva-auto-pct">21,00</span>% = <span id="iva-auto-importe">0,00</span> € · ' +
+      '<strong>Total con IVA <span id="iva-auto-total">0,00</span> €</strong>';
+
+    var target = anchor && (anchor.closest(".row") || anchor.parentElement);
+    if (target && target.parentElement) {
+      target.parentElement.insertBefore(box, target.nextSibling);
+    } else {
+      var form = document.querySelector("form");
+      if (form) form.insertBefore(box, form.firstChild);
+    }
+
+    return box;
+  }
+
+  function init() {
+    // FACTURA_LINEA_DESCUENTO_PORCENTUAL_SAVE_V2
+    var cantidad = byName(["cantidad"]) || findByLabel(/cantidad/i);
+    var precio = byName(["precio_unitario", "precio", "precio_unitario_bruto"]) || findByLabel(/precio/i);
+    var base = byName(["importe_linea", "base_linea", "base"]) || findByLabel(/base/i);
+    var descuento = byName(["descuento"]);
+    var descuentoAdicional = byName(["importe_descuento"]);
+    var iva = byName(["iva_porcentaje", "iva", "porcentaje_iva", "tipo_iva"]) || findByLabel(/iva/i);
+
+    if (!cantidad || !precio || !base) return;
+
+    if (!iva) {
+      iva = ensureHidden("iva_porcentaje_manual");
+      iva.value = "21";
+    }
+
+    var hiddenIvaPct = ensureHidden("iva_porcentaje_manual");
+    var hiddenIvaImporte = ensureHidden("importe_iva_linea_calc");
+    var hiddenTotal = ensureHidden("total_linea_con_iva_calc");
+
+    ensureBox(iva || base);
+
+    var lastChanged = "";
+
+    function recalc() {
+      var q = parseEs(cantidad.value);
+      var p = parseEs(precio.value);
+      var b = parseEs(base.value);
+
+      var dtoPct = descuento
+        ? Math.min(100, Math.max(0, parseEs(descuento.value)))
+        : 0;
+
+      var dtoAdd = descuentoAdicional
+        ? parseEs(descuentoAdicional.value)
+        : 0;
+
+      if (
+        String(cantidad.value || "").trim() !== ""
+        &&
+        String(precio.value || "").trim() !== ""
+      ) {
+        b = (
+          q
+          * p
+          * (1 - dtoPct / 100)
+        ) - dtoAdd;
+
+        base.value = fmtEs(b, 2);
+      }
+
+      var pct = parseEs(iva.value || hiddenIvaPct.value || "21");
+      var ivaImporte = b * pct / 100;
+      var total = b + ivaImporte;
+
+      hiddenIvaPct.value = String(pct.toFixed(2));
+      hiddenIvaImporte.value = String(ivaImporte.toFixed(2));
+      hiddenTotal.value = String(total.toFixed(2));
+
+      var elBase = document.getElementById("iva-auto-base");
+      var elPct = document.getElementById("iva-auto-pct");
+      var elIva = document.getElementById("iva-auto-importe");
+      var elTotal = document.getElementById("iva-auto-total");
+
+      if (elBase) elBase.textContent = fmtEs(b, 2);
+      if (elPct) elPct.textContent = fmtEs(pct, 2);
+      if (elIva) elIva.textContent = fmtEs(ivaImporte, 2);
+      if (elTotal) elTotal.textContent = fmtEs(total, 2);
+    }
+
+    [
+      [cantidad, "cantidad"],
+      [precio, "precio"],
+      [descuento, "descuento"],
+      [descuentoAdicional, "descuento_adicional"],
+      [base, "base"],
+      [iva, "iva"]
+    ].forEach(function (pair) {
+      if (!pair[0]) return;
+      pair[0].addEventListener("input", function () {
+        lastChanged = pair[1];
+        recalc();
+      });
+      pair[0].addEventListener("change", function () {
+        lastChanged = pair[1];
+        recalc();
+      });
+    });
+
+    var form = document.querySelector("form");
+    if (form) {
+      form.addEventListener("submit", function () {
+        recalc();
+      });
+    }
+
+    recalc();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>

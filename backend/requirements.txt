@@ -7,4 +7,7 @@ django-cors-headers==4.4.0
 celery==5.3.*
 redis==5.*
 xhtml2pdf>=0.2.15
-openpyxl
+openpyxl==3.1.5
+python-docx==1.2.0
+xlrd==2.0.1
+cryptography==48.0.0
