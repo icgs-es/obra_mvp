@@ -83,4 +83,4 @@ infra/secrets/
 /backend/_imports/
 /backend/_reports/
 /reports/
-/.backups/
+/.backups//.continue/
