@@ -154,7 +154,7 @@ class AgendaActivityAdapterTests(
 
         self.assertEqual(
             kwargs["visibilidad"],
-            "EQUIPO",
+            "OBJETO",
         )
 
         self.assertEqual(
@@ -200,7 +200,7 @@ class AgendaActivityAdapterTests(
 
         self.assertEqual(
             kwargs["visibilidad"],
-            "ACTOR",
+            "OBJETO",
         )
 
     def test_completion_has_precedence(
@@ -577,7 +577,7 @@ class AgendaActivityAdapterTests(
 
         self.assertEqual(
             activity.visibilidad,
-            "EQUIPO",
+            "OBJETO",
         )
 
     def test_direct_orm_create_has_no_signal(

@@ -146,14 +146,12 @@ def snapshot_evento(
 def _activity_visibility(
     snapshot: dict[str, Any],
 ) -> str:
-    if (
-        snapshot.get("team_id")
-        and snapshot.get("visibility")
-        in SHARED_VISIBILITIES
-    ):
-        return "EQUIPO"
+    """La actividad de Agenda utiliza alcance funcional por objeto.
 
-    return "ACTOR"
+    Team puede conservarse como contexto, pero no determina
+    la visibilidad de la actividad de personal.
+    """
+    return "OBJETO"
 
 
 def _human_datetime(value):

@@ -677,5 +677,5 @@ class AgendaEndpointScopeTests(TestCase):
 
         self.assertEqual(
             activity.visibilidad,
-            "EQUIPO",
+            "OBJETO",
         )

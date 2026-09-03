@@ -422,18 +422,21 @@ def visible_events_for_user(
         else Event.objects.all()
     )
 
+    # Agenda pertenece al dominio de personas.
+    # Gerencia/gestores funcionales pueden consultar la Agenda
+    # organizativa completa sin depender del Team empresarial.
+    #
+    # Esto NO concede permisos administrativos generales ni
+    # modifica el aislamiento Team de otros módulos.
+    if user_is_agenda_manager(user):
+        return queryset.distinct()
+
     selected_ids = (
         selected_agenda_team_ids(
             user,
             active_team_id,
         )
     )
-
-    if user.is_superuser:
-        scope = Q(team__isnull=True)
-        if selected_ids:
-            scope |= Q(team_id__in=selected_ids)
-        return queryset.filter(scope).distinct()
 
     shared_values = [
         Event.Visibility.DEPARTAMENTO,

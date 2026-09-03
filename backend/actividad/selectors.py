@@ -26,6 +26,37 @@ def _team_ids_usuario(user) -> list[int]:
     )
 
 
+def _actividad_objeto_agenda_visible(user):
+    """Scope funcional específico de actividad de Agenda."""
+    from agenda.access import (
+        user_is_agenda_manager,
+        visible_events_for_user,
+    )
+
+    base = Q(
+        visibilidad=(
+            ActividadPlataforma.Visibilidad.OBJETO
+        ),
+        modulo__iexact="agenda",
+        tipo_objeto="agenda.event",
+    )
+
+    if user_is_agenda_manager(user):
+        return base
+
+    event_ids = (
+        visible_events_for_user(
+            user,
+            active_team_id="all",
+        )
+        .values_list("pk", flat=True)
+    )
+
+    return base & Q(
+        objeto_id__in=event_ids
+    )
+
+
 def actividad_visible_para_usuario(
     *,
     user,
@@ -85,6 +116,8 @@ def actividad_visible_para_usuario(
                 ),
                 actor=user,
             )
+            |
+            _actividad_objeto_agenda_visible(user)
         )
 
         qs = qs.filter(visibilidad_permitida)
@@ -101,7 +134,12 @@ def actividad_visible_para_usuario(
         ):
             return qs.none()
 
-        qs = qs.filter(team_id=selected_team_id)
+        # Agenda pertenece al dominio de personas.
+        # El selector empresarial no oculta su actividad.
+        qs = qs.filter(
+            Q(modulo__iexact="agenda")
+            | Q(team_id=selected_team_id)
+        )
 
     alcance = str(alcance or "equipo").strip().lower()
 
