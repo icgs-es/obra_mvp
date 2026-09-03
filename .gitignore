@@ -51,3 +51,36 @@ dolibarr_farmasani/
 node_modules/
 dist/
 build/
+
+# INTASA legacy Access/documentos históricos
+imports/access/**/*.accdb
+imports/access/**/*.mdb
+imports/access/adjuntos_exportados/exported/
+imports/access/adjuntos_exportados/**/*.pdf
+imports/access/adjuntos_exportados/**/*.jpg
+imports/access/adjuntos_exportados/**/*.jpeg
+imports/access/adjuntos_exportados/**/*.gif
+imports/access/adjuntos_exportados/**/*.txt
+
+# INTASA legacy Access real staging
+backend/_imports/access/adjuntos_exportados/exported/
+backend/_imports/access/adjuntos_exportados/**/*.pdf
+backend/_imports/access/adjuntos_exportados/**/*.jpg
+backend/_imports/access/adjuntos_exportados/**/*.jpeg
+backend/_imports/access/adjuntos_exportados/**/*.gif
+backend/_imports/access/adjuntos_exportados/**/*.tif
+backend/_imports/access/adjuntos_exportados/**/*.tiff
+backend/_imports/access/adjuntos_exportados/**/*.txt
+backend/_imports/access/adjuntos_exportados/**/*.docx
+backend/_imports/access/**/*.accdb
+backend/_imports/access/**/*.mdb
+
+# Secretos locales de infraestructura
+infra/secrets/
+.aider*
+
+/imports/
+/backend/_imports/
+/backend/_reports/
+/reports/
+/.backups/

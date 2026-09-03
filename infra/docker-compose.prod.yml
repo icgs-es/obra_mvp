@@ -3,14 +3,15 @@ services:
     build:
       context: ..
       dockerfile: infra/web.Dockerfile
-    image: obra_web:prod                 # ← Etiquetamos la imagen para reutilizarla
+    image: obra_web:intasa-invoice-role-v1-20260829
     env_file:
       - /opt/obra_mvp/deploy/.env.prod
-    command: bash -c "cd /app/backend && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60"
+    command: bash -c "install -d -m 700 /app/private_media/intasa_ia && cd /app/backend && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 300"
     volumes:
       - /opt/obra_mvp:/app               # ← MISMO mapeo que usarán worker/beat
       - static_data:/app/staticfiles
       - media_data:/app/media
+      - intasa_ia_private_data:/app/private_media/intasa_ia
     ports:
       - "8000:8000" 
     depends_on:
@@ -90,8 +91,8 @@ services:
       retries: 10
 
   worker:
-    image: obra_web:prod                 # ← Reusa la imagen de web (no build aquí)
-    command: celery -A config.celery_app worker -l info
+    image: obra_web:intasa-invoice-role-v1-20260829
+    command: sh -lc "install -d -m 700 /app/private_media/intasa_ia && celery -A config.celery_app worker -l info"
     restart: unless-stopped
     env_file:
       - /opt/obra_mvp/deploy/.env.prod   # ← Mismas variables que web (DJANGO_SETTINGS_*, etc.)
@@ -104,6 +105,7 @@ services:
       - web
     volumes:
       - /opt/obra_mvp:/app               # ← Igual que web para compartir el código
+      - intasa_ia_private_data:/app/private_media/intasa_ia
 
   beat:
     image: obra_web:prod                 # ← Reusa la imagen de web (no build aquí)
@@ -127,3 +129,6 @@ volumes:
   media_data:
   caddy_data:
   caddy_config:
+  intasa_ia_private_data:
+    external: true
+    name: infra_intasa_ia_private_data

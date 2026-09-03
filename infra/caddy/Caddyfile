@@ -4,14 +4,6 @@
 
 portal.finaninvestgroup.com:80 {
     encode gzip
-    reverse_proxy nextcloud:80 {
-        header_up X-Forwarded-Proto https
-        header_up Host {host}
-    }
-}
-
-finaninvestgroup.com:80 {
-    encode gzip
 
     handle_path /static/* {
         root * /srv/static
@@ -26,10 +18,20 @@ finaninvestgroup.com:80 {
     handle {
         reverse_proxy infra-web-1:8000 {
             header_up X-Forwarded-Proto https
+            header_up X-Forwarded-Host {host}
             header_up Host {host}
         }
     }
 }
+
+
+finaninvestgroup.com:80, www.finaninvestgroup.com:80 {
+    encode gzip
+
+    root * /srv/site/finaninvestgroup
+    file_server
+}
+
 
 competa.finaninvestgroup.com:80 {
     encode gzip

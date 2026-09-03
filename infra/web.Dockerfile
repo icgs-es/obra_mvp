@@ -12,8 +12,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # deps del sistema para compilar e instalar psycopg
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libpq-dev curl && \
-    rm -rf /var/lib/apt/lists/*
+    build-essential \
+    libpq-dev \
+    curl \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-spa \
+    tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
 
 # --- NUEVO: dependencias del sistema para xhtml2pdf / Cairo ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
