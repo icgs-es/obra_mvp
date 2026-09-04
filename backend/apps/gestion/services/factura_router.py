@@ -872,11 +872,465 @@ def _difalac_lines_v1(text):
     return result
 
 
+
+# =====================================================================
+# TEJEIRO · factura valorada
+# =====================================================================
+# TEJEIRO_FACTURA_VALORADA_V1
+#
+# Formato observado:
+#
+# N. FACTURA  325/26       Fecha de la factura: 28/08/2026
+#
+# FECHA | CTAD | DESCRIPCIÓN | PRECIO UNID. | IMPORTE
+#
+# 480  BLOQUES HORMIGON 40x20x20    0,85    408,00
+# ...
+#
+# Subtotal:       2.407,30 €
+# Impuestos:        505,53 €
+# A pagar:        2.912,83 €
+#
+# El documento no publica código de artículo por línea.
+# Se genera una referencia estable TEJ-* desde la descripción para
+# evitar que todas las líneas terminen como SIN-CODIGO.
+
+
+def _tejeiro_provider_marker_v1(text):
+    raw = re.sub(
+        r"\s+",
+        " ",
+        str(text or "").upper(),
+    )
+
+    return bool(
+        re.search(
+            r"TEJEIRO\s+"
+            r"MATERIALES\s+DE\s+"
+            r"CONSTRUCCI[ÓO]N\s+"
+            r"S\.?\s*L\.?",
+            raw,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _tejeiro_codigo_v1(descripcion):
+    import unicodedata
+
+    raw = unicodedata.normalize(
+        "NFKD",
+        str(descripcion or ""),
+    )
+
+    raw = "".join(
+        ch
+        for ch in raw
+        if not unicodedata.combining(ch)
+    )
+
+    raw = raw.upper()
+
+    slug = re.sub(
+        r"[^A-Z0-9]+",
+        "-",
+        raw,
+    ).strip("-")
+
+    if not slug:
+        slug = "SIN-DESCRIPCION"
+
+    return (
+        "TEJ-" + slug
+    )[:120]
+
+
+def _tejeiro_header_v1(text):
+    raw = str(text or "")
+
+    result = {
+        "numero_documento": "",
+        "num_factura_proveedor": "",
+        "fecha": "",
+        "fecha_iso": "",
+        "base_imponible": "",
+        "iva": "",
+        "total": "",
+        "forma_pago": "",
+        "vencimiento": "",
+        "iva_porcentaje": "",
+        "proveedor_detectado": "",
+    }
+
+    if _tejeiro_provider_marker_v1(raw):
+        result["proveedor_detectado"] = (
+            "TEJEIRO MATERIALES DE CONSTRUCCION SL"
+        )
+
+    numero = re.search(
+        r"(?im)^\s*"
+        r"N\.\s*FACTURA\s+"
+        r"(?P<num>"
+        r"[A-Z0-9]"
+        r"[A-Z0-9./-]{1,40}"
+        r")\b",
+        raw,
+    )
+
+    if numero:
+        value = numero.group(
+            "num"
+        ).strip()
+
+        result[
+            "numero_documento"
+        ] = value
+
+        result[
+            "num_factura_proveedor"
+        ] = value
+
+    fecha = re.search(
+        r"Fecha\s+de\s+la\s+factura"
+        r"\s*:\s*"
+        r"(?P<d>\d{1,2})/"
+        r"(?P<m>\d{1,2})/"
+        r"(?P<y>\d{4})",
+        raw,
+        re.IGNORECASE,
+    )
+
+    if fecha:
+        d = int(fecha.group("d"))
+        m = int(fecha.group("m"))
+        y = int(fecha.group("y"))
+
+        result["fecha"] = (
+            f"{d:02d}/{m:02d}/{y:04d}"
+        )
+
+        result["fecha_iso"] = (
+            f"{y:04d}-{m:02d}-{d:02d}"
+        )
+
+    subtotal = re.search(
+        r"Subtotal\s*:\s*("
+        + MONEY_2_RE
+        + r")",
+        raw,
+        re.IGNORECASE,
+    )
+
+    impuestos = re.search(
+        r"Impuestos\s*:\s*("
+        + MONEY_2_RE
+        + r")",
+        raw,
+        re.IGNORECASE,
+    )
+
+    total = re.search(
+        r"A\s+pagar\s*:\s*("
+        + MONEY_2_RE
+        + r")",
+        raw,
+        re.IGNORECASE,
+    )
+
+    tipo = re.search(
+        r"Tasa\s+impositiva\s*:\s*"
+        r"(?P<pct>\d{1,2}"
+        r"(?:[.,]\d{1,2})?)\s*%",
+        raw,
+        re.IGNORECASE,
+    )
+
+    if subtotal:
+        result[
+            "base_imponible"
+        ] = fmt_v1(
+            subtotal.group(1)
+        )
+
+    if impuestos:
+        result["iva"] = fmt_v1(
+            impuestos.group(1)
+        )
+
+    if total:
+        result["total"] = fmt_v1(
+            total.group(1)
+        )
+
+    if tipo:
+        result[
+            "iva_porcentaje"
+        ] = fmt_v1(
+            tipo.group("pct")
+        )
+
+    return result
+
+
+_TEJEIRO_QTY_RE_V1 = (
+    r"-?"
+    r"(?:\d+(?:[.,]\d{1,4})?)"
+)
+
+_TEJEIRO_ROW_RE_V1 = re.compile(
+    r"^\s*"
+    r"(?P<qty>"
+    + _TEJEIRO_QTY_RE_V1
+    + r")"
+    r"\s+"
+    r"(?P<description>.+?)"
+    r"\s+"
+    r"(?P<price>"
+    + MONEY_2_RE
+    + r")"
+    r"\s+"
+    r"(?P<amount>"
+    + MONEY_2_RE
+    + r")"
+    r"\s*$",
+    re.IGNORECASE,
+)
+
+
+def _tejeiro_lines_v1(text):
+    raw = str(text or "")
+
+    lineas = []
+    warnings = []
+
+    total_lineas = Decimal("0.00")
+
+    table_started = False
+
+    for raw_line in raw.splitlines():
+        line = raw_line.rstrip()
+
+        if not line.strip():
+            continue
+
+        upper = line.upper()
+
+        if (
+            "CTAD" in upper
+            and "DESCRIP" in upper
+            and "PRECIO" in upper
+            and "IMPORTE" in upper
+        ):
+            table_started = True
+            continue
+
+        if (
+            table_started
+            and "SUBTOTAL:" in upper
+        ):
+            break
+
+        if not table_started:
+            continue
+
+        match = _TEJEIRO_ROW_RE_V1.match(
+            line
+        )
+
+        if not match:
+            # Ejemplo:
+            # OBRA EN CÓMPETA CARRIL CIRCUNVALACIÓN, 5
+            # es contexto de la obra, no una línea económica.
+            continue
+
+        cantidad = decimal_es_v1(
+            match.group("qty")
+        )
+
+        precio = decimal_es_v1(
+            match.group("price")
+        )
+
+        importe = decimal_es_v1(
+            match.group("amount")
+        )
+
+        if (
+            cantidad is None
+            or precio is None
+            or importe is None
+        ):
+            continue
+
+        descripcion = re.sub(
+            r"\s+",
+            " ",
+            match.group(
+                "description"
+            ),
+        ).strip()
+
+        esperado = (
+            cantidad * precio
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        error = abs(
+            esperado - importe
+        )
+
+        codigo = _tejeiro_codigo_v1(
+            descripcion
+        )
+
+        item = {
+            "linea": len(lineas) + 1,
+            "codigo": codigo,
+            "codigo_detectado": codigo,
+            "codigo_proveedor": codigo,
+            "descripcion": descripcion,
+            "descripcion_detectada": (
+                descripcion
+            ),
+            "unidad": "UN",
+            "cantidad": fmt_v1(
+                cantidad,
+                "0.0000",
+            ),
+            "precio": fmt_v1(
+                precio,
+                "0.0000",
+            ),
+            "precio_unitario": fmt_v1(
+                precio,
+                "0.0000",
+            ),
+            "descuento": "0.00",
+            "descuento_porcentaje": (
+                "0.00"
+            ),
+            "importe_descuento": "0.00",
+            "importe": fmt_v1(
+                importe
+            ),
+            "importe_linea": fmt_v1(
+                importe
+            ),
+            "num_albaran_proveedor": "",
+            "fecha_albaran": "",
+            "raw_line": line.strip(),
+            "raw_data": {
+                "source": (
+                    "factura_template_router_v1"
+                ),
+                "parser_key": (
+                    "tejeiro_factura_valorada_v1"
+                ),
+                "validation_error": (
+                    fmt_v1(error)
+                ),
+                "codigo_sintetico": True,
+            },
+        }
+
+        if error > Decimal("0.02"):
+            warnings.append(
+                "TEJEIRO: cantidad × precio "
+                "no coincide con importe "
+                f"en línea {item['linea']} "
+                f"({fmt_v1(esperado)} != "
+                f"{fmt_v1(importe)})."
+            )
+
+        lineas.append(item)
+
+        total_lineas += importe
+
+    header = _tejeiro_header_v1(
+        raw
+    )
+
+    expected_base = (
+        decimal_es_v1(
+            header.get(
+                "base_imponible"
+            )
+        )
+    )
+
+    line_sum_matches_base = False
+
+    if expected_base is not None:
+        difference = abs(
+            total_lineas
+            - expected_base
+        )
+
+        line_sum_matches_base = (
+            difference
+            <= Decimal("0.02")
+        )
+
+        if not line_sum_matches_base:
+            warnings.append(
+                "TEJEIRO: suma de líneas "
+                f"{fmt_v1(total_lineas)} "
+                "no coincide con subtotal "
+                f"{fmt_v1(expected_base)}."
+            )
+
+    if not _tejeiro_provider_marker_v1(
+        raw
+    ):
+        warnings.append(
+            "TEJEIRO: no se encontró la "
+            "firma textual del proveedor."
+        )
+
+    return {
+        "parser": (
+            "tejeiro_factura_valorada_v1"
+        ),
+        "parser_key": (
+            "tejeiro_factura_valorada_v1"
+        ),
+        "lineas": lineas,
+        "total_lineas": fmt_v1(
+            total_lineas
+        ),
+        "warnings": warnings,
+        "validation_tolerance": "0.02",
+        "expected_base": (
+            fmt_v1(expected_base)
+            if expected_base is not None
+            else ""
+        ),
+        "line_sum_matches_base": (
+            line_sum_matches_base
+        ),
+        "provider_marker": (
+            _tejeiro_provider_marker_v1(
+                raw
+            )
+        ),
+        "text_source": (
+            "pdftotext_layout_or_fallback"
+        ),
+    }
+
+
 # =====================================================================
 # REGISTRO
 # =====================================================================
 
 FACTURA_TEMPLATE_PARSER_REGISTRY_V1 = {
+    "tejeiro_factura_valorada_v1": {
+        "header": _tejeiro_header_v1,
+        "lines": _tejeiro_lines_v1,
+        "prefer_layout": True,
+    },
     "difalac_factura_valorada_v1": {
         "header": _difalac_header_v1,
         "lines": _difalac_lines_v1,
