@@ -269,4 +269,44 @@
     );
   });
 </script>
+
+
+<script>
+// GESTION_ALBARAN_OBRA_OBLIGATORIA_JS_V1
+document.addEventListener("DOMContentLoaded", function () {
+  const ambito =
+    document.getElementById("id_ambito_gestion");
+
+  const obra =
+    document.getElementById("id_obra_planificacion");
+
+  if (!ambito || !obra) return;
+
+  const wrap = obra.closest('[class*="col-"]');
+
+  function syncObra() {
+    const activa =
+      String(ambito.value || "").toUpperCase()
+      === "OBRA";
+
+    if (wrap) {
+      wrap.hidden = !activa;
+    }
+
+    obra.required = activa;
+
+    if (!activa) {
+      obra.value = "";
+    }
+  }
+
+  ambito.addEventListener(
+    "change",
+    syncObra
+  );
+
+  syncObra();
+});
+</script>
+
 {% endblock %}

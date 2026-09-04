@@ -3178,3 +3178,340 @@ if not getattr(
     )
 
     FacturaProveedorLineaForm._gestion_decimal_input_canonical_v1 = True
+
+
+# ============================================================
+# GESTION_DOCUMENTO_OBRA_OBLIGATORIA_V1
+#
+# Facturas y albaranes:
+# - Ámbito OBRA => obra_planificacion obligatoria.
+# - Catálogo corporativo de obras = Planning de INVERADRIDE.
+# - Nueva alta OBRA => ALTOVELOO (legacy_cod_obra=2) por defecto.
+# - Ámbito distinto de OBRA => limpia obra.
+# - La validación es servidor, no solo UI.
+# ============================================================
+
+def _gestion_catalogo_obras_documentos_v1():
+    from planificacion_obra.models import ObraPlanificacion
+    from usuarios.models import Team
+
+    catalog_team = (
+        Team.objects
+        .filter(pk=1, name__iexact="INVERADRIDE")
+        .first()
+    )
+
+    if catalog_team is None:
+        catalog_team = (
+            Team.objects
+            .filter(name__iexact="INVERADRIDE")
+            .order_by("id")
+            .first()
+        )
+
+    if catalog_team is None:
+        return ObraPlanificacion.objects.none()
+
+    return (
+        ObraPlanificacion.objects
+        .filter(team=catalog_team)
+        .order_by("legacy_cod_obra", "nombre")
+    )
+
+
+def _gestion_configurar_obra_documento_v1(form):
+    from django import forms as _forms
+    from django.db.models import Q
+    from planificacion_obra.models import ObraPlanificacion
+
+    catalog_qs = _gestion_catalogo_obras_documentos_v1()
+
+    # Un ámbito distinto de OBRA nunca debe aceptar una obra
+    # residual o manipulada en el POST.
+    if form.is_bound:
+        data = form.data.copy()
+        ambito_key = form.add_prefix("ambito_gestion")
+        obra_key = form.add_prefix("obra_planificacion")
+        selected_ambito = str(
+            data.get(ambito_key) or ""
+        ).strip().upper()
+
+        if selected_ambito and selected_ambito != "OBRA":
+            data[obra_key] = ""
+            form.data = data
+
+    current_id = getattr(
+        getattr(form, "instance", None),
+        "obra_planificacion_id",
+        None,
+    )
+
+    # En edición preservamos una obra histórica aunque no pertenezca
+    # al catálogo corporativo actual.
+    if current_id:
+        catalog_ids = catalog_qs.values_list("pk", flat=True)
+        queryset = (
+            ObraPlanificacion.objects
+            .filter(
+                Q(pk__in=catalog_ids)
+                | Q(pk=current_id)
+            )
+            .distinct()
+            .order_by("legacy_cod_obra", "nombre")
+        )
+    else:
+        queryset = catalog_qs
+
+    field = _forms.ModelChoiceField(
+        queryset=queryset,
+        label="Obra *",
+        required=False,
+        empty_label="Selecciona una obra",
+    )
+
+    field.help_text = (
+        "Obligatoria cuando el ámbito es Obra."
+    )
+
+    field.widget.attrs.update({
+        "class": "form-select form-select-sm",
+        "data-gestion-obra-selector-v1": "1",
+    })
+
+    field.label_from_instance = lambda obj: (
+        f"{getattr(obj, 'legacy_cod_obra', '')} · "
+        f"{getattr(obj, 'nombre', str(obj))}"
+    )
+
+    if current_id:
+        field.initial = current_id
+    elif not form.is_bound and not getattr(
+        getattr(form, "instance", None),
+        "pk",
+        None,
+    ):
+        ambito_field = form.fields.get("ambito_gestion")
+
+        selected_ambito = str(
+            form.initial.get("ambito_gestion")
+            or (
+                getattr(ambito_field, "initial", None)
+                if ambito_field
+                else None
+            )
+            or getattr(
+                getattr(form, "instance", None),
+                "ambito_gestion",
+                None,
+            )
+            or "OBRA"
+        ).strip().upper()
+
+        if selected_ambito == "OBRA":
+            default_obra = (
+                catalog_qs
+                .filter(
+                    legacy_cod_obra=2,
+                    nombre__iexact="ALTOVELOO",
+                )
+                .first()
+            )
+
+            if default_obra is None:
+                default_obra = (
+                    catalog_qs
+                    .filter(legacy_cod_obra=2)
+                    .first()
+                )
+
+            if default_obra:
+                field.initial = default_obra.pk
+
+    # Insertar visualmente inmediatamente después de Ámbito.
+    ordered = {}
+
+    for name, existing_field in form.fields.items():
+        if name == "obra_planificacion":
+            continue
+
+        ordered[name] = existing_field
+
+        if name == "ambito_gestion":
+            ordered["obra_planificacion"] = field
+
+    if "obra_planificacion" not in ordered:
+        ordered["obra_planificacion"] = field
+
+    form.fields = ordered
+
+
+def _gestion_clean_obra_documento_v1(form, cleaned):
+    ambito = str(
+        cleaned.get("ambito_gestion")
+        or getattr(
+            getattr(form, "instance", None),
+            "ambito_gestion",
+            "",
+        )
+        or ""
+    ).strip().upper()
+
+    obra = cleaned.get("obra_planificacion")
+
+    instance = getattr(form, "instance", None)
+
+    is_new = not bool(
+        getattr(instance, "pk", None)
+    )
+
+    original_ambito = str(
+        getattr(
+            instance,
+            "ambito_gestion",
+            "",
+        )
+        or ""
+    ).strip().upper()
+
+    original_obra_id = getattr(
+        instance,
+        "obra_planificacion_id",
+        None,
+    )
+
+    if ambito == "OBRA":
+        if obra is None:
+            # Compatibilidad histórica:
+            #
+            # - Nuevas altas OBRA: obra obligatoria.
+            # - Cambio de otro ámbito a OBRA: obligatoria.
+            # - Si un documento ya tenía obra, no puede borrarse.
+            # - Un histórico que ya era OBRA y nunca tuvo obra
+            #   puede seguir editándose sin bloquear operaciones
+            #   ajenas como retenciones/pagos.
+            must_require_obra = (
+                is_new
+                or original_ambito != "OBRA"
+                or bool(original_obra_id)
+            )
+
+            if must_require_obra:
+                form.add_error(
+                    "obra_planificacion",
+                    (
+                        "Debes seleccionar la obra cuando "
+                        "el ámbito es Obra."
+                    ),
+                )
+        else:
+            form.instance.obra_planificacion = obra
+
+            legacy = getattr(
+                obra,
+                "legacy_cod_obra",
+                None,
+            )
+
+            if legacy is not None:
+                form.instance.cod_obra_legacy = str(
+                    legacy
+                )
+    else:
+        cleaned["obra_planificacion"] = None
+        form.instance.obra_planificacion = None
+
+        if hasattr(
+            form.instance,
+            "cod_obra_legacy",
+        ):
+            form.instance.cod_obra_legacy = ""
+
+    return cleaned
+
+
+# ALBARÁN
+_gestion_old_albaran_init_obra_v1 = (
+    AlbaranProveedorForm.__init__
+)
+_gestion_old_albaran_clean_obra_v1 = (
+    AlbaranProveedorForm.clean
+)
+
+
+def _gestion_albaran_init_obra_v1(
+    self,
+    *args,
+    **kwargs,
+):
+    _gestion_old_albaran_init_obra_v1(
+        self,
+        *args,
+        **kwargs,
+    )
+
+    _gestion_configurar_obra_documento_v1(
+        self
+    )
+
+
+def _gestion_albaran_clean_obra_v1(self):
+    cleaned = (
+        _gestion_old_albaran_clean_obra_v1(self)
+    )
+
+    return _gestion_clean_obra_documento_v1(
+        self,
+        cleaned,
+    )
+
+
+AlbaranProveedorForm.__init__ = (
+    _gestion_albaran_init_obra_v1
+)
+AlbaranProveedorForm.clean = (
+    _gestion_albaran_clean_obra_v1
+)
+
+
+# FACTURA
+_gestion_old_factura_init_obra_v1 = (
+    FacturaProveedorForm.__init__
+)
+_gestion_old_factura_clean_obra_v1 = (
+    FacturaProveedorForm.clean
+)
+
+
+def _gestion_factura_init_obra_v1(
+    self,
+    *args,
+    **kwargs,
+):
+    _gestion_old_factura_init_obra_v1(
+        self,
+        *args,
+        **kwargs,
+    )
+
+    _gestion_configurar_obra_documento_v1(
+        self
+    )
+
+
+def _gestion_factura_clean_obra_v1(self):
+    cleaned = (
+        _gestion_old_factura_clean_obra_v1(self)
+    )
+
+    return _gestion_clean_obra_documento_v1(
+        self,
+        cleaned,
+    )
+
+
+FacturaProveedorForm.__init__ = (
+    _gestion_factura_init_obra_v1
+)
+FacturaProveedorForm.clean = (
+    _gestion_factura_clean_obra_v1
+)

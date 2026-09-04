@@ -1328,14 +1328,17 @@ def albaran_create(request):
                 else None
             )
 
-            obj.cod_obra_legacy = (
-                str(
-                    empresa
-                    .obra_defecto_legacy
+            # GESTION_DOCUMENTO_OBRA_CREATE_SYNC_V1
+            if (
+                obj.ambito_gestion == "OBRA"
+                and obj.obra_planificacion_id
+            ):
+                obj.cod_obra_legacy = str(
+                    obj.obra_planificacion.legacy_cod_obra
                 )
-                if empresa
-                else ""
-            )
+            else:
+                obj.obra_planificacion = None
+                obj.cod_obra_legacy = ""
 
             if obj.proveedor:
                 obj.cod_proveedor_legacy = (
@@ -1613,6 +1616,23 @@ def albaran_update(request, pk):
             # GESTION_ALBARAN_UPDATE_CAMBIO_EMPRESA_V1
             target_team, team_changed = _gestion_documento_target_team_from_post_v1(request, team_scope, albaran.team)
             obj = _gestion_documento_aplicar_cambio_empresa_v1(obj, target_team, team_changed)
+
+            # GESTION_DOCUMENTO_OBRA_UPDATE_SYNC_V1
+            selected_obra = form.cleaned_data.get(
+                "obra_planificacion"
+            )
+
+            if (
+                obj.ambito_gestion == "OBRA"
+                and selected_obra
+            ):
+                obj.obra_planificacion = selected_obra
+                obj.cod_obra_legacy = str(
+                    selected_obra.legacy_cod_obra
+                )
+            else:
+                obj.obra_planificacion = None
+                obj.cod_obra_legacy = ""
 
             if obj.proveedor:
                 obj.cod_proveedor_legacy = obj.proveedor.legacy_id_proveedor
@@ -2222,7 +2242,17 @@ def factura_create(request):
                 empresa = EmpresaGestionLegacy.objects.filter(team=selected_team).first()
                 obj.empresa_legacy = empresa
                 obj.empresa_legacy_raw = empresa.legacy_id_empresa if empresa else None
-                obj.cod_obra_legacy = str(empresa.obra_defecto_legacy) if empresa else ""
+                # GESTION_DOCUMENTO_OBRA_CREATE_SYNC_V1
+                if (
+                    obj.ambito_gestion == "OBRA"
+                    and obj.obra_planificacion_id
+                ):
+                    obj.cod_obra_legacy = str(
+                        obj.obra_planificacion.legacy_cod_obra
+                    )
+                else:
+                    obj.obra_planificacion = None
+                    obj.cod_obra_legacy = ""
 
                 if obj.proveedor:
                     obj.cod_proveedor_legacy = obj.proveedor.legacy_id_proveedor
@@ -2316,6 +2346,23 @@ def factura_update(request, pk):
             # GESTION_FACTURA_UPDATE_CAMBIO_EMPRESA_V1
             target_team, team_changed = _gestion_documento_target_team_from_post_v1(request, team_scope, factura.team)
             obj = _gestion_documento_aplicar_cambio_empresa_v1(obj, target_team, team_changed)
+
+            # GESTION_DOCUMENTO_OBRA_UPDATE_SYNC_V1
+            selected_obra = form.cleaned_data.get(
+                "obra_planificacion"
+            )
+
+            if (
+                obj.ambito_gestion == "OBRA"
+                and selected_obra
+            ):
+                obj.obra_planificacion = selected_obra
+                obj.cod_obra_legacy = str(
+                    selected_obra.legacy_cod_obra
+                )
+            else:
+                obj.obra_planificacion = None
+                obj.cod_obra_legacy = ""
 
             if obj.proveedor:
                 obj.cod_proveedor_legacy = obj.proveedor.legacy_id_proveedor

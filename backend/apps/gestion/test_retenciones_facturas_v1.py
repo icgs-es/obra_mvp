@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 
 from usuarios.models import Team
+from planificacion_obra.models import ObraPlanificacion
 from apps.gestion.factura_pagos import validar_plan_pago
 from apps.gestion.forms import FacturaProveedorForm
 from apps.gestion.models import FacturaProveedorGestion, Proveedor
@@ -35,7 +36,22 @@ class RetencionCalculoTests(SimpleTestCase):
 
 class RetencionFormularioTests(TestCase):
     def setUp(self):
-        self.team = Team.objects.create(name="Equipo retenciones")
+        # GESTION_RETENCIONES_OBRA_REQUIRED_FIXTURE_V1
+        self.catalog_team = Team.objects.create(
+            name="INVERADRIDE",
+        )
+
+        self.altoveloo = ObraPlanificacion.objects.create(
+            team=self.catalog_team,
+            legacy_cod_obra=2,
+            codigo="2",
+            nombre="ALTOVELOO",
+        )
+
+        self.team = Team.objects.create(
+            name="Equipo retenciones",
+        )
+
         self.proveedor = Proveedor.objects.create(
             team=self.team,
             legacy_id_proveedor=999991,
@@ -48,6 +64,7 @@ class RetencionFormularioTests(TestCase):
         data = {
             "proveedor": self.proveedor.id,
             "ambito_gestion": "OBRA",
+            "obra_planificacion": self.altoveloo.id,
             "num_factura_proveedor": "RET-TEST-1",
             "fecha_emision": "2026-09-03",
             "importe_base_imponible": "23596.04",
@@ -105,14 +122,23 @@ class RetencionFormularioTests(TestCase):
             importe_iva=Decimal("21.01"),
             importe_factura=Decimal("121.01"),
         )
+        historical_data = self._data(
+            importe_base_imponible="100.00",
+            importe_iva="21.01",
+            iva_porcentaje="21.01",
+            retencion_porcentaje="5",
+            num_factura_proveedor="RET-IVA-PRESERVADO",
+        )
+
+        # Documento histórico creado antes de que la obra fuese
+        # obligatoria: debe seguir siendo editable.
+        historical_data.pop(
+            "obra_planificacion",
+            None,
+        )
+
         form = FacturaProveedorForm(
-            data=self._data(
-                importe_base_imponible="100.00",
-                importe_iva="21.01",
-                iva_porcentaje="21.01",
-                retencion_porcentaje="5",
-                num_factura_proveedor="RET-IVA-PRESERVADO",
-            ),
+            data=historical_data,
             instance=factura,
             team=self.team,
             can_manage_retention=True,

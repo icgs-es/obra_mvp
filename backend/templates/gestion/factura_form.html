@@ -113,6 +113,32 @@
             <div class="form-text small">Filtra los proveedores.</div>
             {% if form.ambito_gestion.errors %}<div class="text-danger small">{{ form.ambito_gestion.errors|striptags }}</div>{% endif %}
           </div>
+
+          {# GESTION_FACTURA_OBRA_OBLIGATORIA_V1 #}
+          <div
+            class="col-md-3"
+            id="factura-obra-planificacion-wrap"
+          >
+            <label
+              class="form-label small text-muted"
+              for="{{ form.obra_planificacion.id_for_label }}"
+            >
+              Obra *
+            </label>
+
+            {{ form.obra_planificacion }}
+
+            <div class="form-text small">
+              Obligatoria cuando el ámbito es Obra.
+            </div>
+
+            {% if form.obra_planificacion.errors %}
+              <div class="text-danger small">
+                {{ form.obra_planificacion.errors|striptags }}
+              </div>
+            {% endif %}
+          </div>
+
 <div class="col-md-5">
             <label class="form-label small text-muted">{{ form.proveedor.label }}</label>
             {{ form.proveedor }}
@@ -465,6 +491,46 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     window.location.href = url.toString();
   });
+});
+</script>
+
+
+
+<script>
+// GESTION_FACTURA_OBRA_OBLIGATORIA_JS_V1
+document.addEventListener("DOMContentLoaded", function () {
+  const ambito =
+    document.getElementById("id_ambito_gestion");
+
+  const obra =
+    document.getElementById("id_obra_planificacion");
+
+  const wrap =
+    document.getElementById(
+      "factura-obra-planificacion-wrap"
+    );
+
+  if (!ambito || !obra || !wrap) return;
+
+  function syncObra() {
+    const activa =
+      String(ambito.value || "").toUpperCase()
+      === "OBRA";
+
+    wrap.hidden = !activa;
+    obra.required = activa;
+
+    if (!activa) {
+      obra.value = "";
+    }
+  }
+
+  ambito.addEventListener(
+    "change",
+    syncObra
+  );
+
+  syncObra();
 });
 </script>
 
