@@ -297,7 +297,18 @@
 
   function setNumber(input, value) {
     if (!input) return;
-    input.value = Number(value || 0).toLocaleString("es-ES", {
+
+    const numericValue = Number(value || 0);
+
+    // Los <input type="number"> solo admiten punto decimal en
+    // su value interno. Escribir "25,05" hace que el navegador
+    // invalide/vacíe el campo.
+    if (String(input.type || "").toLowerCase() === "number") {
+      input.value = numericValue.toFixed(2);
+      return;
+    }
+
+    input.value = numericValue.toLocaleString("es-ES", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
