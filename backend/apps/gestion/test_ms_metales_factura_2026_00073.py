@@ -141,6 +141,55 @@ Por favor, pague el importe pendiente dentro de los próximos 3 días a la cuent
             "1270.50",
         )
 
+    def test_direct_text_without_leading_indent(self):
+        text = """
+FACTURA
+2026-00073
+Fecha de emisión
+04/08/2026
+Fecha de vencimiento
+07/08/2026
+JOSE ANTONIO MUÑOZ SECILLA
+26970284r
+Detalle de la facturación
+Placa de anclaje 300x200 con 4
+garrotas (Ø16 mm, 600 mm) y
+poste redondo (Ø140 mm, 2300
+mm) con argolla
+14 202,07 € 2.829,00 € 21% 594,09 € 3.423,09 €
+Imprimación y lacado al horno 1 1.050,00 € 1.050,00 € 21% 220,50 € 1.270,50 €
+Base imponible: 3.879,00 €
+IVA total: 814,59 €
+TOTAL FACTURA: 4.693,59 €
+"""
+
+        p = _portal_ms_metales_extract_lines_v2(
+            text
+        )
+
+        self.assertEqual(len(p["lineas"]), 2)
+        self.assertEqual(p["total_lineas"], "3879.00")
+        self.assertEqual(
+            p["raw"]["total_iva_lineas"],
+            "814.59",
+        )
+        self.assertEqual(p["warnings"], [])
+
+        self.assertEqual(
+            p["lineas"][0]["descripcion"],
+            (
+                "Placa de anclaje 300x200 con 4 "
+                "garrotas (Ø16 mm, 600 mm) y "
+                "poste redondo (Ø140 mm, 2300 mm) "
+                "con argolla"
+            ),
+        )
+
+        self.assertEqual(
+            p["lineas"][1]["descripcion"],
+            "Imprimación y lacado al horno",
+        )
+
     def test_historical_v_code_still_works(self):
         text = """
 FACTURA 2026-00072

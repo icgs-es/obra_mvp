@@ -18026,17 +18026,15 @@ def _portal_ms_metales_extract_lines_v2(text):
 
     # Formato MS METALES con descripción libre.
     #
-    # En el PDF generado por este proveedor la descripción puede envolver
-    # la fila económica:
+    # Soporta tanto:
+    # - pdftotext -layout
+    # - extract_pdf_text/direct_text
     #
-    # Placa ...
-    # garrotas ...
-    #                         14 202,07 € ...
-    # poste redondo ...
-    # mm) con argolla
+    # En direct_text una fila económica puede comenzar directamente:
     #
-    # Por ello se conserva el layout físico y cada bloque separado por
-    # líneas en blanco se interpreta como una línea de factura.
+    # 14 202,07 € 2.829,00 € 21% 594,09 € 3.423,09 €
+    #
+    # sin espacios iniciales ni descripción en la propia fila.
     if not lineas:
         detail_match_raw = re.search(
             r"Detalle\s+de\s+la\s+facturaci[oó]n"
@@ -18055,18 +18053,22 @@ def _portal_ms_metales_extract_lines_v2(text):
         money = r"\d{1,3}(?:\.\d{3})*,\d{2}"
 
         economic_row_re = re.compile(
-            rf"^(?P<prefix>.*?)"
-            rf"\s+(?P<cantidad>\d+(?:[.,]\d+)?)"
-            rf"\s+(?P<precio>{money})\s*€?"
-            rf"\s+(?P<base>{money})\s*€?"
-            rf"\s+(?P<iva_pct>\d{{1,2}})\s*%"
-            rf"\s+(?P<iva>{money})\s*€?"
-            rf"\s+(?P<total>{money})\s*€?"
-            rf"\s*$",
+            rf"^\s*"
+            rf"(?:(?P<prefix>.+?)\s+)?"
+            rf"(?P<cantidad>\d+(?:[.,]\d+)?)\s+"
+            rf"(?P<precio>{money})\s*€?\s+"
+            rf"(?P<base>{money})\s*€?\s+"
+            rf"(?P<iva_pct>\d{{1,2}})\s*%\s+"
+            rf"(?P<iva>{money})\s*€?\s+"
+            rf"(?P<total>{money})\s*€?\s*$",
             re.IGNORECASE,
         )
 
-        def append_generic_line(description, match, raw_line):
+        def append_generic_line(
+            description,
+            match,
+            raw_line,
+        ):
             nonlocal total_base, total_iva
 
             descripcion = " ".join(
@@ -18074,28 +18076,34 @@ def _portal_ms_metales_extract_lines_v2(text):
             ).strip()
 
             cantidad = _portal_ms_metales_dec_v2(
-                match.group("cantidad"), "0.00"
+                match.group("cantidad"),
+                "0.00",
             )
             precio = _portal_ms_metales_dec_v2(
-                match.group("precio"), "0.00"
+                match.group("precio"),
+                "0.00",
             )
             base = _portal_ms_metales_dec_v2(
-                match.group("base"), "0.00"
+                match.group("base"),
+                "0.00",
             ).quantize(
                 Decimal("0.01"),
                 rounding=ROUND_HALF_UP,
             )
             iva_pct = _portal_ms_metales_dec_v2(
-                match.group("iva_pct"), "21.00"
+                match.group("iva_pct"),
+                "21.00",
             )
             iva = _portal_ms_metales_dec_v2(
-                match.group("iva"), "0.00"
+                match.group("iva"),
+                "0.00",
             ).quantize(
                 Decimal("0.01"),
                 rounding=ROUND_HALF_UP,
             )
             total_con_iva = _portal_ms_metales_dec_v2(
-                match.group("total"), "0.00"
+                match.group("total"),
+                "0.00",
             ).quantize(
                 Decimal("0.01"),
                 rounding=ROUND_HALF_UP,
@@ -18116,7 +18124,9 @@ def _portal_ms_metales_extract_lines_v2(text):
                 rounding=ROUND_HALF_UP,
             )
 
-            if abs(calculado - base) > Decimal("0.03"):
+            if abs(
+                calculado - base
+            ) > Decimal("0.03"):
                 return False
 
             if abs(
@@ -18147,163 +18157,188 @@ def _portal_ms_metales_extract_lines_v2(text):
                 "descripcion": descripcion,
                 "descripcion_detectada": descripcion,
                 "unidad": "UD",
-                "cantidad": _portal_ms_metales_fmt_v2(
-                    cantidad, "0.0000"
-                ),
-                "precio": _portal_ms_metales_fmt_v2(
-                    precio, "0.0000"
-                ),
-                "precio_unitario": _portal_ms_metales_fmt_v2(
-                    precio, "0.0000"
-                ),
+                "cantidad":
+                    _portal_ms_metales_fmt_v2(
+                        cantidad,
+                        "0.0000",
+                    ),
+                "precio":
+                    _portal_ms_metales_fmt_v2(
+                        precio,
+                        "0.0000",
+                    ),
+                "precio_unitario":
+                    _portal_ms_metales_fmt_v2(
+                        precio,
+                        "0.0000",
+                    ),
                 "descuento": "0.00",
                 "descuento_porcentaje": "0.00",
                 "importe_descuento": "0.00",
-                "importe": _portal_ms_metales_fmt_v2(
-                    base, "0.00"
-                ),
-                "importe_linea": _portal_ms_metales_fmt_v2(
-                    base, "0.00"
-                ),
-                "importe_calculado": _portal_ms_metales_fmt_v2(
-                    base, "0.00"
-                ),
-                "iva_porcentaje": _portal_ms_metales_fmt_v2(
-                    iva_pct, "0.00"
-                ),
-                "importe_iva_linea": _portal_ms_metales_fmt_v2(
-                    iva, "0.00"
-                ),
+                "importe":
+                    _portal_ms_metales_fmt_v2(
+                        base,
+                        "0.00",
+                    ),
+                "importe_linea":
+                    _portal_ms_metales_fmt_v2(
+                        base,
+                        "0.00",
+                    ),
+                "importe_calculado":
+                    _portal_ms_metales_fmt_v2(
+                        base,
+                        "0.00",
+                    ),
+                "iva_porcentaje":
+                    _portal_ms_metales_fmt_v2(
+                        iva_pct,
+                        "0.00",
+                    ),
+                "importe_iva_linea":
+                    _portal_ms_metales_fmt_v2(
+                        iva,
+                        "0.00",
+                    ),
                 "total_linea_con_iva":
                     _portal_ms_metales_fmt_v2(
-                        total_con_iva, "0.00"
+                        total_con_iva,
+                        "0.00",
                     ),
                 "vivienda": "",
                 "raw_line": raw_line,
                 "raw_data": {
                     "source":
-                        "ocr_ms_metales_factura_libre_layout_v2",
+                        "ocr_ms_metales_factura_libre_v3",
                     "parser":
                         "ms_metales_factura_valorada_v2",
                     "parser_key":
                         "ms_metales_factura_valorada_v2",
                     "codigo_detectado": "",
-                    "descripcion_detectada": descripcion,
+                    "descripcion_detectada":
+                        descripcion,
                     "vivienda": "",
                     "iva_porcentaje":
                         _portal_ms_metales_fmt_v2(
-                            iva_pct, "0.00"
+                            iva_pct,
+                            "0.00",
                         ),
                     "importe_iva_linea":
                         _portal_ms_metales_fmt_v2(
-                            iva, "0.00"
+                            iva,
+                            "0.00",
                         ),
                     "total_linea_con_iva":
                         _portal_ms_metales_fmt_v2(
-                            total_con_iva, "0.00"
+                            total_con_iva,
+                            "0.00",
                         ),
                 },
             })
 
             return True
 
-        # Primera opción: layout real separado en bloques.
-        blocks = [
-            block
-            for block in re.split(
-                r"\n\s*\n+",
-                detail_raw,
-            )
-            if block.strip()
+        physical_lines = [
+            line.strip()
+            for line in detail_raw.splitlines()
+            if line.strip()
         ]
 
-        for block in blocks:
-            physical_lines = [
-                line.rstrip()
-                for line in block.splitlines()
-                if line.strip()
-            ]
+        pending_description = []
+        last_created = None
 
-            econ = []
+        for physical_line in physical_lines:
+            match = economic_row_re.match(
+                physical_line
+            )
 
-            for idx, physical_line in enumerate(
-                physical_lines
-            ):
-                match = economic_row_re.match(
+            if not match:
+                pending_description.append(
                     physical_line
                 )
-                if match:
-                    econ.append(
-                        (idx, match, physical_line)
-                    )
-
-            # Una línea económica por bloque.
-            if len(econ) != 1:
                 continue
 
-            econ_idx, match, raw_line = econ[0]
+            prefix = " ".join(
+                (match.group("prefix") or "").split()
+            ).strip()
 
-            description_parts = []
-
-            for idx, physical_line in enumerate(
-                physical_lines
-            ):
-                if idx == econ_idx:
-                    prefix = " ".join(
-                        match.group("prefix").split()
+            if prefix:
+                # En layout, texto situado después de la fila
+                # económica anterior puede ser continuación de
+                # su descripción.
+                if (
+                    last_created is not None
+                    and pending_description
+                ):
+                    continuation = " ".join(
+                        pending_description
                     ).strip()
 
-                    if prefix:
-                        description_parts.append(prefix)
-                else:
-                    text_part = " ".join(
-                        physical_line.split()
-                    ).strip()
+                    if continuation:
+                        desc = (
+                            last_created["descripcion"]
+                            + " "
+                            + continuation
+                        ).strip()
 
-                    if text_part:
-                        description_parts.append(
-                            text_part
-                        )
+                        last_created["descripcion"] = desc
+                        last_created[
+                            "descripcion_detectada"
+                        ] = desc
 
-            append_generic_line(
-                " ".join(description_parts),
+                        raw_data = last_created.get(
+                            "raw_data"
+                        ) or {}
+                        raw_data[
+                            "descripcion_detectada"
+                        ] = desc
+                        last_created["raw_data"] = raw_data
+
+                descripcion = prefix
+                pending_description = []
+
+            else:
+                descripcion = " ".join(
+                    pending_description
+                ).strip()
+                pending_description = []
+
+            if append_generic_line(
+                descripcion,
                 match,
-                raw_line,
-            )
+                physical_line,
+            ):
+                last_created = lineas[-1]
 
-        # Fallback secundario para OCRs que no conservan saltos de línea.
-        if not lineas:
-            detail_match = re.search(
-                r"Detalle\s+de\s+la\s+facturaci[oó]n\s+"
-                r"(?P<body>.+?)"
-                r"\s+Base\s+imponible\s*:",
-                compact,
-                re.IGNORECASE,
-            )
+        # Continuación final de la última descripción,
+        # posible en layouts multicolumna.
+        if (
+            last_created is not None
+            and pending_description
+        ):
+            continuation = " ".join(
+                pending_description
+            ).strip()
 
-            detail = (
-                detail_match.group("body")
-                if detail_match
-                else ""
-            )
+            if continuation:
+                desc = (
+                    last_created["descripcion"]
+                    + " "
+                    + continuation
+                ).strip()
 
-            generic_re = re.compile(
-                rf"(?P<descripcion>.+?)\s+"
-                rf"(?P<cantidad>\d+(?:[.,]\d+)?)\s+"
-                rf"(?P<precio>{money})\s*€?\s+"
-                rf"(?P<base>{money})\s*€?\s+"
-                rf"(?P<iva_pct>\d{{1,2}})\s*%\s+"
-                rf"(?P<iva>{money})\s*€?\s+"
-                rf"(?P<total>{money})\s*€?",
-                re.IGNORECASE,
-            )
+                last_created["descripcion"] = desc
+                last_created[
+                    "descripcion_detectada"
+                ] = desc
 
-            for match in generic_re.finditer(detail):
-                append_generic_line(
-                    match.group("descripcion"),
-                    match,
-                    match.group(0),
-                )
+                raw_data = last_created.get(
+                    "raw_data"
+                ) or {}
+                raw_data[
+                    "descripcion_detectada"
+                ] = desc
+                last_created["raw_data"] = raw_data
 
     result["lineas"] = lineas
     result["total_lineas"] = _portal_ms_metales_fmt_v2(total_base, "0.00")
