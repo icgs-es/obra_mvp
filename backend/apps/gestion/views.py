@@ -8559,8 +8559,8 @@ def factura_lineas_desde_ocr(request, pk):
 
                     _ocr_candidates = (
                         FacturaProveedorGestion.objects
-                        .select_for_update()
                         .select_related("proveedor")
+                        .select_for_update(of=("self",))
                         .filter(team=factura.team)
                         .exclude(pk=factura.pk)
                         .order_by("pk")
