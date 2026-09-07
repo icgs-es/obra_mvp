@@ -8136,6 +8136,42 @@ def factura_lineas_desde_ocr(request, pk):
         except Exception:
             pass
 
+    # FACTURA_OCR_DOCUMENT_HEADER_V1
+    # Mantener el payload completo del parser para poder mostrar
+    # y aplicar de forma controlada la cabecera documental.
+    if isinstance(parsed, dict):
+        parsed_result = parsed
+
+    ocr_header = {}
+
+    if isinstance(parsed_result, dict):
+        _ocr_raw = parsed_result.get("raw") or {}
+
+        if isinstance(_ocr_raw, dict):
+            _candidate_header = _ocr_raw.get("header") or {}
+
+            if isinstance(_candidate_header, dict):
+                ocr_header = dict(_candidate_header)
+
+    _ms_metales_header_active = bool(
+        ocr_header
+        and _parser_key_router_v1
+        == "ms_metales_factura_valorada_v2"
+    )
+
+    def _ocr_iso_date(value):
+        from datetime import date
+
+        raw_value = str(value or "").strip()
+
+        if not raw_value:
+            return None
+
+        try:
+            return date.fromisoformat(raw_value)
+        except (TypeError, ValueError):
+            return None
+
     def _dec(value, default="0.00"):
         raw = str(value or "").strip().replace(",", ".")
         try:
@@ -8234,6 +8270,21 @@ def factura_lineas_desde_ocr(request, pk):
                 "num_albaran_proveedor": num_albaran,
                 "num_albaran_norm": num_albaran_norm,
                 "albaran": albaran,
+                "unidad": original.get("unidad", ""),
+                "iva_porcentaje": (
+                    original.get("iva_porcentaje")
+                    or original.get("iva_pct")
+                    or ""
+                ),
+                "importe_iva_linea": (
+                    original.get("importe_iva_linea")
+                    or ""
+                ),
+                "total_linea_con_iva": (
+                    original.get("total_linea_con_iva")
+                    or original.get("importe_total_con_iva")
+                    or ""
+                ),
                 "raw_line": original.get("raw_line", ""),
             })
 
@@ -8244,9 +8295,78 @@ def factura_lineas_desde_ocr(request, pk):
                 "adjunto": adjunto,
                 "lineas": lineas,
             "ocr_text": text,
-                "parsed": parsed,
+                "parsed": parsed_result,
+                "ocr_header": ocr_header,
                 "origen_texto": origen_texto,
             })
+
+        _ocr_fecha_emision = _ocr_iso_date(
+            ocr_header.get("fecha_emision")
+        )
+        _ocr_fecha_vencimiento = _ocr_iso_date(
+            ocr_header.get("vencimiento")
+        )
+
+        if _ms_metales_header_active:
+            # MS METALES es una factura completa: no permitir aplicar
+            # su cabecera si solo se importa una parte de sus líneas.
+            if len(selected) != len(lineas):
+                messages.error(
+                    request,
+                    "MS METALES: deben importarse todas las líneas "
+                    "del documento para aplicar su cabecera.",
+                )
+                return redirect(request.get_full_path())
+
+            _expected_base_pre = _dec(
+                ocr_header.get(
+                    "importe_base_imponible"
+                ),
+                "0.00",
+            )
+
+            _selected_base_pre = sum(
+                (
+                    item["importe"]
+                    for item in selected
+                ),
+                Decimal("0.00"),
+            ).quantize(Decimal("0.01"))
+
+            if (
+                _expected_base_pre
+                and abs(
+                    _selected_base_pre
+                    - _expected_base_pre
+                ) > Decimal("0.01")
+            ):
+                messages.error(
+                    request,
+                    "MS METALES: la suma seleccionada "
+                    f"({_selected_base_pre:.2f} €) no coincide "
+                    "con la base del PDF "
+                    f"({_expected_base_pre:.2f} €).",
+                )
+                return redirect(request.get_full_path())
+
+            if (
+                factura.fecha_pago_segun_contrato
+                and _ocr_fecha_vencimiento
+                and factura.fecha_pago_segun_contrato
+                != _ocr_fecha_vencimiento
+            ):
+                messages.error(
+                    request,
+                    "MS METALES: la fecha de vencimiento "
+                    "detectada no coincide con una fecha "
+                    "contractual ya existente. No se modifica.",
+                )
+                return redirect(request.get_full_path())
+
+        # Colisión documental: nunca sobrescribir automáticamente
+        # el número del proveedor si ya existe otra factura del mismo
+        # proveedor fiscal/equipo con ese número.
+        _ocr_numero_collision = None
 
         with transaction.atomic():
             total_base = Decimal("0.00")
@@ -8344,6 +8464,192 @@ def factura_lineas_desde_ocr(request, pk):
                 source="ocr_lineas_documentales_v2",
             )
 
+            # El helper canónico bloquea y relee la factura.
+            # Refrescar esta instancia antes de validar/guardar cabecera.
+            factura.refresh_from_db()
+
+            _ocr_header_update_fields = []
+
+            if _ms_metales_header_active:
+                _expected_base = _dec(
+                    ocr_header.get(
+                        "importe_base_imponible"
+                    ),
+                    "0.00",
+                )
+                _expected_iva = _dec(
+                    ocr_header.get(
+                        "importe_iva"
+                    ),
+                    "0.00",
+                )
+                _expected_total = _dec(
+                    ocr_header.get(
+                        "importe_factura"
+                    ),
+                    "0.00",
+                )
+
+                _actual_base = _dec(
+                    factura.importe_base_imponible
+                )
+                _actual_iva = _dec(
+                    factura.importe_iva
+                )
+                _actual_total = _dec(
+                    factura.importe_factura
+                )
+
+                _mismatch = (
+                    abs(
+                        _actual_base
+                        - _expected_base
+                    ) > Decimal("0.01")
+                    or abs(
+                        _actual_iva
+                        - _expected_iva
+                    ) > Decimal("0.01")
+                    or abs(
+                        _actual_total
+                        - _expected_total
+                    ) > Decimal("0.01")
+                )
+
+                if _mismatch:
+                    transaction.set_rollback(True)
+
+                    messages.error(
+                        request,
+                        "MS METALES: los totales calculados "
+                        "desde las líneas no coinciden con "
+                        "la cabecera del PDF. La importación "
+                        "se ha cancelado sin guardar cambios.",
+                    )
+
+                    return redirect(
+                        request.get_full_path()
+                    )
+
+                _ocr_numero = str(
+                    ocr_header.get(
+                        "num_factura_proveedor"
+                    )
+                    or ""
+                ).strip()
+
+                if _ocr_numero:
+                    _ocr_num_norm = re.sub(
+                        r"[^A-Z0-9]",
+                        "",
+                        _ocr_numero.upper(),
+                    )
+
+                    _ocr_cif_norm = re.sub(
+                        r"[^A-Z0-9]",
+                        "",
+                        str(
+                            getattr(
+                                factura.proveedor,
+                                "cif",
+                                "",
+                            )
+                            or ""
+                        ).upper(),
+                    )
+
+                    _ocr_candidates = (
+                        FacturaProveedorGestion.objects
+                        .select_for_update()
+                        .select_related("proveedor")
+                        .filter(team=factura.team)
+                        .exclude(pk=factura.pk)
+                        .order_by("pk")
+                    )
+
+                    for _ocr_other in _ocr_candidates:
+                        _other_num_norm = re.sub(
+                            r"[^A-Z0-9]",
+                            "",
+                            str(
+                                _ocr_other
+                                .num_factura_proveedor
+                                or ""
+                            ).upper(),
+                        )
+
+                        if (
+                            _other_num_norm
+                            != _ocr_num_norm
+                        ):
+                            continue
+
+                        _other_cif_norm = re.sub(
+                            r"[^A-Z0-9]",
+                            "",
+                            str(
+                                getattr(
+                                    _ocr_other.proveedor,
+                                    "cif",
+                                    "",
+                                )
+                                or ""
+                            ).upper(),
+                        )
+
+                        if (
+                            _ocr_cif_norm
+                            and _other_cif_norm
+                            != _ocr_cif_norm
+                        ):
+                            continue
+
+                        _ocr_numero_collision = (
+                            _ocr_other
+                        )
+                        break
+
+                    if _ocr_numero_collision is None:
+                        factura.num_factura_proveedor = (
+                            _ocr_numero
+                        )
+                        _ocr_header_update_fields.append(
+                            "num_factura_proveedor"
+                        )
+
+                if _ocr_fecha_emision:
+                    factura.fecha_emision = (
+                        _ocr_fecha_emision
+                    )
+                    _ocr_header_update_fields.append(
+                        "fecha_emision"
+                    )
+
+                if _ocr_fecha_vencimiento:
+                    factura.fecha_pago_segun_contrato = (
+                        _ocr_fecha_vencimiento
+                    )
+                    _ocr_header_update_fields.append(
+                        "fecha_pago_segun_contrato"
+                    )
+
+                _ocr_forma_pago = str(
+                    ocr_header.get(
+                        "forma_pago_texto"
+                    )
+                    or ""
+                ).strip()
+
+                if (
+                    _ocr_forma_pago
+                    and not factura.forma_pago
+                ):
+                    factura.forma_pago = (
+                        _ocr_forma_pago
+                    )
+                    _ocr_header_update_fields.append(
+                        "forma_pago"
+                    )
+
             factura.raw_data = factura.raw_data or {}
             factura.raw_data["lineas_ocr_importadas"] = {
                 "source": "portal_pdf_ocr",
@@ -8354,13 +8660,95 @@ def factura_lineas_desde_ocr(request, pk):
                 "albaranes_vinculados": len(by_albaran),
                 "adjunto_id": adjunto.id,
             }
-            factura.save(update_fields=[
+
+            if _ms_metales_header_active:
+                factura.raw_data[
+                    "cabecera_ocr_importada"
+                ] = {
+                    "source":
+                        "ms_metales_factura_valorada_v2",
+                    "num_factura_proveedor":
+                        ocr_header.get(
+                            "num_factura_proveedor"
+                        ),
+                    "fecha_emision":
+                        ocr_header.get(
+                            "fecha_emision"
+                        ),
+                    "fecha_vencimiento":
+                        ocr_header.get(
+                            "vencimiento"
+                        ),
+                    "importe_base_imponible":
+                        ocr_header.get(
+                            "importe_base_imponible"
+                        ),
+                    "importe_iva":
+                        ocr_header.get(
+                            "importe_iva"
+                        ),
+                    "importe_factura":
+                        ocr_header.get(
+                            "importe_factura"
+                        ),
+                    "forma_pago":
+                        ocr_header.get(
+                            "forma_pago_texto"
+                        ),
+                    "totales_validados_desde_lineas":
+                        True,
+                    "numero_factura_aplicado": (
+                        _ocr_numero_collision
+                        is None
+                    ),
+                    "numero_factura_colision": (
+                        {
+                            "factura_id":
+                                _ocr_numero_collision.pk,
+                            "cod_factura":
+                                _ocr_numero_collision
+                                .cod_factura,
+                            "numero":
+                                _ocr_numero_collision
+                                .num_factura_proveedor,
+                        }
+                        if _ocr_numero_collision
+                        is not None
+                        else None
+                    ),
+                }
+
+            _save_fields = [
                 "importe_base_imponible",
                 "importe_iva",
                 "importe_factura",
                 "raw_data",
                 "updated_at",
-            ])
+            ]
+
+            _save_fields.extend(
+                _ocr_header_update_fields
+            )
+
+            factura.save(
+                update_fields=list(
+                    dict.fromkeys(_save_fields)
+                )
+            )
+
+        if (
+            _ms_metales_header_active
+            and _ocr_numero_collision is not None
+        ):
+            messages.warning(
+                request,
+                "El número de factura detectado "
+                f"{ocr_header.get('num_factura_proveedor')} "
+                "no se ha sobrescrito porque ya existe en "
+                f"{_ocr_numero_collision.cod_factura}. "
+                "La posible factura duplicada debe revisarse "
+                "por separado.",
+            )
 
         messages.success(
             request,
@@ -8373,7 +8761,8 @@ def factura_lineas_desde_ocr(request, pk):
         "adjunto": adjunto,
         "lineas": lineas,
             "ocr_text": text,
-        "parsed": parsed,
+        "parsed": parsed_result,
+                "ocr_header": ocr_header,
         "origen_texto": origen_texto,
     })
 

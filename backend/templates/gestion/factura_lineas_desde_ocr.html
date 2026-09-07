@@ -7,7 +7,7 @@
     <div>
       <h1 class="h4 mb-1">Importar líneas OCR de factura</h1>
       <div class="text-muted small">
-        Factura {{ factura.cod_factura }} · {{ factura.proveedor }} · Nº proveedor {{ factura.num_factura_proveedor }}
+        Factura {{ factura.cod_factura }} · {{ factura.proveedor }} · Nº proveedor {{ ocr_header.num_factura_proveedor|default:factura.num_factura_proveedor }}
       </div>
     </div>
     <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}/app/gestion/facturas/{{ factura.id }}/{% endif %}" class="btn btn-outline-secondary btn-sm">Volver</a>
@@ -63,13 +63,51 @@
     Revisa las líneas antes de importar. Se crearán líneas de factura, artículos internos y alias por proveedor. Si se localizan albaranes existentes, quedarán vinculados.
   </div>
 
+  {% if ocr_header %}
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body">
+      <div class="fw-semibold mb-2">Cabecera detectada del PDF</div>
+      <div class="row g-2 small">
+        <div class="col-md-4">
+          <strong>Nº proveedor:</strong>
+          {{ ocr_header.num_factura_proveedor|default:"—" }}
+        </div>
+        <div class="col-md-4">
+          <strong>Fecha emisión:</strong>
+          {{ ocr_header.fecha_emision|default:"—" }}
+        </div>
+        <div class="col-md-4">
+          <strong>Vencimiento:</strong>
+          {{ ocr_header.vencimiento|default:"—" }}
+        </div>
+        <div class="col-md-4">
+          <strong>Base:</strong>
+          {{ ocr_header.importe_base_imponible|money_es }}
+        </div>
+        <div class="col-md-4">
+          <strong>IVA:</strong>
+          {{ ocr_header.importe_iva|money_es }}
+        </div>
+        <div class="col-md-4">
+          <strong>Total:</strong>
+          {{ ocr_header.importe_factura|money_es }}
+        </div>
+        <div class="col-md-6">
+          <strong>Forma de pago:</strong>
+          {{ ocr_header.forma_pago_texto|default:"—" }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="card mb-3 border-0 shadow-sm">
     <div class="card-body small">
       <strong>Adjunto:</strong> {{ adjunto.nombre_original }} ·
       <strong>Origen texto:</strong> {{ origen_texto }} ·
       <strong>Líneas detectadas:</strong> {{ lineas|length }} ·
       <strong>Total líneas:</strong> {{ parsed.total_lineas|default:"0.00" }} € ·
-      <strong>Base factura:</strong> {{ factura.importe_base_imponible|money_es }}
+      <strong>Base PDF:</strong> {{ ocr_header.importe_base_imponible|default:factura.importe_base_imponible|money_es }}
     </div>
   </div>
 
