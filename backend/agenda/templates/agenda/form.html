@@ -35,9 +35,126 @@
     justify-content:flex-end;
     margin-top:1.5rem;
   }
-</style>
 
-<div class="container py-3">
+    /* PORTAL_AGENDA_FORM_RESPONSIVE_V1 */
+    .agenda-form-page {
+      max-width: 980px;
+    }
+
+    .agenda-form-page .form-grid > *,
+    .agenda-form-page .form-grid-1 > * {
+      min-width: 0;
+    }
+
+    .agenda-form-page input,
+    .agenda-form-page textarea,
+    .agenda-form-page select {
+      box-sizing: border-box;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .agenda-form-page select[multiple] {
+      min-height: 160px;
+    }
+
+    @media screen and (max-width: 767.98px) {
+      .agenda-form-page {
+        padding: .5rem .4rem 1rem !important;
+      }
+
+      .agenda-form-page .card {
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .agenda-form-page .card-header {
+        padding: .8rem .9rem;
+        font-size: 1.05rem;
+      }
+
+      .agenda-form-page .card-body {
+        padding: .85rem;
+      }
+
+      .agenda-form-page .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .8rem;
+      }
+
+      .agenda-form-page .form-grid-1 {
+        gap: .8rem;
+      }
+
+      .agenda-form-page label {
+        font-size: .9rem;
+        margin-bottom: .3rem;
+      }
+
+      .agenda-form-page input:not([type="checkbox"]):not([type="radio"]),
+      .agenda-form-page textarea,
+      .agenda-form-page select {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        font-size: 16px;
+        padding: .55rem .65rem;
+      }
+
+      .agenda-form-page input[type="datetime-local"] {
+        appearance: none;
+        -webkit-appearance: none;
+      }
+
+      .agenda-form-page textarea {
+        min-height: 110px;
+      }
+
+      .agenda-form-page select[multiple] {
+        min-height: 180px;
+      }
+
+      .agenda-form-page .form-check {
+        margin-top: 0;
+        min-height: 44px;
+        align-items: center;
+      }
+
+      .agenda-form-page .form-check input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        flex: 0 0 auto;
+      }
+
+      .agenda-form-page .form-text {
+        font-size: .78rem;
+        line-height: 1.3;
+      }
+
+      .agenda-form-page .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .55rem;
+        margin-top: 1rem;
+      }
+
+      .agenda-form-page .actions .btn {
+        width: 100%;
+        min-height: 44px;
+      }
+    }
+
+    @media screen and (max-width: 390px) {
+      .agenda-form-page .actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  </style>
+
+<div class="container py-3 agenda-form-page">
   <div class="card">
     <div class="card-header">
       {% if mode == "create" %}Nuevo evento{% else %}Editar evento{% endif %}
@@ -177,7 +294,7 @@
           <div>
             <label for="{{ form.who_users.id_for_label }}">Asistentes</label>
             {{ form.who_users }}
-            <div class="form-text">Mantén Ctrl/Cmd para seleccionar varios</div>
+            <div class="form-text">Selecciona uno o varios asistentes.</div>
             {% for e in form.who_users.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
           </div>
         </div>

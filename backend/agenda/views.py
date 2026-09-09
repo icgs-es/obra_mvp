@@ -1208,6 +1208,12 @@ def update_view(
 
 @login_required
 def import_view(request):
+    # PORTAL_AGENDA_ADMIN_IO_V1
+    if not request.user.is_superuser:
+        return HttpResponseForbidden(
+            "Solo el Administrador General puede importar eventos."
+        )
+
     team = resolve_active_agenda_team(
         request
     )
@@ -1408,6 +1414,12 @@ def import_view(request):
 
 @login_required
 def export_view(request):
+    # PORTAL_AGENDA_ADMIN_IO_V1
+    if not request.user.is_superuser:
+        return HttpResponseForbidden(
+            "Solo el Administrador General puede exportar eventos."
+        )
+
     try:
         start_date = dt.date.fromisoformat(
             request.GET.get("start")

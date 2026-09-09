@@ -2,7 +2,85 @@
 {% block title %}{% if mode == "create" %}Nueva tarea{% else %}Editar tarea{% endif %}{% endblock %}
 {% block content %}
 
-<div class="card shadow-sm">
+  <style>
+    /* PORTAL_TASK_FORM_RESPONSIVE_V1 */
+    .task-form-page input,
+    .task-form-page textarea,
+    .task-form-page select {
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    .task-form-page .row > * {
+      min-width: 0;
+    }
+
+    @media screen and (max-width: 767.98px) {
+      .task-form-page {
+        margin: .5rem .25rem;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .task-form-page .card-header {
+        padding: .75rem .8rem;
+        gap: .55rem;
+        flex-wrap: wrap;
+      }
+
+      .task-form-page .card-body {
+        padding: .85rem;
+      }
+
+      .task-form-page .form-label {
+        font-size: .9rem;
+        font-weight: 600;
+        margin-bottom: .3rem;
+      }
+
+      .task-form-page input:not([type="checkbox"]):not([type="radio"]),
+      .task-form-page textarea,
+      .task-form-page select {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        font-size: 16px;
+      }
+
+      .task-form-page textarea {
+        min-height: 110px;
+      }
+
+      .task-form-page select[multiple] {
+        min-height: 180px;
+      }
+
+      .task-form-page .form-text {
+        font-size: .78rem;
+      }
+
+      .task-form-page .form-check-inline {
+        margin-right: .65rem;
+        margin-bottom: .4rem !important;
+      }
+
+      .task-form-page .task-form-actions {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: .55rem !important;
+        margin-top: 1rem !important;
+      }
+
+      .task-form-page .task-form-actions .btn {
+        width: 100%;
+        min-height: 44px;
+      }
+    }
+  </style>
+
+
+<div class="card shadow-sm task-form-page">
   <div class="card-header d-flex align-items-center justify-content-between">
     <div>
       <i class="bi bi-check2-square me-2"></i>
@@ -105,7 +183,7 @@
         </div>
       </div>
 
-      <div class="d-flex gap-2 justify-content-end mt-4">
+      <div class="d-flex gap-2 justify-content-end mt-4 task-form-actions">
         <a href="{% url 'tareas:list' %}" class="btn btn-outline-secondary">Cancelar</a>
         <button type="submit" name="save_add_another" value="1" class="btn btn-outline-primary">Guardar y nueva</button>
         <button type="submit" class="btn btn-primary">Guardar</button>

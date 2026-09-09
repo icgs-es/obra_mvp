@@ -274,6 +274,263 @@
     font-style: italic;
   }
 
+
+  /* PORTAL_RESPONSIVE_AGENDA_V1_MOBILE */
+  @media screen and (max-width: 640px) {
+    .agenda-shell {
+      padding: .35rem .22rem .85rem;
+    }
+
+    .agenda-header {
+      margin-bottom: .45rem;
+      padding: .65rem .72rem;
+      border-radius: 12px;
+    }
+
+    .agenda-header h1 {
+      font-size: 1.08rem !important;
+      line-height: 1.2;
+    }
+
+    .agenda-header .agenda-subtitle {
+      display: none;
+    }
+
+    .agenda-actions {
+      width: 100%;
+      margin-top: .4rem;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .agenda-actions::-webkit-scrollbar,
+    .agenda-filter-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .agenda-actions .btn {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      min-height: 36px;
+      font-size: .76rem;
+      padding: .32rem .58rem;
+    }
+
+    .agenda-card {
+      border-radius: 11px;
+    }
+
+    .agenda-toolbar {
+      grid-template-columns: 1fr;
+      gap: .4rem;
+      padding: .45rem .42rem;
+    }
+
+    .agenda-filter-row {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: .38rem;
+      scrollbar-width: none;
+    }
+
+    .agenda-filter-row > strong {
+      display: none;
+    }
+
+    .agenda-chip {
+      flex: 0 0 auto;
+      padding: .3rem .5rem;
+      gap: .28rem;
+      font-size: .76rem;
+      white-space: nowrap;
+    }
+
+    .agenda-chip input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+
+    #btn-agenda-today {
+      display: none;
+    }
+
+    #btn-agenda-refresh {
+      flex: 0 0 auto;
+      min-height: 34px;
+      font-size: .75rem;
+      white-space: nowrap;
+    }
+
+    .agenda-search {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+    }
+
+    .agenda-search input {
+      min-height: 38px;
+      font-size: 16px;
+    }
+
+    .agenda-counter {
+      font-size: .74rem;
+    }
+
+    .agenda-toolbar > .d-flex {
+      flex-wrap: nowrap !important;
+      gap: .4rem !important;
+    }
+
+    .agenda-legend {
+      display: none;
+    }
+
+    .agenda-body {
+      padding: .18rem .18rem .35rem;
+    }
+
+    #calendar .fc-toolbar {
+      margin: .35rem 0 .45rem;
+    }
+
+    #calendar .fc-header-toolbar {
+      display: grid !important;
+      grid-template-columns: auto minmax(0,1fr) auto;
+      gap: .3rem;
+      align-items: center;
+    }
+
+    #calendar .fc-header-toolbar .fc-toolbar-chunk:nth-child(2) {
+      min-width: 0;
+      text-align: center;
+    }
+
+    #calendar .fc-toolbar-title {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .98rem;
+      line-height: 1.15;
+      font-weight: 750;
+    }
+
+    #calendar .fc .fc-button {
+      min-height: 34px;
+      border-radius: 8px !important;
+      padding: .3rem .45rem !important;
+      font-size: .74rem !important;
+    }
+
+    #calendar .fc-header-toolbar .fc-prev-button,
+    #calendar .fc-header-toolbar .fc-next-button {
+      width: 34px;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    #calendar .fc-footer-toolbar {
+      margin: .45rem 0 .1rem;
+    }
+
+    #calendar .fc-footer-toolbar .fc-toolbar-chunk,
+    #calendar .fc-footer-toolbar .fc-button-group {
+      width: 100%;
+    }
+
+    #calendar .fc-footer-toolbar .fc-button-group {
+      display: flex;
+    }
+
+    #calendar .fc-footer-toolbar .fc-button {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: .4rem .28rem !important;
+      font-size: .72rem !important;
+    }
+
+    #calendar .fc-timegrid-axis {
+      width: 38px !important;
+    }
+
+    #calendar .fc-timegrid-axis-cushion,
+    #calendar .fc-timegrid-slot-label-cushion {
+      padding-left: 2px;
+      padding-right: 3px;
+      font-size: .67rem;
+      white-space: nowrap;
+    }
+
+    #calendar .fc-col-header-cell-cushion {
+      display: block;
+      padding: 5px 1px;
+      font-size: .7rem;
+      line-height: 1.12;
+      white-space: normal;
+      text-align: center;
+    }
+
+    #calendar .fc-timegrid-slot {
+      height: 1.55rem;
+    }
+
+    #calendar .fc-event {
+      padding: 2px 3px !important;
+      border-radius: 5px !important;
+    }
+
+    #calendar .agenda-event {
+      line-height: 1.15;
+    }
+
+    #calendar .agenda-event__top,
+    #calendar .agenda-event__time,
+    #calendar .agenda-event__icon,
+    #calendar .agenda-event__state {
+      font-size: 8.5px;
+    }
+
+    #calendar .agenda-event__title {
+      font-size: 11px;
+      line-height: 1.16;
+      font-weight: 550;
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
+    #calendar .agenda-event__meta {
+      display: none;
+    }
+
+    #calendar .fc-dayGridMonth-view .agenda-event__top {
+      display: none;
+    }
+
+    #calendar .fc-dayGridMonth-view .agenda-event__title {
+      font-size: 9.5px;
+      line-height: 1.12;
+      -webkit-line-clamp: 2;
+    }
+
+    #calendar .fc-daygrid-day-number {
+      font-size: .72rem;
+      padding: 3px 4px;
+    }
+
+    #calendar .fc-list {
+      font-size: .8rem;
+    }
+
+    #calendar .fc-list-event td {
+      padding: .45rem .35rem;
+    }
+  }
+
 </style>
 
 <div class="agenda-shell">
@@ -287,15 +544,23 @@
       </div>
 
       <div class="agenda-actions">
+        {# PORTAL_AGENDA_V1_1_ACTIONS_ADMIN #}
         <a class="btn btn-light btn-sm fw-bold" href="{% url 'agenda:create' %}">
           <i class="bi bi-plus-lg"></i> Nuevo evento
         </a>
+
+        <a class="btn btn-outline-light btn-sm fw-bold" href="{% url 'tareas:create' %}">
+          <i class="bi bi-check2-square"></i> Añadir tarea
+        </a>
+
+        {% if request.user.is_superuser %}
         <a class="btn btn-outline-light btn-sm" href="{% url 'agenda:import' %}">
           <i class="bi bi-upload"></i> Importar
         </a>
         <a class="btn btn-outline-light btn-sm" href="{% url 'agenda:export' %}">
           <i class="bi bi-download"></i> Exportar
         </a>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -592,7 +857,41 @@ console.log("AGENDA_OPERATIVA_V1 cargada");
 
   loadLayerState();
 
-  const initialView = localStorage.getItem(STORAGE_VIEW) || "timeGridWeek";
+  const phoneQuery = window.matchMedia("(max-width: 640px)");
+  const storedView = localStorage.getItem(STORAGE_VIEW);
+
+  const mobileViews = new Set([
+    "timeGridDay",
+    "timeGridMobile3",
+    "dayGridMonth",
+    "listWeek"
+  ]);
+
+  const initialView = phoneQuery.matches
+    ? (mobileViews.has(storedView) ? storedView : "timeGridDay")
+    : (
+        storedView === "timeGridMobile3"
+          ? "timeGridWeek"
+          : (storedView || "timeGridWeek")
+      );
+
+  const desktopHeaderToolbar = {
+    left: "prev,next today",
+    center: "title",
+    right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+  };
+
+  const mobileHeaderToolbar = {
+    left: "prev,next",
+    center: "title",
+    right: "today"
+  };
+
+  const mobileFooterToolbar = {
+    left: "",
+    center: "timeGridDay,timeGridMobile3,dayGridMonth,listWeek",
+    right: ""
+  };
 
 
   // AGENDA_USER_COLORS_V1_3
@@ -679,10 +978,16 @@ console.log("AGENDA_OPERATIVA_V1 cargada");
     moreLinkText: "más",
     noEventsText: "No hay eventos para mostrar",
 
-    headerToolbar: {
-      left: "prev,next today",
-      center: "title",
-      right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+    headerToolbar: phoneQuery.matches ? mobileHeaderToolbar : desktopHeaderToolbar,
+    footerToolbar: phoneQuery.matches ? mobileFooterToolbar : false,
+
+    views: {
+      timeGridMobile3: {
+        type: "timeGrid",
+        duration: { days: 3 },
+        dateIncrement: { days: 1 },
+        buttonText: "3 días"
+      }
     },
 
     buttonText: {
@@ -796,6 +1101,32 @@ console.log("AGENDA_OPERATIVA_V1 cargada");
   });
 
   calendar.render();
+
+  function applyAgendaResponsiveMode() {
+    const mobile = phoneQuery.matches;
+
+    calendar.setOption(
+      "headerToolbar",
+      mobile ? mobileHeaderToolbar : desktopHeaderToolbar
+    );
+
+    calendar.setOption(
+      "footerToolbar",
+      mobile ? mobileFooterToolbar : false
+    );
+
+    if (mobile && calendar.view.type === "timeGridWeek") {
+      calendar.changeView("timeGridMobile3");
+    } else if (!mobile && calendar.view.type === "timeGridMobile3") {
+      calendar.changeView("timeGridWeek");
+    }
+  }
+
+  if (phoneQuery.addEventListener) {
+    phoneQuery.addEventListener("change", applyAgendaResponsiveMode);
+  } else if (phoneQuery.addListener) {
+    phoneQuery.addListener(applyAgendaResponsiveMode);
+  }
 
   [cbMis, cbDepto, cbGlobal].forEach(cb => {
     cb.addEventListener("change", () => {
