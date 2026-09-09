@@ -3,7 +3,7 @@ import re
 import smtplib
 import ssl
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from email import message_from_bytes
 from email.header import decode_header
 from email.policy import default
@@ -33,6 +33,7 @@ class MensajeResumen:
     fecha_original: str
     leido: bool
     tamano_bytes: int
+    tiene_adjuntos: bool = False
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,12 @@ class ResultadoBandeja:
     mensajes: tuple[MensajeResumen, ...]
     no_leidos: int
     total_mensajes: int
+    period_total: int = 0
+    page: int = 1
+    page_size: int = 50
+    total_pages: int = 1
+    has_previous: bool = False
+    has_next: bool = False
 
 
 class CorreoImapError(RuntimeError):
@@ -256,9 +263,68 @@ def probar_conexion(
     )
 
 
+_IMAP_MONTHS = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+
+
+def _imap_search_date(
+    value: date,
+) -> str:
+    """
+    Fecha RFC 3501 para IMAP SEARCH SINCE.
+
+    No depende del locale del sistema operativo.
+    """
+    return (
+        f"{value.day:02d}-"
+        f"{_IMAP_MONTHS[value.month - 1]}-"
+        f"{value.year:04d}"
+    )
+
+
+
+def _bodystructure_has_attachment(
+    metadata: bytes,
+) -> bool:
+    """
+    Detecta adjuntos a partir de IMAP BODYSTRUCTURE
+    sin descargar el cuerpo completo del mensaje.
+
+    El lector de correo considera adjunto una parte
+    con disposition=attachment o con filename.
+    """
+    if not isinstance(
+        metadata,
+        bytes,
+    ):
+        return False
+
+    value = metadata.upper()
+
+    return bool(
+        b'"ATTACHMENT"' in value
+        or b'"FILENAME"' in value
+        or b'"NAME"' in value
+    )
+
+
 def listar_bandeja(
     cuenta: CuentaCorreo,
-    limit: int = 20,
+    days: int = 7,
+    page: int = 1,
+    page_size: int = 50,
     timeout: int = 12,
 ) -> ResultadoBandeja:
     if not cuenta.activa:
@@ -274,9 +340,35 @@ def listar_bandeja(
             )
         )
 
-    safe_limit = max(
+    try:
+        requested_days = int(days)
+    except (TypeError, ValueError):
+        requested_days = 7
+
+    safe_days = (
+        30
+        if requested_days == 30
+        else 7
+    )
+
+    try:
+        requested_page = int(page)
+    except (TypeError, ValueError):
+        requested_page = 1
+
+    safe_page = max(
         1,
-        min(int(limit), 50),
+        requested_page,
+    )
+
+    try:
+        requested_page_size = int(page_size)
+    except (TypeError, ValueError):
+        requested_page_size = 50
+
+    safe_page_size = max(
+        1,
+        min(requested_page_size, 50),
     )
 
     imap = None
@@ -329,10 +421,20 @@ def listar_bandeja(
         else:
             no_leidos = 0
 
+        since_date = (
+            timezone.localdate()
+            - timedelta(
+                days=safe_days - 1
+            )
+        )
+
         status, all_data = imap.uid(
             "search",
             None,
-            "ALL",
+            "SINCE",
+            _imap_search_date(
+                since_date
+            ),
         )
 
         if status != "OK":
@@ -347,22 +449,124 @@ def listar_bandeja(
             else []
         )
 
-        selected_uids = list(
+        period_total = len(
+            all_uids
+        )
+
+        total_pages = max(
+            1,
+            (
+                period_total
+                + safe_page_size
+                - 1
+            )
+            // safe_page_size,
+        )
+
+        safe_page = min(
+            safe_page,
+            total_pages,
+        )
+
+        newest_uids = list(
             reversed(
-                all_uids[-safe_limit:]
+                all_uids
             )
         )
+
+        offset = (
+            (safe_page - 1)
+            * safe_page_size
+        )
+
+        selected_uids = newest_uids[
+            offset:
+            offset + safe_page_size
+        ]
 
         if not selected_uids:
             return ResultadoBandeja(
                 mensajes=(),
                 no_leidos=no_leidos,
                 total_mensajes=total_mensajes,
+                period_total=period_total,
+                page=safe_page,
+                page_size=safe_page_size,
+                total_pages=total_pages,
+                has_previous=False,
+                has_next=False,
             )
 
         uid_set = b",".join(
             selected_uids
         ).decode("ascii")
+
+        # CORREO_V1.2_ATTACHMENT_INDICATOR
+        #
+        # BODYSTRUCTURE permite conocer si el correo
+        # contiene adjuntos sin descargar el mensaje.
+        attachment_by_uid: dict[
+            str,
+            bool,
+        ] = {}
+
+        structure_status, structure_data = imap.uid(
+            "fetch",
+            uid_set,
+            "(UID BODYSTRUCTURE)",
+        )
+
+        if (
+            structure_status == "OK"
+            and structure_data
+        ):
+            for structure_item in structure_data:
+                if isinstance(
+                    structure_item,
+                    tuple,
+                ):
+                    structure_metadata = (
+                        structure_item[0]
+                        if structure_item
+                        else b""
+                    )
+                elif isinstance(
+                    structure_item,
+                    bytes,
+                ):
+                    structure_metadata = (
+                        structure_item
+                    )
+                else:
+                    continue
+
+                if not isinstance(
+                    structure_metadata,
+                    bytes,
+                ):
+                    continue
+
+                structure_uid_match = re.search(
+                    rb"\bUID\s+(\d+)\b",
+                    structure_metadata,
+                )
+
+                if not structure_uid_match:
+                    continue
+
+                structure_uid = (
+                    structure_uid_match
+                    .group(1)
+                    .decode("ascii")
+                )
+
+                attachment_by_uid[
+                    structure_uid
+                ] = (
+                    _bodystructure_has_attachment(
+                        structure_metadata
+                    )
+                )
 
         status, fetch_data = imap.uid(
             "fetch",
@@ -489,6 +693,12 @@ def listar_bandeja(
                 fecha_original=raw_date,
                 leido=leido,
                 tamano_bytes=size,
+                tiene_adjuntos=(
+                    attachment_by_uid.get(
+                        uid,
+                        False,
+                    )
+                ),
             )
 
         ordered_messages: list[
@@ -515,6 +725,17 @@ def listar_bandeja(
             ),
             no_leidos=no_leidos,
             total_mensajes=total_mensajes,
+            period_total=period_total,
+            page=safe_page,
+            page_size=safe_page_size,
+            total_pages=total_pages,
+            has_previous=(
+                safe_page > 1
+            ),
+            has_next=(
+                safe_page
+                < total_pages
+            ),
         )
 
     except CorreoCryptoError as exc:

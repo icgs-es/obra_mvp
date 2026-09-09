@@ -304,6 +304,35 @@ def inicio(request):
     correo_error = ""
     compose_nonce = ""
 
+    correo_dias = (
+        30
+        if str(
+            request.GET.get(
+                "dias",
+                "7",
+            )
+        ).strip() == "30"
+        else 7
+    )
+
+    try:
+        correo_pagina = int(
+            request.GET.get(
+                "page",
+                "1",
+            )
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        correo_pagina = 1
+
+    correo_pagina = max(
+        1,
+        correo_pagina,
+    )
+
     dock_mode = str(
         request.GET.get(
             "dock",
@@ -321,7 +350,9 @@ def inicio(request):
         try:
             bandeja = listar_bandeja(
                 cuenta,
-                limit=20,
+                days=correo_dias,
+                page=correo_pagina,
+                page_size=50,
             )
         except CorreoImapError as exc:
             correo_error = str(exc)
@@ -345,6 +376,7 @@ def inicio(request):
             "correo_error": correo_error,
             "compose_nonce": compose_nonce,
             "dock_mode": dock_mode,
+            "correo_dias": correo_dias,
         },
     )
 
@@ -434,9 +466,10 @@ def detalle_mensaje(
         ],
     )
 
-    can_save_to_files = bool(
-        request.user.is_superuser
-        or request.user.is_staff
+    can_save_to_files = (
+        _puede_gestionar_archivos_cloud(
+            request.user
+        )
     )
 
     return _json_private(
@@ -758,25 +791,28 @@ def _puede_gestionar_archivos_cloud(
     user,
 ) -> bool:
     """
-    Mantiene la misma política que el explorador cloud actual.
+    Capacidad mínima para guardar un adjunto
+    del correo en Archivos INTASA.
+
+    is_staff por sí solo no concede acceso.
     """
+    if not getattr(
+        user,
+        "is_authenticated",
+        False,
+    ):
+        return False
+
+    if getattr(
+        user,
+        "is_superuser",
+        False,
+    ):
+        return True
+
     return bool(
-        getattr(
-            user,
-            "is_authenticated",
-            False,
-        )
-        and (
-            getattr(
-                user,
-                "is_superuser",
-                False,
-            )
-            or getattr(
-                user,
-                "is_staff",
-                False,
-            )
+        user.has_perm(
+            "archivos.add_archivo"
         )
     )
 

@@ -204,8 +204,14 @@ class AttachmentViewTests(TestCase):
             codename="use_correo",
         )
 
+        archivo_permission = Permission.objects.get(
+            content_type__app_label="archivos",
+            codename="add_archivo",
+        )
+
         self.user.user_permissions.add(
-            permission
+            permission,
+            archivo_permission,
         )
 
         self.account = CuentaCorreo.objects.create(

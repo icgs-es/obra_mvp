@@ -216,14 +216,36 @@
       <div class="correo-workspace">
         <section class="card shadow-sm correo-list-card">
           <div class="card-header bg-white py-2 px-3">
-            <div class="d-flex justify-content-between align-items-center gap-2">
+            <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
               <h2 class="h6 mb-0">
                 Bandeja de entrada
               </h2>
 
-              <span class="small text-muted">
-                Últimos {{ bandeja.mensajes|length }}
-              </span>
+              <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                <div
+                  class="btn-group btn-group-sm"
+                  role="group"
+                  aria-label="Periodo de correo"
+                >
+                  <a
+                    href="?dias=7{% if dock_mode %}&amp;dock=1{% endif %}"
+                    class="btn {% if correo_dias == 7 %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                  >
+                    7 días
+                  </a>
+
+                  <a
+                    href="?dias=30{% if dock_mode %}&amp;dock=1{% endif %}"
+                    class="btn {% if correo_dias == 30 %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                  >
+                    30 días
+                  </a>
+                </div>
+
+                <span class="small text-muted text-nowrap">
+                  {{ bandeja.period_total }} mensajes
+                </span>
+              </div>
             </div>
           </div>
 
@@ -256,6 +278,19 @@
 
                     <div class="correo-row-subject">
                       {{ mensaje.asunto }}
+
+                      {% if mensaje.tiene_adjuntos %}
+                        <span
+                          class="ms-1 text-secondary"
+                          title="Tiene adjuntos"
+                          aria-label="Tiene adjuntos"
+                        >
+                          <i
+                            class="bi bi-paperclip"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+                      {% endif %}
                     </div>
 
                     <div class="correo-row-date">
@@ -282,7 +317,38 @@
           {% else %}
             <div class="card-body">
               <div class="alert alert-light border mb-0">
-                La bandeja de entrada está vacía.
+                No hay mensajes en los últimos {{ correo_dias }} días.
+              </div>
+            </div>
+          {% endif %}
+
+          {% if bandeja.total_pages > 1 %}
+            <div class="card-footer bg-white py-2 px-3">
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <span class="small text-muted">
+                  Página {{ bandeja.page }} de {{ bandeja.total_pages }}
+                  · 50 mensajes por página
+                </span>
+
+                <div class="btn-group btn-group-sm">
+                  {% if bandeja.has_previous %}
+                    <a
+                      class="btn btn-outline-secondary"
+                      href="?dias={{ correo_dias }}&amp;page={{ bandeja.page|add:'-1' }}{% if dock_mode %}&amp;dock=1{% endif %}"
+                    >
+                      ‹ Anterior
+                    </a>
+                  {% endif %}
+
+                  {% if bandeja.has_next %}
+                    <a
+                      class="btn btn-outline-secondary"
+                      href="?dias={{ correo_dias }}&amp;page={{ bandeja.page|add:'1' }}{% if dock_mode %}&amp;dock=1{% endif %}"
+                    >
+                      Siguiente ›
+                    </a>
+                  {% endif %}
+                </div>
               </div>
             </div>
           {% endif %}
