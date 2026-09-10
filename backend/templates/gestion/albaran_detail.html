@@ -180,7 +180,7 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
       <span class="fw-semibold">Líneas de albarán</span>
       <div class="d-flex gap-2">
-        <a href="/app/gestion/albaranes/{{ albaran.id }}/lineas/desde-ocr/?next={{ next_url|urlencode }}" class="btn btn-outline-primary btn-sm">Importar OCR</a>
+        <a href="/app/gestion/albaranes/{{ albaran.id }}/lineas/desde-ocr/?next={{ request.path|urlencode }}" class="btn btn-outline-primary btn-sm">Importar OCR</a>
         <a href="/app/gestion/albaranes/{{ albaran.id }}/lineas/nueva/?next={{ next_url|urlencode }}" class="btn btn-primary btn-sm">Nueva línea</a> {# ALBARAN_LINEAS_A_ALMACEN_BTN_V1 #}<a href="{% url 'gestion:albaran_lineas_a_almacen' albaran.id %}?next={{ next_url|urlencode }}" class="btn btn-outline-success btn-sm">Enviar a almacén</a> {# ALBARAN_LINEAS_A_PARTIDA_BTN_V1 #}<a href="{% url 'gestion:albaran_lineas_a_partida' albaran.id %}?next={{ next_url|urlencode }}" class="btn btn-outline-primary btn-sm">Enviar a partida/tarea</a>
       </div>
     </div>

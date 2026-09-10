@@ -16125,3 +16125,649 @@ try:
 
 except NameError:
     pass
+
+
+# =============================================================================
+# DIVELEC_ALBARAN_GENERIC_TABLE_V12
+#
+# Parser canónico DIVELEC.
+# - Sin lista cerrada de prefijos.
+# - Soporta CAB / NIE / NOV / SOL / PLY y futuras familias.
+# - Soporta NETO.
+# - Convierte UV D/C/M a precio unitario.
+# - Tolera cantidad perdida por OCR.
+# - Conserva líneas con descuento.
+# - Reconoce CUOTA ECORAEE.
+# =============================================================================
+
+def _divelec_v12_nums(value):
+    import re
+
+    return list(re.finditer(
+        r"(?<![A-Z0-9])"
+        r"(?:"
+        r"\d{1,3}(?:\.\d{3})+(?:,\d{1,4})?"
+        r"|"
+        r"\d+(?:,\d{1,4})?"
+        r")"
+        r"(?![A-Z0-9])",
+        str(value or ""),
+        re.I,
+    ))
+
+
+def _divelec_v12_dec(value):
+    from decimal import Decimal, InvalidOperation
+    import re
+
+    raw = str(value or "").strip()
+    raw = raw.replace("€", "").replace(" ", "")
+    raw = re.sub(r"[^0-9,.\-]", "", raw)
+
+    if not raw:
+        return Decimal("0")
+
+    if "," in raw:
+        raw = raw.replace(".", "").replace(",", ".")
+    elif raw.count(".") > 1:
+        raw = raw.replace(".", "")
+
+    try:
+        return Decimal(raw)
+    except (InvalidOperation, ValueError):
+        return Decimal("0")
+
+
+def _divelec_v12_ascii(value):
+    import unicodedata
+
+    raw = unicodedata.normalize("NFKD", str(value or ""))
+
+    return "".join(
+        c for c in raw
+        if not unicodedata.combining(c)
+    )
+
+
+def _divelec_v12_code(value):
+    import re
+
+    raw = _divelec_v12_ascii(value).upper()
+
+    for m in re.finditer(
+        r"(?<![A-Z0-9])"
+        r"([A-Z]{2,}[A-Z0-9]*\d[A-Z0-9]*)"
+        r"(?![A-Z0-9])",
+        raw,
+    ):
+        token = m.group(1)
+
+        # DIVELEC_V12_OCR_HARDENING_R4
+        if re.fullmatch(r"CAB[O0]\d{8}", token):
+            token = "CAB" + token[3:].replace("O", "0")
+
+        elif re.fullmatch(r"NTE\d{9}", token):
+            token = "NIE" + token[3:]
+
+        elif re.fullmatch(r"NOV[O0]{2}[A-Z]+\d+", token):
+            suffix = token[3:]
+            lead = re.match(r"^[O0]+", suffix)
+            if lead:
+                token = (
+                    "NOV"
+                    + lead.group(0).replace("O", "0")
+                    + suffix[lead.end():]
+                )
+
+        # DIVELEC_V12_ABB_CODE_NORMALIZATION_V1
+        # Familia ABB numérica: OCR puede confundir ceros con letra O.
+        if re.fullmatch(r"ABB[O0\d]{9}", token):
+            token = "ABB" + token[3:].replace("O", "0")
+
+        if len(token) < 7:
+            continue
+
+        if token.startswith(("H07", "HO7")):
+            continue
+
+        return token
+
+    return ""
+
+
+def _divelec_v12_desc(raw, cut_pos, codigo):
+    import re
+
+    prefix = str(raw or "")[:cut_pos]
+    prefix = prefix.replace("[", " ").replace("]", " ")
+
+    parts = [
+        x.strip()
+        for x in prefix.split("|")
+        if x.strip()
+    ]
+
+    if len(parts) >= 2:
+        desc = parts[-1]
+    else:
+        desc = prefix
+
+        desc = re.sub(
+            r"^.*?" + re.escape(codigo) + r"\s*",
+            "",
+            desc,
+            count=1,
+            flags=re.I,
+        )
+
+        desc = re.sub(
+            r"^\s*[A-Z0-9.,/\-]{2,}\s+",
+            "",
+            desc,
+            count=1,
+            flags=re.I,
+        )
+
+    desc = re.sub(r"\bUN\b\s*$", "", desc, flags=re.I)
+    desc = re.sub(r"\s+", " ", desc).strip()
+
+    # DIVELEC_V12_LEADING_OCR_NOISE_V1
+    # El OCR puede anteponer comillas/símbolos antes del código.
+    # Ej.: “ ABBOO0015301 1SPE007717FO510 DESCRIPCION
+    desc = re.sub(
+        r"^[^A-Za-z0-9]+",
+        "",
+        desc,
+    ).strip()
+
+    # Quitar código OCR residual al principio.
+    desc = re.sub(
+        r"^[A-Z]{2,}[A-Z0-9]*\d[A-Z0-9]*\s+",
+        "",
+        desc,
+        count=1,
+        flags=re.I,
+    )
+
+    # Quitar REF.PRO únicamente si el token contiene algún dígito.
+    # Conserva palabras reales como CABLE, TECLA, MARCO, EXTRACTOR.
+    desc = re.sub(
+        r"^(?=[A-Z0-9,./\-]*\d)"
+        r"[A-Z0-9][A-Z0-9,./\-]{3,}\s+",
+        "",
+        desc,
+        count=1,
+        flags=re.I,
+    )
+
+    # OCR: "mo LIBRE HALOGENOS" -> "CABLE LIBRE HALOGENOS".
+    desc = re.sub(
+        r"^[A-Za-z]{1,3}\s+LIBRE HALOGENOS\b",
+        "CABLE LIBRE HALOGENOS",
+        desc,
+        count=1,
+        flags=re.I,
+    )
+
+    # Ruido manuscrito aislado.
+    desc = re.sub(
+        r"\s+\([A-Z]\s*$",
+        "",
+        desc,
+        flags=re.I,
+    ).strip()
+
+    return desc.strip(" -·|[](){}=:,;")
+
+
+def _divelec_v12_build(
+    line_no,
+    codigo,
+    descripcion,
+    cantidad,
+    pvp,
+    uv,
+    descuento,
+    importe,
+    raw,
+):
+    from decimal import Decimal, ROUND_HALF_UP
+
+    factor = {
+        "D": Decimal("10"),
+        "C": Decimal("100"),
+        "M": Decimal("1000"),
+    }.get(str(uv or "").upper(), Decimal("1"))
+
+    precio_unitario = (
+        pvp / factor
+    ).quantize(
+        Decimal("0.0001"),
+        rounding=ROUND_HALF_UP,
+    )
+
+    control = (
+        cantidad
+        * precio_unitario
+        * (Decimal("100") - descuento)
+        / Decimal("100")
+    ).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
+
+    return {
+        "linea": line_no,
+        "codigo": codigo,
+        "cod_articulo": codigo,
+        "codigo_detectado": codigo,
+        "codigo_proveedor": codigo,
+        "descripcion": descripcion or codigo,
+
+        "cantidad": f"{cantidad:.4f}",
+        "cantidad_input": f"{cantidad:.4f}",
+
+        "unidad": "UD",
+        "unidad_compra": "UD",
+
+        "precio": f"{precio_unitario:.4f}",
+        "precio_unitario": f"{precio_unitario:.4f}",
+        "precio_detectado": f"{precio_unitario:.4f}",
+        "precio_input": f"{precio_unitario:.4f}",
+
+        "descuento": f"{descuento:.2f}",
+        "descuento_input": f"{descuento:.2f}",
+
+        "importe": f"{importe:.2f}",
+        "importe_linea": f"{importe:.2f}",
+        "importe_detectado": f"{importe:.2f}",
+        "importe_input": f"{importe:.2f}",
+
+        "raw": raw,
+        "raw_line": raw,
+
+        "parser": "divelec_albaran_generic_table_v12",
+        "source": "ocr_divelec_albaran_generic_table_v12",
+        "source_parser": "divelec_albaran_generic_table_v12",
+
+        "raw_data": {
+            "pvp_tarifa": f"{pvp:.4f}",
+            "uv_tarifa": str(uv or "").upper(),
+            "factor_tarifa": str(factor),
+            "precio_unitario": f"{precio_unitario:.4f}",
+            "importe_calculado_control": f"{control:.2f}",
+        },
+    }
+
+
+def _divelec_v12_parse_ecoraee(raw, line_no, last_code):
+    from decimal import Decimal
+
+    upper = _divelec_v12_ascii(raw).upper()
+
+    if "CUOTA ECORAEE" not in upper:
+        return None
+
+    nums = [
+        m for m in _divelec_v12_nums(raw)
+        if "," in m.group(0)
+    ]
+
+    if len(nums) < 2:
+        return None
+
+    cantidad = _divelec_v12_dec(nums[-2].group(0))
+    pvp = _divelec_v12_dec(nums[-1].group(0))
+
+    if not cantidad or not pvp or not last_code:
+        return None
+
+    importe = (cantidad * pvp).quantize(Decimal("0.01"))
+
+    return _divelec_v12_build(
+        line_no,
+        last_code,
+        "CUOTA ECORAEE",
+        cantidad,
+        pvp,
+        "",
+        Decimal("0"),
+        importe,
+        raw,
+    )
+
+
+def _divelec_v12_parse_line(raw, line_no):
+    from decimal import Decimal, ROUND_HALF_UP
+    import re
+
+    raw = str(raw or "").strip()
+
+    codigo = _divelec_v12_code(raw)
+
+    if not codigo:
+        return None
+
+    upper = _divelec_v12_ascii(raw).upper()
+
+    if "NETO" in upper:
+        neto_pos = upper.find("NETO")
+
+        before = raw[:neto_pos]
+        after = raw[neto_pos + 4:]
+
+        before_nums = _divelec_v12_nums(before)
+        after_nums = _divelec_v12_nums(after)
+
+        if not before_nums or not after_nums:
+            return None
+
+        pvp_match = before_nums[-1]
+
+        pvp = _divelec_v12_dec(
+            pvp_match.group(0)
+        )
+
+        importe = _divelec_v12_dec(
+            after_nums[-1].group(0)
+        )
+
+        if not pvp or not importe:
+            return None
+
+        uv_match = re.search(
+            r"(?:^|[\s|])([DCM])(?:[\s|]|$)",
+            _divelec_v12_ascii(
+                before[pvp_match.end():]
+            ).upper(),
+        )
+
+        uv = uv_match.group(1) if uv_match else ""
+
+        factor = {
+            "D": Decimal("10"),
+            "C": Decimal("100"),
+            "M": Decimal("1000"),
+        }.get(uv, Decimal("1"))
+
+        cantidad = Decimal("0")
+        qty_match = None
+
+        if len(before_nums) >= 2:
+            candidate = before_nums[-2]
+
+            prefix = before[
+                max(0, candidate.start() - 3):
+                candidate.start()
+            ]
+
+            if "/" not in prefix:
+                cantidad = _divelec_v12_dec(
+                    candidate.group(0)
+                )
+                qty_match = candidate
+
+        inferred_qty = (
+            importe * factor / pvp
+        ).quantize(
+            Decimal("0.0001"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        if cantidad:
+            nearest = inferred_qty.quantize(
+                Decimal("1"),
+                rounding=ROUND_HALF_UP,
+            )
+
+            if (
+                abs(inferred_qty - nearest) <= Decimal("0.02")
+                and abs(cantidad - nearest) <= Decimal("0.05")
+            ):
+                cantidad = nearest
+        else:
+            cantidad = inferred_qty
+
+        cut = (
+            qty_match.start()
+            if qty_match is not None
+            else pvp_match.start()
+        )
+
+        descripcion = _divelec_v12_desc(
+            before,
+            cut,
+            codigo,
+        )
+
+        return _divelec_v12_build(
+            line_no,
+            codigo,
+            descripcion,
+            cantidad,
+            pvp,
+            uv,
+            Decimal("0"),
+            importe,
+            raw,
+        )
+
+    nums = _divelec_v12_nums(raw)
+
+    if len(nums) < 4:
+        return None
+
+    qty_m, pvp_m, dto_m, importe_m = nums[-4:]
+
+    cantidad = _divelec_v12_dec(qty_m.group(0))
+    pvp = _divelec_v12_dec(pvp_m.group(0))
+    descuento = _divelec_v12_dec(dto_m.group(0))
+    importe = _divelec_v12_dec(importe_m.group(0))
+
+    if (
+        not cantidad
+        or not pvp
+        or not importe
+        or descuento < 0
+        or descuento > 95
+    ):
+        return None
+
+    # DIVELEC_V12_LOST_DECIMAL_RECONCILIATION_V1
+    # OCR puede perder la coma decimal del PVP:
+    # 69,21 -> 6921.
+    # Solo se corrige cuando cantidad + descuento + importe
+    # permiten demostrar matemáticamente el PVP correcto.
+    _pvp_raw = str(pvp_m.group(0) or "").strip()
+    _factor_desc = (
+        Decimal("1")
+        - (descuento / Decimal("100"))
+    )
+
+    if (
+        _factor_desc > 0
+        and "," not in _pvp_raw
+        and "." not in _pvp_raw
+    ):
+        _calc_actual = (
+            cantidad * pvp * _factor_desc
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        if abs(_calc_actual - importe) > Decimal("0.05"):
+            _best_pvp = pvp
+            _best_diff = abs(_calc_actual - importe)
+
+            for _divisor in (
+                Decimal("10"),
+                Decimal("100"),
+                Decimal("1000"),
+            ):
+                _candidate = (
+                    pvp / _divisor
+                ).quantize(
+                    Decimal("0.0001"),
+                    rounding=ROUND_HALF_UP,
+                )
+
+                _candidate_total = (
+                    cantidad
+                    * _candidate
+                    * _factor_desc
+                ).quantize(
+                    Decimal("0.01"),
+                    rounding=ROUND_HALF_UP,
+                )
+
+                _diff = abs(
+                    _candidate_total - importe
+                )
+
+                if _diff < _best_diff:
+                    _best_diff = _diff
+                    _best_pvp = _candidate
+
+            if _best_diff <= Decimal("0.05"):
+                pvp = _best_pvp
+
+    descripcion = _divelec_v12_desc(
+        raw,
+        qty_m.start(),
+        codigo,
+    )
+
+    return _divelec_v12_build(
+        line_no,
+        codigo,
+        descripcion,
+        cantidad,
+        pvp,
+        "",
+        descuento,
+        importe,
+        raw,
+    )
+
+
+def _divelec_v12_lines(text):
+    from decimal import Decimal
+
+    raw = str(text or "")
+
+    result = {
+        "parser": "divelec_albaran_generic_table_v12",
+        "parser_key": "divelec_albaran_valorado_v1",
+        "lineas": [],
+        "total_lineas": "0.00",
+        "warnings": [],
+        "errors": [],
+    }
+
+    if "DIVELEC" not in _divelec_v12_ascii(raw).upper():
+        return result
+
+    physical = [
+        str(x or "").strip()
+        for x in raw.splitlines()
+        if str(x or "").strip()
+    ]
+
+    start = None
+
+    for i, line in enumerate(physical):
+        u = _divelec_v12_ascii(line).upper()
+
+        if (
+            "CODIGO" in u
+            and "REF.PRO" in u
+            and "DESCRIPCION" in u
+            and "IMPORTE" in u
+        ):
+            start = i + 1
+            break
+
+    if start is None:
+        return result
+
+    parsed = []
+    last_code = ""
+
+    for raw_line in physical[start:]:
+        upper = _divelec_v12_ascii(raw_line).upper()
+
+        if any(x in upper for x in (
+            "MATERIAL PENDIENTE DE ENTREGA",
+            "IMPORTE BRUTO",
+            "BASE IMPONIBLE",
+            "TOTAL ALBARAN",
+            "ESTE DOCUMENTO",
+        )):
+            break
+
+        if "SUMA Y SIGUE" in upper:
+            continue
+
+        if "CUOTA ECORAEE" in upper:
+            item = _divelec_v12_parse_ecoraee(
+                raw_line,
+                len(parsed) + 1,
+                last_code,
+            )
+        else:
+            item = _divelec_v12_parse_line(
+                raw_line,
+                len(parsed) + 1,
+            )
+
+        if not item:
+            continue
+
+        parsed.append(item)
+
+        if item.get("codigo"):
+            last_code = item["codigo"]
+
+    total = sum(
+        (
+            _divelec_v12_dec(x.get("importe"))
+            for x in parsed
+        ),
+        Decimal("0"),
+    )
+
+    result["lineas"] = parsed
+    result["total_lineas"] = f"{total:.2f}"
+
+    return result
+
+
+if "extract_albaran_lines_by_template" in globals():
+
+    _extract_albaran_lines_by_template_before_divelec_v12 = (
+        extract_albaran_lines_by_template
+    )
+
+    def extract_albaran_lines_by_template(
+        text,
+        parser_key="",
+        *args,
+        **kwargs,
+    ):
+        key = str(parser_key or "").strip().lower()
+
+        if key == "divelec_albaran_valorado_v1":
+            parsed = _divelec_v12_lines(text)
+
+            if parsed.get("lineas"):
+                return parsed
+
+        return (
+            _extract_albaran_lines_by_template_before_divelec_v12(
+                text,
+                parser_key=parser_key,
+                *args,
+                **kwargs,
+            )
+        )

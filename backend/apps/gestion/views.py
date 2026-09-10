@@ -5723,6 +5723,8 @@ def albaran_lineas_desde_ocr(request, pk):
         try:
             from django.apps import apps as _ocr_apps
             PlantillaOCRProveedor = _ocr_apps.get_model("gestion", "PlantillaOCRProveedor")
+            # DIVELEC_SINGLE_TEMPLATE_CANONICAL_V1
+            # Primero respeta el match histórico exacto.
             plantilla_fallback = (
                 PlantillaOCRProveedor.objects
                 .filter(
@@ -5734,6 +5736,43 @@ def albaran_lineas_desde_ocr(request, pk):
                 .order_by("prioridad", "id")
                 .first()
             )
+
+            # Si proveedor y Team quedaron desacoplados por duplicados históricos,
+            # resolver la plantilla por identidad fiscal del proveedor.
+            if not plantilla_fallback:
+                _proveedor_cif = (
+                    getattr(albaran.proveedor, "cif", "") or ""
+                ).strip().upper()
+
+                if _proveedor_cif:
+                    plantilla_fallback = (
+                        PlantillaOCRProveedor.objects
+                        .filter(
+                            proveedor__cif__iexact=_proveedor_cif,
+                            tipo_documento="ALBARAN",
+                            activa=True,
+                        )
+                        .order_by(
+                            "-team_id",
+                            "prioridad",
+                            "id",
+                        )
+                        .first()
+                    )
+
+                    # DIVELEC tiene una única plantilla canónica:
+                    # INVERADRIDE / Team 1 / PK 2.
+                    if _proveedor_cif == "B13729439":
+                        plantilla_fallback = (
+                            PlantillaOCRProveedor.objects
+                            .filter(
+                                pk=2,
+                                tipo_documento="ALBARAN",
+                                activa=True,
+                            )
+                            .first()
+                            or plantilla_fallback
+                        )
             if plantilla_fallback:
                 parser_key = (plantilla_fallback.parser_key or "").strip()
                 raw_data = raw_data if isinstance(raw_data, dict) else {}
@@ -5771,17 +5810,25 @@ def albaran_lineas_desde_ocr(request, pk):
             except Exception:
                 _albaran_pdf_path_router_v1 = ""
 
-            parsed = (
-                extract_albaran_lines_routed_v1(
+            # DIVELEC_IMPORT_LINES_CANONICAL_V12
+            # No aceptar resultados parciales de routers históricos.
+            if parser_key == "divelec_albaran_valorado_v1":
+                parsed = extract_albaran_lines_by_template(
                     text,
                     parser_key=parser_key,
-                    pdf_path=(
-                        _albaran_pdf_path_router_v1
-                        or None
-                    ),
-                    max_pages=10,
                 )
-            )
+            else:
+                parsed = (
+                    extract_albaran_lines_routed_v1(
+                        text,
+                        parser_key=parser_key,
+                        pdf_path=(
+                            _albaran_pdf_path_router_v1
+                            or None
+                        ),
+                        max_pages=10,
+                    )
+                )
 
         except Exception:
             parsed = None
