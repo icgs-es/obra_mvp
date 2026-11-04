@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import presupuesto_views, views
 
 app_name = "gestion"
 
@@ -43,6 +43,13 @@ urlpatterns = [
 
     path("sync-access/", views.access_sync_view, name="gestion_sync_access"),
     path("", views.gestion_index, name="index"),
+    path("presupuestos/", presupuesto_views.presupuestos_list, name="presupuestos_list"),
+    path("presupuestos/nuevo/", presupuesto_views.presupuesto_form, name="presupuesto_create"),
+    path("presupuestos/<int:pk>/", presupuesto_views.presupuesto_detail, name="presupuesto_detail"),
+    path("presupuestos/<int:pk>/editar/", presupuesto_views.presupuesto_form, name="presupuesto_update"),
+    path("presupuestos/<int:pk>/aprobacion/", presupuesto_views.presupuesto_aprobacion, name="presupuesto_aprobacion"),
+    path("presupuestos/<int:pk>/plan/", presupuesto_views.presupuesto_plan, name="presupuesto_plan"),
+    path("presupuestos/<int:pk>/pdf/", presupuesto_views.presupuesto_pdf, name="presupuesto_pdf"),
     path("facturas/", views.facturas_list, name="facturas_list"),
     path("facturas/informe/", views.facturas_informe, name="facturas_informe"),
     path("pagos/pendientes/", views.pagos_pendientes_informe, name="pagos_pendientes_informe"),

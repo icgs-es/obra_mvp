@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-3">
+  <a href="{% url 'gestion:presupuestos_list' %}">Presupuestos</a>
+  <h1 class="h4 mt-2">{% if presupuesto.pk %}Editar presupuesto{% else %}Nuevo presupuesto{% endif %}</h1>
+  {% if empresas %}
+    <form method="get" class="d-flex align-items-end gap-2 mb-3">
+      <div>
+        <label for="empresa-presupuesto" class="form-label">Empresa</label>
+        <select id="empresa-presupuesto" name="team_id" class="form-select">
+          {% for empresa in empresas %}
+            <option value="{{ empresa.pk }}"{% if empresa.pk == presupuesto.team_id %} selected{% endif %}>{{ empresa }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn btn-outline-secondary">Cargar empresa</button>
+    </form>
+  {% else %}
+    <p class="text-muted">{{ presupuesto.team }}</p>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="team_id" value="{{ presupuesto.team_id }}">
+    {{ form.non_field_errors }}
+    <div class="row g-3">
+      {% for field in form %}
+        <div class="{% if field.name == 'condiciones_pago' or field.name == 'observaciones' %}col-12{% else %}col-md-6{% endif %}">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {{ field.errors }}
+          {% if field.name == "pdf" and presupuesto.pk and presupuesto.pdf %}
+            <a class="small" href="{% url 'gestion:presupuesto_pdf' presupuesto.pk %}">Descargar PDF actual</a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <button class="btn btn-primary mt-3">Guardar presupuesto</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <a href="{% url 'gestion:presupuesto_detail' presupuesto.pk %}">Volver al presupuesto</a>
+  <h1 class="h4 mt-2">Plan de pagos · {{ presupuesto }}</h1>
+  <p class="text-muted">Total previsto: {% if presupuesto.importe_total != None %}{{ presupuesto.importe_total }} €{% else %}Por determinar{% endif %}. Puedes indicar una fecha, un hito o ambos.</p>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  {{ formset.non_form_errors }}
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>Fecha prevista</th><th>Hito</th><th>Importe (€)</th><th>Forma de pago</th><th>Observaciones</th><th>Quitar</th></tr></thead>
+        <tbody id="presupuesto-pagos">
+          {% for form in formset %}
+            {% include "gestion/presupuesto_plan_fila.html" %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <template id="presupuesto-pago-nuevo">
+      {% include "gestion/presupuesto_plan_fila.html" with form=formset.empty_form %}
+    </template>
+    <button type="button" class="btn btn-outline-secondary" id="presupuesto-pago-anadir">Añadir pago</button>
+    <button class="btn btn-primary">Guardar plan</button>
+  </form>
+</div>
+<script>
+  (() => {
+    const total = document.getElementById('id_pagos-TOTAL_FORMS');
+    const rows = document.getElementById('presupuesto-pagos');
+    const template = document.getElementById('presupuesto-pago-nuevo');
+    document.getElementById('presupuesto-pago-anadir').addEventListener('click', () => {
+      rows.insertAdjacentHTML('beforeend', template.innerHTML.replaceAll('__prefix__', total.value));
+      total.value = Number(total.value) + 1;
+    });
+  })();
+</script>
+{% endblock %}

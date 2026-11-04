@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from intasa_ia.private_storage import private_ia_storage
 
 # CENTRO_COSTE_GESTION_V1
 # GESTION_AMBITO_OBRA_DEFAULT_V1
@@ -1336,3 +1337,65 @@ class FacturaVencimientoGestion(models.Model):
 
 # GESTION_UNIDADES_COMPRA_V1A_SIGNALS
 from . import purchase_memory_signals_v1  # noqa: E402,F401
+
+
+def presupuesto_pdf_upload_to(instance, filename):
+    from uuid import uuid4
+
+    return f"gestion/presupuestos/{instance.team_id}/{uuid4().hex}.pdf"
+
+
+class PresupuestoProveedorGestion(models.Model):
+    team = models.ForeignKey("usuarios.Team", on_delete=models.PROTECT)
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT)
+    obra = models.ForeignKey(
+        "planificacion_obra.ObraPlanificacion",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+    numero_proveedor = models.CharField("número del proveedor", max_length=120, blank=True)
+    concepto = models.CharField(max_length=255)
+    fecha_emision = models.DateField("fecha de emisión", null=True, blank=True)
+    fecha_entrega = models.DateField("fecha prevista de entrega", null=True, blank=True)
+    valido_hasta = models.DateField("válido hasta", null=True, blank=True)
+    condiciones_pago = models.TextField("condiciones de pago del proveedor", blank=True)
+    observaciones = models.TextField(blank=True)
+    importe_total = models.DecimalField(
+        "total previsto (IVA incluido)", max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text="Déjalo vacío si la oferta está pendiente de medición o de valoración.",
+    )
+    pdf = models.FileField(
+        "PDF del proveedor", upload_to=presupuesto_pdf_upload_to, storage=private_ia_storage,
+        max_length=250, blank=True,
+    )
+    aprobado_en = models.DateTimeField(null=True, blank=True, editable=False)
+    aprobado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, editable=False,
+    )
+    nombre_aprobador = models.CharField(max_length=255, blank=True, editable=False)
+
+    class Meta:
+        ordering = ("-pk",)
+        permissions = [("approve_presupuesto", "Puede aprobar presupuestos de proveedor")]
+
+    @property
+    def aprobado(self):
+        return self.aprobado_en is not None
+
+    def __str__(self):
+        return self.numero_proveedor or f"Presupuesto {self.pk}"
+
+
+class PresupuestoVencimientoGestion(models.Model):
+    presupuesto = models.ForeignKey(
+        PresupuestoProveedorGestion, on_delete=models.CASCADE, related_name="vencimientos",
+    )
+    fecha_vencimiento = models.DateField(null=True, blank=True)
+    hito = models.CharField(max_length=160, blank=True)
+    importe_previsto = models.DecimalField(max_digits=14, decimal_places=2)
+    forma_pago = models.CharField(max_length=160, blank=True)
+    observaciones = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ("pk",)

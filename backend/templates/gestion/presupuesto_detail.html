@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <a href="{% url 'gestion:presupuestos_list' %}">Presupuestos</a>
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 my-3">
+    <div><h1 class="h4 mb-1">{{ presupuesto }}</h1><p class="text-muted mb-0">{{ presupuesto.concepto }}</p></div>
+    <div class="d-flex flex-wrap gap-2">
+      {% if presupuesto.pdf %}<a class="btn btn-outline-secondary" href="{% url 'gestion:presupuesto_pdf' presupuesto.pk %}">Descargar PDF</a>{% endif %}
+      {% if not presupuesto.aprobado %}<a class="btn btn-outline-primary" href="{% url 'gestion:presupuesto_update' presupuesto.pk %}">Editar ficha</a>{% endif %}
+      {% if perms.gestion.approve_presupuesto %}
+        <form method="post" action="{% url 'gestion:presupuesto_aprobacion' presupuesto.pk %}">
+          {% csrf_token %}
+          {% if presupuesto.aprobado %}
+            <button class="btn btn-outline-danger" name="accion" value="revocar">Revocar aprobación</button>
+          {% else %}
+            <button class="btn btn-success" name="accion" value="aprobar">Aprobar presupuesto</button>
+          {% endif %}
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  <section class="card mb-3"><div class="card-body">
+    <h2 class="h6">Datos del presupuesto</h2>
+    <dl class="row mb-0">
+      <dt class="col-md-3">Empresa</dt><dd class="col-md-9">{{ presupuesto.team }}</dd>
+      <dt class="col-md-3">Proveedor</dt><dd class="col-md-9">{{ presupuesto.proveedor }}</dd>
+      <dt class="col-md-3">Obra</dt><dd class="col-md-9">{{ presupuesto.obra|default_if_none:"—" }}</dd>
+      <dt class="col-md-3">Emisión / validez</dt><dd class="col-md-9">{{ presupuesto.fecha_emision|date:"d/m/Y"|default:"—" }} / {{ presupuesto.valido_hasta|date:"d/m/Y"|default:"—" }}</dd>
+      <dt class="col-md-3">Entrega prevista</dt><dd class="col-md-9">{{ presupuesto.fecha_entrega|date:"d/m/Y"|default:"Por confirmar" }}</dd>
+      <dt class="col-md-3">Aprobación</dt>
+      <dd class="col-md-9">{% include "gestion/presupuesto_estado.html" %}{% if presupuesto.aprobado %} · {{ presupuesto.aprobado_en|date:"d/m/Y H:i" }} · {{ presupuesto.nombre_aprobador }}{% endif %}</dd>
+      <dt class="col-md-3">Condiciones del proveedor</dt><dd class="col-md-9">{{ presupuesto.condiciones_pago|default:"—"|linebreaksbr }}</dd>
+      {% if presupuesto.observaciones %}
+        <dt class="col-md-3">Observaciones</dt><dd class="col-md-9">{{ presupuesto.observaciones|linebreaksbr }}</dd>
+      {% endif %}
+    </dl>
+  </div></section>
+  <section class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h2 class="h6 mb-0">Plan de pagos previsto</h2>
+      {% if perms.gestion.authorize_factura_payment_plan %}
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'gestion:presupuesto_plan' presupuesto.pk %}">Editar plan</a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p class="mb-0">Total previsto: {% if presupuesto.importe_total != None %}{{ presupuesto.importe_total }} €{% else %}Por determinar{% endif %} · Planificado: {{ previsto }} €{% if pendiente != None %} · Sin planificar: {{ pendiente }} €{% endif %}</p>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Fecha prevista</th><th>Hito</th><th class="text-end">Importe</th><th>Forma de pago</th><th>Observaciones</th></tr></thead>
+        <tbody>
+        {% for pago in vencimientos %}
+          <tr><td>{{ pago.fecha_vencimiento|date:"d/m/Y"|default:"Por confirmar" }}</td><td>{{ pago.hito|default:"—" }}</td><td class="text-end">{{ pago.importe_previsto }} €</td><td>{{ pago.forma_pago|default:"—" }}</td><td>{{ pago.observaciones }}</td></tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">Todavía no hay pagos planificados.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
