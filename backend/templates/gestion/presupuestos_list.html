@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div><h1 class="h4 mb-1">Presupuestos</h1><p class="text-muted mb-0">Ofertas de proveedores, entregas y previsión de pagos</p></div>
+    <a class="btn btn-primary" href="{% url 'gestion:presupuesto_create' %}">Nuevo presupuesto</a>
+  </div>
+  <form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <input type="search" name="q" value="{{ q }}" class="form-control w-auto" aria-label="Buscar" placeholder="Número, proveedor, obra o concepto">
+    <select name="estado" class="form-select w-auto" aria-label="Estado de aprobación">
+      <option value="">Todos los estados</option>
+      <option value="pendiente"{% if estado == 'pendiente' %} selected{% endif %}>Pendiente</option>
+      <option value="aprobado"{% if estado == 'aprobado' %} selected{% endif %}>Aprobado</option>
+    </select>
+    <button class="btn btn-outline-secondary">Filtrar</button>
+  </form>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Presupuesto</th><th>Empresa</th><th>Proveedor / obra</th><th>Emisión</th><th>Entrega prevista</th><th class="text-end">Total previsto</th><th>Aprobación</th></tr></thead>
+      <tbody>
+      {% for presupuesto in page %}
+        <tr>
+          <td><a href="{% url 'gestion:presupuesto_detail' presupuesto.pk %}">{{ presupuesto }}</a><div class="small text-muted">{{ presupuesto.concepto }}</div></td>
+          <td>{{ presupuesto.team }}</td>
+          <td>{{ presupuesto.proveedor }}<div class="small text-muted">{{ presupuesto.obra|default_if_none:"" }}</div></td>
+          <td>{{ presupuesto.fecha_emision|date:"d/m/Y"|default:"—" }}</td>
+          <td>{{ presupuesto.fecha_entrega|date:"d/m/Y"|default:"Por confirmar" }}</td>
+          <td class="text-end">{% if presupuesto.importe_total != None %}{{ presupuesto.importe_total }} €{% else %}Por determinar{% endif %}</td>
+          <td>{% include "gestion/presupuesto_estado.html" %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">No hay presupuestos para esta búsqueda.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page.has_other_pages %}
+    <nav class="d-flex gap-3 align-items-center" aria-label="Páginas de presupuestos">
+      {% if page.has_previous %}<a href="?q={{ q|urlencode }}&amp;estado={{ estado|urlencode }}&amp;page={{ page.previous_page_number }}">Anterior</a>{% endif %}
+      <span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?q={{ q|urlencode }}&amp;estado={{ estado|urlencode }}&amp;page={{ page.next_page_number }}">Siguiente</a>{% endif %}
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}
